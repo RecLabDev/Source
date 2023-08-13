@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"name": "..",
+			"path": "."
+		},
+		{
+			"name": "..",
+			"path": "."
+		},
+	],
+	"settings": {
+		"dotnet.defaultSolution": "projects/Sandbox/Sandbox.sln"
+		//..
+	},
+	"extensions": {
+		"recommendations": [
+			"pomdtr.excalidraw-editor",
+			"ms-dotnettools.vscode-dotnet-runtime",
+			"visualstudiotoolsforunity.vstuc",
+			"kleber-swf.unity-code-snippets"
+		]
+	}
+}
