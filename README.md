@@ -6,6 +6,4 @@
 
 ## Getting Started
 
-https://deno.land/manual@v1.36.4/node/how_to_with_npm/react
-
-deno run --allow-env --allow-read --allow-write npm:create-vite-extra
+TODO
