@@ -5,12 +5,14 @@ using UnityEditor.UIElements;
 using UnityEditor.SceneManagement;
 
 using Theta.Unity.Runtime;
+using UnityEngine.SceneManagement;
 
 namespace Theta.Unity.Editor.Aby
 {
     /// <summary>
     /// TODO
-    /// </summary>
+    /// </summary>\
+    [InitializeOnLoad]
     public class AbyControllerEditorWindow : EditorWindow
     {
         /// <summary>
@@ -18,6 +20,15 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         [SerializeField]
         private VisualTreeAsset m_VisualTreeAsset = default;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        static AbyControllerEditorWindow()
+        {
+            // Mount a heirarchy gui event handler.
+            EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyWindowItemGUI;
+        }
 
         /// <summary>
         /// TODO
@@ -39,12 +50,12 @@ namespace Theta.Unity.Editor.Aby
 
         //--
         /// <summary>
-        /// TODO
+        /// Mounts the root `VisualElement` and inits the start/reload buttons.
         /// </summary>
         public void CreateGUI()
         {
-            var uxmlContent = m_VisualTreeAsset.Instantiate();
-            rootVisualElement.Add(uxmlContent);
+            var editorVisualTree = m_VisualTreeAsset.Instantiate();
+            rootVisualElement.Add(editorVisualTree);
 
             SetupStartButton();
             SetupReloadButton();
@@ -56,6 +67,14 @@ namespace Theta.Unity.Editor.Aby
         public void OnGUI()
         {
             MountStatusDisplay();
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnHierarchyWindowItemGUI(int instanceID, Rect selectionRect)
+        {
+            // Debug.LogFormat("Found GUI item: {0}", instanceID);
         }
 
         //--
@@ -96,11 +115,15 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         private void MountStatusDisplay()
         {
-            var runtimeStateLabel = rootVisualElement.Q<Label>("RuntimeStatus");
-            if (runtimeStateLabel != null)
+            var runtimeStateLabel = rootVisualElement.Q<Label>("RuntimeState");
+            if (runtimeStateLabel == null)
+            {
+                Debug.LogWarning("RuntimeState element not found ..");
+            }
+            else
             {
                 var runtimeState = Theta.Unity.Runtime.JsRuntime.GetState();
-                runtimeStateLabel.text = $"Runtime Status: {runtimeState}";
+                runtimeStateLabel.text = $"Runtime State: {runtimeState}";
             }
         }
 
@@ -120,6 +143,20 @@ namespace Theta.Unity.Editor.Aby
         private void OnReloadButtonClicked()
         {
             Debug.Log("Attempting to reload plugin.");
+
+            // EditorApplication.delayCall
+            EditorApplication.ExitPlaymode();
+
+            EditorApplication.delayCall += DelayedOnReloadButtonClicked;
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void DelayedOnReloadButtonClicked()
+        {
+            EditorApplication.delayCall -= DelayedOnReloadButtonClicked;
+
             EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
 
             if (ConfirmEditorRestart())
@@ -134,8 +171,8 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         private void StartJsRuntime(int portNumber)
         {
-            var startReport = JsRuntime.Start(portNumber);
-            Debug.LogFormat("JsRuntime exited with report: {0}", startReport);
+            var startExitCode = JsRuntime.Start(portNumber);
+            Debug.LogFormat("JsRuntime exited with code: {0}", startExitCode);
             Debug.LogFormat("JsRuntime State: {0}", JsRuntime.GetState());
         }
 

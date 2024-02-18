@@ -41,11 +41,11 @@
 		"dotnet.defaultSolution": "runtimes/Unit/Unity.sln",
 		//--
 		// Deno
-		"deno.enable": false,
+		"deno.enable": true,
 		// "deno.config": "./deno.json",
 		// "deno.importMap": "./imports.json",
 		// TypeScript
-		"typescript.validate.enable": true,
+		"typescript.validate.enable": false,
 		"typescript.format.enable": false,
 		"javascript.format.enable": false,
 		//--
