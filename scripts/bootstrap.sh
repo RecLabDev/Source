@@ -23,4 +23,4 @@ rm "mdbook-v$VERSION-$TARGET_ARCH-$OS_TYPE.zip"
 # Move to the specified directory
 mv mdbook "$INSTALL_DIR/"
 
-echo "mdBook version $VERSION for $TARGET_ARCH has been downloaded and installed in $INSTALL_DIR."
+echo "Downloaded and installed mdBook version $VERSION for $TARGET_ARCH to $INSTALL_DIR."

@@ -6,6 +6,9 @@ using UnityEditor;
 
 namespace Theta.Unity.Runtime
 {
+    /// <summary>
+    /// TODO
+    /// </summary>
     [CreateAssetMenu(fileName = "New Environment", menuName = "Aby/Environment")]
     public class AbyEnvironment : ScriptableObject
     {

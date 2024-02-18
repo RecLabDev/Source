@@ -58,9 +58,9 @@ impl JsRuntimeManager {
         // TODO: Move this to `ThetaRuntime::resolve_main_module(..)`.
         let main_module = resolve_url_or_path(main_specifier, &current_dir)?;
         
-        // let message_thread = self.async_runtime.spawn(async move {
-        //     //..
-        // });
+        let message_thread = self.async_runtime.spawn(async move {
+            //..
+        });
         
         // Run the "lite" Deno runtime, with only a core.
         // Useful for some testing scenarios.
@@ -118,7 +118,7 @@ impl JsRuntimeManager {
         });
         
         // TODO
-        // tokio::join!(message_thread);
+        tokio::join!(message_thread);
             
         #[cfg(feature="ffi")]
         JS_RUNTIME_STATE.store(CJsRuntimeState::Shutdown as u32, Ordering::Relaxed);
