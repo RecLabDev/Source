@@ -1,11 +1,14 @@
+using System.ComponentModel;
+
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.SceneManagement;
 
 using Theta.Unity.Runtime;
-using UnityEngine.SceneManagement;
 
 namespace Theta.Unity.Editor.Aby
 {
@@ -16,10 +19,21 @@ namespace Theta.Unity.Editor.Aby
     public class AbyControllerEditorWindow : EditorWindow
     {
         /// <summary>
+        /// The expected Exit Code used to ask the dev script to reload
+        /// the window, instead of just shutting down.
+        /// </summary>
+        const int RELOAD_REQUEST_EXIT_CODE = 100;
+
+        /// <summary>
         /// TODO
         /// </summary>
         [SerializeField]
         private VisualTreeAsset m_VisualTreeAsset = default;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        // private readonly State m_BindingContext = new State();
 
         /// <summary>
         /// TODO
@@ -134,7 +148,7 @@ namespace Theta.Unity.Editor.Aby
         private void OnStartButtonClicked()
         {
             // TODO: Get the port from config and/or ui field.
-            StartJsRuntime(8080);
+            StartJsRuntime(9000);
         }
 
         /// <summary>
@@ -144,9 +158,12 @@ namespace Theta.Unity.Editor.Aby
         {
             Debug.Log("Attempting to reload plugin.");
 
-            // EditorApplication.delayCall
+            // We need to exit play mode first so we can (optionally) save
+            // and safely run shutdown operations.
             EditorApplication.ExitPlaymode();
 
+            // `ExitPlaymore` doesn't complete until "later", so we defer
+            // the rest of the operation until then.
             EditorApplication.delayCall += DelayedOnReloadButtonClicked;
         }
 
@@ -157,11 +174,12 @@ namespace Theta.Unity.Editor.Aby
         {
             EditorApplication.delayCall -= DelayedOnReloadButtonClicked;
 
-            EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-
-            if (ConfirmEditorRestart())
+            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
-                EditorApplication.Exit(100); // Request reload.
+                if (ConfirmEditorRestart())
+                {
+                    EditorApplication.Exit(RELOAD_REQUEST_EXIT_CODE); // Request reload.
+                }
             }
         }
 
@@ -169,9 +187,9 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        private void StartJsRuntime(int portNumber)
+        private void StartJsRuntime(int servicePortNumber)
         {
-            var startExitCode = JsRuntime.Start(portNumber);
+            var startExitCode = JsRuntime.Start(servicePortNumber);
             Debug.LogFormat("JsRuntime exited with code: {0}", startExitCode);
             Debug.LogFormat("JsRuntime State: {0}", JsRuntime.GetState());
         }

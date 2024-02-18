@@ -6,6 +6,12 @@ using UnityEditor;
 
 namespace Theta.Unity.Runtime
 {
+    [CreateAssetMenu(fileName = "New Environment", menuName = "Aby/Environment")]
+    public class AbyEnvironment : ScriptableObject
+    {
+        public int servicePortNumber = 8080;
+    }
+
     /// <summary>
     /// TODO
     /// </summary>

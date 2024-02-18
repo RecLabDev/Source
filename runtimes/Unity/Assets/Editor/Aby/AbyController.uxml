@@ -8,5 +8,6 @@
         <ui:Label text="..." name="RuntimeState" style="margin-top: 1px; margin-right: 3px; margin-bottom: 1px; margin-left: 3px; padding-top: 1px; padding-right: 6px; padding-bottom: 3px; padding-left: 6px; background-color: rgb(35, 35, 35); border-left-color: rgba(26, 26, 26, 0); border-right-color: rgba(26, 26, 26, 0); border-top-color: rgba(26, 26, 26, 0); border-bottom-color: rgba(26, 26, 26, 0); border-top-left-radius: 2px; border-top-right-radius: 2px; border-bottom-right-radius: 2px; border-bottom-left-radius: 2px; -unity-text-align: upper-center; font-size: 12px;" />
         <ui:Button text="Start JavaScript Runtime!" parse-escape-sequences="true" display-tooltip-when-elided="true" name="StartButton" />
         <ui:Button text="Reload Plugin" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ReloadButton" />
+        <ui:IntegerField label="Service Port" value="0" binding-path="ServicePortNumber" readonly="true" focusable="false" tabindex="-1" />
     </ui:VisualElement>
 </ui:UXML>
