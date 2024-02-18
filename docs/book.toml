@@ -1,0 +1,6 @@
+[book]
+authors = ["Theta Games"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Theta SDK"

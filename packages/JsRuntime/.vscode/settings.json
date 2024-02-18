@@ -1,0 +1,19 @@
+{
+    //--
+    // Deno
+    "deno.enable": true,
+    // "deno.config": "./deno.json",
+    // "deno.importMap": "./imports.json",
+    // TypeScript
+    "typescript.validate.enable": false,
+    "typescript.format.enable": false,
+    "javascript.format.enable": false,
+    //--
+    // Rust & Cargo
+    "rust-analyzer.check.features": [
+        // TODO: "all"
+    ],
+    "rust-analyzer.cargo.features": [
+        // TODO: "all"
+    ],
+}

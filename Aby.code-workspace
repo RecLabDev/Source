@@ -1,24 +1,102 @@
 {
 	"folders": [
 		{
+			// TODO
 			"name": "..",
 			"path": "."
 		},
 		{
-			"name": "..",
-			"path": "."
+			// TODO
+			"name": "Scripts",
+			"path": "./scripts"
+		},
+		{
+			// TODO
+			"name": "Docs",
+			"path": "./docs"
+		},
+		{
+			// TODO
+			"name": "Dashboard",
+			"path": "./services/Dashboard"
+		},
+		{
+			// TODO
+			"name": "Theta SDK",
+			"path": "./packages/ThetaSDK"
+		},
+		{
+			// TODO
+			"name": "JavaScript Runtime",
+			"path": "./packages/JsRuntime"
+		},
+		{
+			// TODO
+			"name": "Unity Runtime",
+			"path": "./runtimes/Unity"
 		},
 	],
 	"settings": {
-		"dotnet.defaultSolution": "projects/Sandbox/Sandbox.sln"
-		//..
+		// C# & .NET
+		"dotnet.defaultSolution": "runtimes/Unit/Unity.sln",
+		//--
+		// Deno
+		"deno.enable": false,
+		// "deno.config": "./deno.json",
+		// "deno.importMap": "./imports.json",
+		// TypeScript
+		"typescript.validate.enable": true,
+		"typescript.format.enable": false,
+		"javascript.format.enable": false,
+		//--
+		// Rust & Cargo
+		"rust-analyzer.check.features": [
+			// TODO: "all"
+		],
+		"rust-analyzer.cargo.features": [
+			// TODO: "all"
+		],
+		//--
+		// Markdown
+		"[markdown]": {
+			"editor.unicodeHighlight.ambiguousCharacters": false,
+			"editor.unicodeHighlight.invisibleCharacters": false,
+			"diffEditor.ignoreTrimWhitespace": false,
+			"editor.wordWrap": "wordWrapColumn",
+			"editor.quickSuggestions": {
+				"comments": "off",
+				"strings": "off",
+				"other": "off"
+			}
+		},
+		//--
+		// General Settings
+		"files.exclude": {
+			"**/.git": true,
+			"**/.svn": true,
+			"**/.hg": true,
+			"**/CVS": true,
+			"**/.DS_Store": true,
+			"**/Thumbs.db": true,
+			"**/*.meta": true,
+		},
+		//--
+		// Language Settings
+		"[json]": {
+			"editor.formatOnSave": false,
+			"editor.suggest.insertMode": "replace"
+		}
 	},
 	"extensions": {
 		"recommendations": [
 			"pomdtr.excalidraw-editor",
 			"ms-dotnettools.vscode-dotnet-runtime",
 			"visualstudiotoolsforunity.vstuc",
-			"kleber-swf.unity-code-snippets"
+			"kleber-swf.unity-code-snippets",
+			"ms-vscode.cpptools",
+			"neikeq.godot-csharp-vscode",
+			"ms-dotnettools.csharp",
+			"1yib.rust-bundle"
 		]
 	}
 }

@@ -1,5 +1,11 @@
-# Aby: Theta's Internal Tool
+# Aby: Theta's Internal Dev Tool
 
 [![SDK (.NET)](https://github.com/ThetaStudioDev/Aby/actions/workflows/sdk.yml/badge.svg?branch=main&event=workflow_run)](https://github.com/ThetaStudioDev/Aby/actions/workflows/sdk.yml)
 
 ![Aby Masthead](./.github/assets/masthead.excalidraw.svg)
+
+## Getting Started
+
+https://deno.land/manual@v1.36.4/node/how_to_with_npm/react
+
+deno run --allow-env --allow-read --allow-write npm:create-vite-extra
