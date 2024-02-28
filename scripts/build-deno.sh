@@ -17,29 +17,47 @@ BUILD_TARGET="${1:-release}"
 SOURCE_LIB_NAME="js_runtime.dll"
 SOURCE_LIB_PATH="$CRATE_DIR/target/$BUILD_TARGET/$SOURCE_LIB_NAME"
 
+SOURCE_PDB_NAME="js_runtime.pdb"
+SOURCE_PDB_PATH="$CRATE_DIR/target/$BUILD_TARGET/$SOURCE_PDB_NAME"
+
 # TODO: Build this per platform (as above).
 TARGET_LIB_NAME="JsRuntime.dll"
 TARGET_LIB_PATH="$UNITY_PLUGIN_DIR/$TARGET_LIB_NAME"
 
+TARGET_PDB_NAME="JsRuntime.pdb"
+TARGET_PDB_PATH="$UNITY_PLUGIN_DIR/$TARGET_PDB_NAME"
+
+#--
 echo "Building Rust crate ($BUILD_TARGET; $CRATE_DIR)"
 cd "$CRATE_DIR"
-cargo build --$BUILD_TARGET --features lite # TODO: In emergencies, break glass: --features lite
-
-if [ $? -ne 0 ]; then
+cargo build --no-default-features --features ffi # TODO: In emergencies, break glass: --features lite
+if [ $? -ne 0 ];
+then
     echo "Cargo Build failed, exiting script."
     exit 1
 fi
 
-if [ -f "$SOURCE_LIB_PATH" ]; then
+if [ -f "$SOURCE_LIB_PATH" ];
+then
     mkdir -p "$UNITY_PLUGIN_DIR"
     cp "$SOURCE_LIB_PATH" "$TARGET_LIB_PATH"
     echo "Library moved successfully to Unity Plugins folder."
-    echo "Source Library: $SOURCE_LIB_PATH"
-    echo "Target Library: $UNITY_PLUGIN_DIR/$TARGET_LIB_NAME"
+    echo " -> Source Lib: $SOURCE_LIB_PATH"
+    echo " -> Target Lib: $UNITY_PLUGIN_DIR/$TARGET_LIB_NAME"
 else
     echo "Library not found, check the build configuration and path."
     echo "Expected path: $SOURCE_LIB_PATH"
     exit 1
 fi
 
+#--
+if [ "$BUILD_TARGET" == "debug" ] && [ -f "$SOURCE_PDB_PATH" ];\
+then
+    cp "$SOURCE_PDB_PATH" "$TARGET_PDB_PATH"
+    echo "PDB file moved successfully to Unity Plugins folder."
+    echo " -> Source PDB: $SOURCE_PDB_PATH"
+    echo " -> Target PDB: $TARGET_PDB_PATH"
+fi
+
+#--
 echo "All good! <3"

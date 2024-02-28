@@ -33,15 +33,16 @@ else
     exit 1
 fi
 
-# TODO: Run bootstrap script, but only if the editor isn't already running.
+# TODO: Run Unity integration tests ..
 # if [[ " $* " =~ " --bootstrap " ]];
 # then
-#     UNITY_BUILD_SCRIPT_NAME="Theta.Unity.Editor.Actions.Build.Sandbox"
-#     echo "Running Unity SDK Setup Scripts ($UNITY_BUILD_SCRIPT_NAME)"
-#     Unity -quit -batchmode -logfile -projectPath $UNITY_PROJECT_DIR -executeMethod $UNITY_BUILD_SCRIPT_NAME
+#     UNITY_TEST_PATH="Theta.Unity.Editor.Aby.Tests.JsRuntime.CanMount"
+#     echo "Running Unity SDK Setup Scripts ($UNITY_TEST_PATH)"
+#     Unity -quit -batchmode -logfile -projectPath $UNITY_PROJECT_DIR -executeMethod $UNITY_TEST_PATH
+#     EXIT_CODE=$?
 
-#     if [ $? -ne 0 ]; then
-#         echo "Unity Build Script failed, exiting script."
+#     if [ $EXIT_CODE -ne 0 ]; then
+#         echo "Unity tests failed with code $EXIT_CODE .."
 #         exit 1
 #     fi
 # fi

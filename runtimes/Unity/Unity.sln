@@ -5,10 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{6311E6C6-0A20-383B-320B-694068DE37A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.Platformer.Tutorials", "Unity.Platformer.Tutorials.csproj", "{A8CDEC68-7E6B-2269-15A0-9480059207D6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.2DPlatformer.Tutorials", "Unity.2DPlatformer.Tutorials.csproj", "{FAA158B0-E701-8DD5-6289-17D1E3E9D580}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,14 +19,6 @@ Global
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A8CDEC68-7E6B-2269-15A0-9480059207D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8CDEC68-7E6B-2269-15A0-9480059207D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8CDEC68-7E6B-2269-15A0-9480059207D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8CDEC68-7E6B-2269-15A0-9480059207D6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FAA158B0-E701-8DD5-6289-17D1E3E9D580}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FAA158B0-E701-8DD5-6289-17D1E3E9D580}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FAA158B0-E701-8DD5-6289-17D1E3E9D580}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FAA158B0-E701-8DD5-6289-17D1E3E9D580}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

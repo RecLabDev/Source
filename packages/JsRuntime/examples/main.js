@@ -1,8 +1,14 @@
+import { SomeService } from "./service.js";
+
 console.log("Hello, from main.js!");
-
-Deno.serve((request) =>
+try
 {
-    console.log("Handling request:", request.method, request.url);
-
-    return new Response("Hello, world");
-});
+    const service = new SomeService();
+    
+    await service.start();
+    await service.serve();
+}
+catch (exc)
+{
+    console.log("Caught exception:", exc);
+}

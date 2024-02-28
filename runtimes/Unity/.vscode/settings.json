@@ -1,4 +1,5 @@
 {
+    "deno.enable": true,
     "dotnet.defaultSolution": "Unity.sln",
     "files.exclude": {
         "**/.DS_Store": true,

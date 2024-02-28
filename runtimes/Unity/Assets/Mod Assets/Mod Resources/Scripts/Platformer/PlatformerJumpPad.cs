@@ -5,7 +5,7 @@ public class PlatformerJumpPad : MonoBehaviour
 {
     public float verticalVelocity;
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
         var rb = other.attachedRigidbody;
         if (rb == null) return;
