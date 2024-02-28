@@ -19,7 +19,7 @@ do
     then
         echo "Unity requested restart."
         sleep 1
-    if [ $EXIT_CODE -eq 70 ];
+    elif [ $EXIT_CODE -eq 70 ];
     then
         echo "Deno force-quit ($EXIT_CODE) because of a failed feature verification."
         exit $EXIT_CODE
