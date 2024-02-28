@@ -10,6 +10,8 @@ pub mod loader;
 
 pub mod ops;
 
+pub mod tracing;
+
 //--
 #[cfg(feature="ffi")]
 mod ffi;
