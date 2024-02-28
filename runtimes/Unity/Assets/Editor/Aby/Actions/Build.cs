@@ -6,7 +6,7 @@ using UnityEditor;
 
 using Theta.Unity.Runtime;
 
-namespace Theta.Unity.Editor.Actions
+namespace Theta.Unity.Editor.Aby.Actions
 {
     /// <summary>
     /// Encapsulates static build actions for the Theta Unity runtime.
@@ -19,11 +19,7 @@ namespace Theta.Unity.Editor.Actions
         /// </summary>
         public static void Sandbox()
         {
-            // string[] defaultScene = { "Assets/Sandbox.unity" };
-            // BuildPipeline.BuildPlayer(defaultScene, "Build/windowsGame.exe", BuildTarget.StandaloneWindows, BuildOptions.None);
-
-            Debug.LogFormat("Running Build Sandbox <3");
-            Debug.LogFormat("JsRuntime Lib Name: {0}", JsRuntime.AssemblyName);
+            //..
         }
     }
 }

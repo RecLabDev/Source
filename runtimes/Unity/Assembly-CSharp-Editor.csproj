@@ -60,16 +60,16 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.20f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Editor\Platformer\PatrolPathEditor.cs" />
+    <Compile Include="Assets\Editor\Aby\Controller\AbyController.cs" />
     <Compile Include="Assets\Editor\Aby\Actions\Build.cs" />
-    <Compile Include="Assets\Editor\Aby\AbyController.cs" />
-    <Compile Include="Assets\Editor\PatrolPathEditor.cs" />
-    <Compile Include="Assets\Editor\Aby\AbyMonitor.cs" />
+    <Compile Include="Assets\Editor\Aby\Monitor\AbyMonitor.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Editor\Aby\AbyController.uss" />
-    <None Include="Assets\Editor\Aby\AbyMonitor.uxml" />
-    <None Include="Assets\Editor\Aby\AbyController.uxml" />
-    <None Include="Assets\Editor\Aby\AbyMonitor.uss" />
+    <None Include="Assets\Editor\Aby\Controller\AbyController.uss" />
+    <None Include="Assets\Editor\Aby\Monitor\AbyMonitor.uxml" />
+    <None Include="Assets\Editor\Aby\Controller\AbyController.uxml" />
+    <None Include="Assets\Editor\Aby\Monitor\AbyMonitor.uss" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -1040,12 +1040,12 @@
       <HintPath>Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.AI.Navigation.Editor.ConversionSystem">
-      <HintPath>Library\ScriptAssemblies\Unity.AI.Navigation.Editor.ConversionSystem.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.VSCode.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.VSCode.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.AI.Navigation.Editor.ConversionSystem">
+      <HintPath>Library\ScriptAssemblies\Unity.AI.Navigation.Editor.ConversionSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Toolchain.Win-x86_64-Linux-x86_64">
@@ -1197,14 +1197,6 @@
     <ProjectReference Include="Assembly-CSharp.csproj">
       <Project>{CD8C9303-404B-FB8D-6B9B-21988D5CAC0A}</Project>
       <Name>Assembly-CSharp</Name>
-    </ProjectReference>
-    <ProjectReference Include="Unity.2DPlatformer.Tutorials.csproj">
-      <Project>{FAA158B0-E701-8DD5-6289-17D1E3E9D580}</Project>
-      <Name>Unity.2DPlatformer.Tutorials</Name>
-    </ProjectReference>
-    <ProjectReference Include="Unity.Platformer.Tutorials.csproj">
-      <Project>{A8CDEC68-7E6B-2269-15A0-9480059207D6}</Project>
-      <Name>Unity.Platformer.Tutorials</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
