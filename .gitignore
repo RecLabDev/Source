@@ -3,7 +3,7 @@
 *.user
 *.userosscache
 *.sln.docstates
-*.dll
+# *.dll
 *.pdb
 *.cache
 *.bak
@@ -19,7 +19,7 @@
 *_p.c
 *_i.h
 *.ilk
-*.meta
+# *.meta
 *.log
 *.sbr
 *.scc
