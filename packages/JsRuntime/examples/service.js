@@ -12,7 +12,12 @@ export class SomeService
     /**
      * TODO
      */
-    #state = undefined;
+    #store = undefined;
+    
+    /**
+     * TODO
+     */
+    #queue = undefined;
     
     /**
      * TODO
@@ -24,7 +29,7 @@ export class SomeService
      */
     #apiOptions = {
         port: DEFAULT_PUBLIC_PORT,
-        signal: undefined,
+        signal: this.#controller.signal,
     };
     
     /**
@@ -32,7 +37,7 @@ export class SomeService
      */
     #adminOptions = {
         port: DEFAULT_ADMIN_PORT,
-        signal: undefined,
+        signal: this.#controller.signal,
     };
     
     /**
@@ -40,8 +45,7 @@ export class SomeService
      */
     constructor()
     {
-        this.#apiOptions.signal = this.#controller.signal;
-        this.#adminOptions.signal = this.#controller.signal;
+        //..
     }
     
     /**
@@ -49,41 +53,39 @@ export class SomeService
      */
     async start()
     {
-        this.#state = await Deno.openKv();
+        this.#store = await Deno.openKv();
     }
     
     /**
      * TODO
      */
+    // deno-lint-ignore require-await
     async serve()
     {
-        // TODO: Only set this if we need it.
-        await this.#state.set(VISIT_COUNTER_KEY, new Deno.KvU64(0n));
-        
-        Deno.serve(this.#apiOptions, this.serveAPIRequest.bind(this));
-        Deno.serve(this.#adminOptions, this.serveAdminRequest.bind(this));
+        Deno.serve(this.#apiOptions, this.handleRestRequest.bind(this));
+        Deno.serve(this.#adminOptions, this.handleAdminRequest.bind(this));
     }
     
     /**
      * TODO
      */
-    async serveAPIRequest(request)
+    async handleRestRequest(request)
     {
         const requestURL = new URL(request.url);
-        console.debug("Handling admin request:", request.method, requestURL.pathname);
+        console.debug("Handling api request:", request.method, requestURL.pathname);
         
         switch (requestURL.pathname)
         {
             case "/favicon.ico":
             {
-                break;
+                return new Response();
             }
             default:
             {
-                const visitorCounter = await this.#state.get(VISIT_COUNTER_KEY);
+                const visitorCounter = await this.#store.get(VISIT_COUNTER_KEY, 0);
                 const currentVisitorCount = visitorCounter.value + 1n;
                 
-                await this.#state.set(VISIT_COUNTER_KEY, new Deno.KvU64(currentVisitorCount));
+                await this.#store.set(VISIT_COUNTER_KEY, new Deno.KvU64(currentVisitorCount));
                 console.debug("Incremented Counter to", currentVisitorCount);
                 
                 return new Response(`Hello! You are visitor #${currentVisitorCount}! <3`);
@@ -94,31 +96,31 @@ export class SomeService
     /**
      * TODO
      */
-    async serveAdminRequest(request)
+    async handleAdminRequest(request)
     {
         const requestURL = new URL(request.url);
         console.debug("Handling admin request:", request.method, requestURL.pathname);
         
         switch (requestURL.pathname)
         {
-            case "/quit":
+            case "/shutdown":
             {
                 controller.abort();
-                break;
+                return new Response(``);
             }
             case "/exit":
             {
                 Deno.exit(0);
-                break;
+                return new Response(``);
             }
             case "/restart":
             {
                 Deno.exit(100);
-                break;
+                return new Response(``);
             }
             default:
             {
-                const visitorCounter = await this.#state.get(VISIT_COUNTER_KEY);
+                const visitorCounter = await this.#store.get(VISIT_COUNTER_KEY);
                 return new Response(`Hello, Admin! There have been ${visitorCounter.value} visitors. <3`);
             }
         }

@@ -1,3 +1,6 @@
+// use std::sync::atomic::AtomicU32;
+// use std::sync::atomic::Ordering;
+
 use crate::runtime::JsRuntimeError;
 
 /// Representing the state of the current `JsRuntime`` instance

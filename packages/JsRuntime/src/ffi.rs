@@ -6,6 +6,7 @@ use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 // use std::ffi::CStr;
 use std::ffi::CString;
+use std::os::raw::c_int;
 use std::os::raw::c_char;
 
 use crate::runtime::JsRuntimeError;
@@ -24,13 +25,72 @@ pub static JS_RUNTIME_STATE: AtomicU32 = AtomicU32::new(CJsRuntimeState::None as
 
 //---
 /// TODO
-pub type LogCallback = extern "C" fn(message: *const c_char);
+pub type CLogCallback = extern "C" fn(message: *const c_char);
+
+pub struct SafeLogCallback {
+    callback: Arc<Mutex<CLogCallback>>,
+}
+
+impl SafeLogCallback {
+    pub fn new(callback: CLogCallback) -> Self {
+        SafeLogCallback {
+            callback: Arc::new(Mutex::new(callback)),
+        }
+    }
+
+    #[allow(unused_unsafe)]
+    pub fn call(&self, message: &str) {
+        let c_string = CString::new(message).expect("CString::new failed");
+        let callback = self.callback.lock().unwrap();
+
+        unsafe {
+            callback(c_string.as_ptr());
+        }
+    }
+}
 
 //---
 /// TODO
 #[repr(C)]
+#[derive(Debug)]
 pub struct CBootstrapOptions {
-    //.
+    pub int_value: c_int,
+    pub thread_prefix: *const c_char,
+    // pub array_value: *const c_int,
+    pub js_runtime_config: CJsRuntimeConfig,
+    // pub log_callback_fn: CLogCallback,
+}
+
+impl CBootstrapOptions {
+    pub fn new() -> Self {
+        CBootstrapOptions {
+            int_value: 0,
+            thread_prefix: CString::default().as_ptr(),
+            js_runtime_config: CJsRuntimeConfig {
+                main_module_path: CString::default().as_ptr(),
+                log_level: CJsRuntimeLogLevel::Trace,
+            }
+            
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct CJsRuntimeConfig {
+    pub main_module_path: *const c_char,
+    pub log_level: CJsRuntimeLogLevel,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub enum CJsRuntimeLogLevel {
+    None = 0,
+    Error = 1,
+    Warning = 2,
+    Info = 3,
+    Debug = 4,
+    Trace = 5,
 }
 
 //---
@@ -38,8 +98,9 @@ pub struct CBootstrapOptions {
 /// 
 /// Use this when you want to create a single, managed instance of Deno's
 ///   `MainWorker` for use in another managed environment.
+#[allow(unused)]
 #[export_name = "js_runtime__bootstrap"]
-pub extern "C" fn bootstrap() -> u8 {
+pub extern "C" fn bootstrap(options: CBootstrapOptions) -> u8 {
     let js_runtime_mgr = JsRuntimeManager::try_new().expect("Unable to get JsRuntimeManager");
     JS_RUNTIME_MANAGER.get_or_init(|| Arc::new(Mutex::new(js_runtime_mgr)));
     
@@ -49,6 +110,7 @@ pub extern "C" fn bootstrap() -> u8 {
 }
 
 /// TODO
+#[inline(always)]
 #[export_name = "js_runtime__get_state"]
 pub extern "C" fn get_state() -> CJsRuntimeState {
     match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
@@ -95,13 +157,13 @@ impl TryFrom<&PanicReport<'_>> for CLogMessage {
 
 /// TODO
 #[export_name = "js_runtime__mount_log_callback"]
-pub unsafe extern "C" fn mount_log_callback(log_callback: LogCallback) -> CMountLogResult {
+pub unsafe extern "C" fn mount_log_callback(log_callback: CLogCallback) -> CMountLogResult {
     let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
         JS_RUNTIME_STATE.store(CJsRuntimeState::Panic as u32, Ordering::Relaxed);
         return CMountLogResult::JsRuntimeMissing; // </3
     };
     
-    
+    let mut js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
     
     // Log panics to the supplied log_callback.
     std::panic::set_hook(Box::new(move |panic_info| {
@@ -122,7 +184,9 @@ pub unsafe extern "C" fn mount_log_callback(log_callback: LogCallback) -> CMount
         log_callback(c_message.as_ptr());
     }));
     
-    js_runtime.lock().expect("Couldn't lock JsRuntime ..").set_log_callback(log_callback);
+    js_runtime.set_log_callback(log_callback);
+    
+    js_runtime.capture_trace().expect("Failed to capture trace!");
     
     CMountLogResult::Ok // <3
 }
@@ -142,15 +206,34 @@ pub unsafe extern "C" fn start(_command: u8) -> u8 {
         return 1; // </3
     };
     
-    match js_runtime.lock().unwrap().start("./examples/main.js") {
-        Ok(status) => {
-            tracing::debug!("Runtime exited with status {:?}", status);
+    let js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
+    
+    JS_RUNTIME_STATE.store(CJsRuntimeState::Startup as u32, Ordering::Relaxed);
+    
+    let start_result = std::panic::catch_unwind(|| {
+        js_runtime.start("./examples/main.js").expect("Failed to start JsRuntime!")
+    });
+    
+    JS_RUNTIME_STATE.store(CJsRuntimeState::Shutdown as u32, Ordering::Relaxed);
+    
+    // TODO: Maybe we should be using a panic hook instead?
+    // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
+    match start_result {
+        Ok(exit_status) => {
+            tracing::debug!("Runtime exited with status {:?}", exit_status);
         }
-        Err(error) => {
-            tracing::error!("Couldn't start Theta Runtime: {:?}", error);
-            return 1; // </3
+        Err(error_any) => {
+            tracing::error!("JsRuntime failed to start: {:}", {
+                if let Some(error_string) = error_any.downcast_ref::<String>() {
+                    error_string.to_owned()
+                } else if let Some(error_str) = error_any.downcast_ref::<&'static str>() {
+                    String::from(*error_str)
+                } else {
+                    format!("Unknown: {:?}", error_any)
+                }
+            });
         }
     }
-            
+    
     0 // <3
 }

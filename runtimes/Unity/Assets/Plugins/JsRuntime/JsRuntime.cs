@@ -7,12 +7,21 @@ using System.Runtime.InteropServices;
 
 using UnityEngine;
 using UnityEditor;
+using static UnityEngine.CullingGroup;
 
 namespace Theta.Unity.Runtime
 {
     /// <summary>
     /// TODO
     /// </summary>
+    /// <param name="message"></param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void LogCallback(string message);
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    [InitializeOnLoad]
     public class JsRuntime
     {
         /// <summary>
@@ -31,9 +40,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        /// <param name="message"></param>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void LogCallback(string message);
+        private static LogCallback m_CallbackDelegate;
 
         /// <summary>
         /// TODO
@@ -53,7 +60,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        public static bool IsRunning => m_ServiceThread.ThreadState == ThreadState.Running;
+        public static bool IsRunning => m_ServiceThread != null && m_ServiceThread.ThreadState == ThreadState.Running;
 
         /// <summary>
         /// TOODO
@@ -62,17 +69,21 @@ namespace Theta.Unity.Runtime
         {
             try
             {
-                // Initialize a thread for the service worker.
-                m_ServiceThread = new Thread(new ThreadStart(StartService));
-
                 c_Bootstrap();
 
-                // Mount the logging callback into rust bindings.
-                LogCallback callbackDelegate = OnRustLogMessage;
-                MountLogCallback(OnRustLogMessage);
+                AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+                AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+                EditorApplication.quitting += OnEditorQuitting;
 
-                // Keep the callback delcate alive, forever.
-                GCHandle.Alloc(callbackDelegate);
+                // Mount the logging callback into rust bindings and keep it alive forever.
+                if (m_CallbackDelegate == null)
+                {
+                    MountLogCallback(m_CallbackDelegate = OnRustLogMessage);
+
+                    // Keep the callback delcate alive, forever.
+                    GCHandle.Alloc(m_CallbackDelegate);
+                }
             }
             catch (Exception exception)
             {
@@ -122,6 +133,62 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
+        private static void OnBeforeAssemblyReload()
+        {
+            if (IsRunning)
+            {
+                StopServiceThread();
+                Debug.LogFormat("Stopped service before assembly reload ..");
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnAfterAssemblyReload()
+        {
+            if (!IsRunning)
+            {
+                // TODO: Re-start the server, but only if it was running before assembly reload.
+                // StartServiceThread();
+                // Debug.LogFormat("Re-started servicec after assembly reload ..");
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnEditorQuitting()
+        {
+            if (IsRunning)
+            {
+                Debug.LogFormat("Quitting JsRuntime service!");
+                StopServiceThread();
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="stateChange"></param>
+        private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
+        {
+            Debug.LogFormat("Play mode state changed: {0}", stateChange);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="domainChange"></param>
+        private static void OnDomainChanged(object domainChange)
+        {
+            Debug.LogFormat("Domain reloaded: {0}", domainChange);
+        }
+
+        //---
+        /// <summary>
+        /// TODO
+        /// </summary>
         [DllImport(AssemblyName, EntryPoint = "js_runtime__mount_log_callback")]
         private static extern int MountLogCallback(LogCallback callback);
 
@@ -139,18 +206,24 @@ namespace Theta.Unity.Runtime
         /// <returns>Enumerator for co-routine.</returns>
         private static void StartService()
         {
-            var exitCode = Start(8080);
-            switch (exitCode)
+            try
             {
-                case 0:
-                    Debug.LogFormat("JsRuntime exited safely with code OK ({0}) ..", exitCode);
-                    break;
-                case 100:
-                    Debug.LogWarningFormat("JsRuntime requested shutdown with code RESTART ({0}) ..", exitCode);
-                    break;
-                default:
-                    Debug.LogErrorFormat("JsRuntime exited with code ERROR ({0}).", exitCode);
-                    break;
+                var exitCode = Start(8080);
+                switch (exitCode)
+                {
+                    case 0:
+                        Debug.LogFormat("JsRuntime exited safely with code OK ({0}) ..", exitCode);
+                        break;
+                    case 100:
+                        Debug.LogWarningFormat("JsRuntime requested shutdown with code RESTART ({0}) ..", exitCode);
+                        break; // TODO: Request application restart ..
+                    default:
+                        throw new Exception($"JsRuntime exited with exit code ERR ({exitCode})");
+                }
+            }
+            catch (Exception exc)
+            {
+                Debug.LogErrorFormat("Failed to start JsRuntime service: {0}", exc);
             }
         }
 
@@ -159,7 +232,10 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public static void StartServiceThread()
         {
+            m_ServiceThread = new Thread(new ThreadStart(StartService));
             m_ServiceThread.Start();
+
+            // TODO: Wait for the thread to become active first ..
             Debug.LogFormat("Started Service thread to state {0} ..", State);
         }
 
@@ -180,18 +256,29 @@ namespace Theta.Unity.Runtime
                     Debug.LogFormat("Called quit endpoint: {0}", quitResponse.Result);
                 }
             }
+            catch (HttpRequestException exc)
+            {
+                Debug.LogFormat("Server shutodown (as expected): {0}", exc);
+            }
+            catch (AggregateException exc)
+            {
+                Debug.LogWarningFormat("Server shutodown (as expected): {0}", exc);
+            }
             catch (Exception exc)
             {
                 Debug.LogErrorFormat("Couldn't shutdown gracefully: {0}", exc);
             }
             finally
             {
-                if (m_ServiceThread.Join(TimeSpan.FromSeconds(5)) == false)
+                if (m_ServiceThread.Join(TimeSpan.FromSeconds(10)) == false)
                 {
                     Debug.LogError("Failed to join JsRuntime service thread.");
                 }
-
-                Debug.LogFormat("Thread State: {0}", m_ServiceThread.ThreadState);
+                else
+                {
+                    Debug.LogFormat("Thread State: {0}", m_ServiceThread.ThreadState);
+                    m_ServiceThread = null;
+                }
             }
         }
 

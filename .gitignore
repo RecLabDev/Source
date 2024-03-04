@@ -3,7 +3,7 @@
 *.user
 *.userosscache
 *.sln.docstates
-# *.dll
+*.dll
 *.pdb
 *.cache
 *.bak

@@ -1,4 +1,5 @@
 console.log("Hello, from main.js!");
+
 try
 {
     const kv = await Deno.openKv();

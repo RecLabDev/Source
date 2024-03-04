@@ -12,7 +12,7 @@ namespace Theta.Unity.Runtime
     /// TODO
     /// </summary>
     [CreateAssetMenu(fileName = "New Environment", menuName = "Aby/Environment")]
-    public class AbyEnvConfig : ScriptableObject
+    public class AbyEnv : ScriptableObject
     {
         public int servicePortNumber = 8080;
     }
