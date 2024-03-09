@@ -256,6 +256,7 @@ impl JsRuntimeManager {
         Ok(0)
     }
     
+    /// TODO
     fn create_bootstrap_options(&self) -> BootstrapOptions {
         BootstrapOptions {
             unstable_features: self.unstable_features.clone(),
@@ -263,6 +264,7 @@ impl JsRuntimeManager {
         }
     }
     
+    /// TODO
     fn create_feature_checker(&self) -> Arc<FeatureChecker> {
         let mut feature_checker = FeatureChecker::default();
         
@@ -286,6 +288,7 @@ pub enum JsRuntimeError {
     /// TODO
     ResourceError(&'static str, std::io::Error),
     
+    /// TODO
     NulError(std::ffi::NulError),
     
     /// TODO
@@ -298,24 +301,28 @@ pub enum JsRuntimeError {
 impl Error for JsRuntimeError {}
 
 impl Display for JsRuntimeError {
+    /// TODO
     fn fmt(&self, mut f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("TODO")
     }
 }
 
 impl From<std::io::Error> for JsRuntimeError {
+    /// TODO
     fn from(error: std::io::Error) -> JsRuntimeError {
         JsRuntimeError::ResourceError("io", error)
     }
 }
 
 impl From<std::ffi::NulError> for JsRuntimeError {
+    /// TODO
     fn from(error: std::ffi::NulError) -> JsRuntimeError {
         JsRuntimeError::NulError(error)
     }
 }
 
 impl From<ModuleResolutionError> for JsRuntimeError {
+    /// TODO
     fn from(error: ModuleResolutionError) -> JsRuntimeError {
         JsRuntimeError::ModuleError(error)
     }
