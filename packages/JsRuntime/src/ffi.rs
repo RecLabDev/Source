@@ -70,8 +70,8 @@ pub struct CBootstrapOptions {
     // pub log_callback_fn: CLogCallback,
 }
 
-impl CBootstrapOptions {
-    pub fn new() -> Self {
+impl Default for CBootstrapOptions {
+    fn default() -> Self {
         CBootstrapOptions {
             int_value: 0,
             thread_prefix: CString::default().as_ptr(),
@@ -177,17 +177,8 @@ pub unsafe extern "C" fn mount_log_callback(log_callback: CLogCallback) -> CMoun
     // Log panics to the supplied log_callback.
     std::panic::set_hook(Box::new(move |panic_info| {
         // let js_runtime = js_runtime.lock().unwrap();
-        let location = panic_info.location();
-        let payload = panic_info.payload();
         
-        let message = match payload.downcast_ref::<&str>() {
-            Some(s) => format!("Encountered panic at `{:?}`: {}", location, s),
-            None => match payload.downcast_ref::<String>() {
-                Some(s) => format!("Encountered panic at `{:?}`: {}", location, s),
-                None => format!("Encountered unknown panic at `{:?}`: {:?}", location, payload),
-            },
-        };
-        
+        let message = unwrap_panic_message(panic_info);
         let c_message = CString::new(message).expect("CString::new failed");
         
         log_callback(c_message.as_ptr());
@@ -195,9 +186,29 @@ pub unsafe extern "C" fn mount_log_callback(log_callback: CLogCallback) -> CMoun
     
     js_runtime.set_log_callback(log_callback);
     
-    js_runtime.capture_trace().expect("Failed to capture trace!");
-    
-    CMountLogResult::Ok // <3
+    match js_runtime.capture_trace() {
+        Ok(_) => {
+            CMountLogResult::Ok
+        }
+        Err(error) => {
+            let c_message = CString::new(format!("Error: {:}", error)).expect("TODO");
+            log_callback(c_message.as_ptr());
+            CMountLogResult::LogCaptureFailed
+        }
+    }
+}
+
+pub fn unwrap_panic_message(panic_info: &PanicInfo<'_>) -> String {
+    let payload = panic_info.payload();
+    let location = panic_info.location();
+
+    match payload.downcast_ref::<&str>() {
+        Some(s) => format!("Encountered panic at `{:?}`: {}", location, s),
+        None => match payload.downcast_ref::<String>() {
+            Some(s) => format!("Encountered panic at `{:?}`: {}", location, s),
+            None => format!("Encountered unknown panic at `{:?}`: {:?}", location, payload),
+        },
+    }
 }
 
 #[repr(C)]
@@ -205,6 +216,7 @@ pub enum CMountLogResult {
     Ok = 0,
     UnknownError = 1,
     JsRuntimeMissing = 2,
+    LogCaptureFailed = 3,
 }
 
 /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
@@ -212,7 +224,7 @@ pub enum CMountLogResult {
 pub unsafe extern "C" fn start(_command: u8) -> CStartResult {
     let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
         crate::ffi::set_state(CJsRuntimeState::Panic);
-        return CStartResult::BindingPanic; // </3
+        return CStartResult::BindingErr; // </3
     };
     
     let js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
@@ -234,19 +246,19 @@ pub unsafe extern "C" fn start(_command: u8) -> CStartResult {
                 JsRuntimeError::DenoAnyError(deno_error) => {
                     tracing::error!("Runtime exited with JavaScript error: {:}", deno_error);
                     crate::ffi::set_state(CJsRuntimeState::Shutdown);
-                    CStartResult::JsRuntimeError // </3
+                    CStartResult::JsRuntimeErr // </3
                 }
                 _ => {
                     tracing::error!("Runtime exited with error: {:#?}", error);
                     crate::ffi::set_state(CJsRuntimeState::Panic);
-                    CStartResult::BindingError // </3
+                    CStartResult::BindingErr // </3
                 }
             }
         }
         Err(payload) => {
             handle_panic(payload);
             crate::ffi::set_state(CJsRuntimeState::Panic);
-            CStartResult::BindingPanic // </3
+            CStartResult::BindingErr // </3
         }
     }
 }
@@ -271,7 +283,7 @@ fn handle_panic(payload: Box<dyn Any + Send>) {
 #[derive(Debug)]
 pub enum CStartResult {
     Ok = 0,
-    BindingError = 1,
-    BindingPanic = 2,
-    JsRuntimeError = 3,
+    Err = 1,
+    BindingErr = 2,
+    JsRuntimeErr = 3,
 }

@@ -1,16 +1,20 @@
 #![allow(unused)]
 
 use std::error::Error;
+use std::ffi::CStr;
 use std::ffi::CString;
 use std::fmt::Display;
 use std::fs::OpenOptions;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::OnceLock;
+use std::cell::OnceCell;
 use std::time::Duration;
 
 use tokio::runtime::Builder as TokioRuntimeBuilder;
 use tokio::runtime::Runtime as TokioRuntime;
+use tokio::sync::Mutex as TokioMutex;
 
 use deno_runtime::permissions::PermissionsContainer;
 
@@ -25,6 +29,7 @@ use deno_runtime::worker::WorkerOptions;
 
 use deno_runtime::BootstrapOptions;
 use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+use tokio::task::JoinHandle;
 
 use crate::stdio::JsRuntimeStdio;
 
@@ -56,6 +61,9 @@ pub struct JsRuntimeManager {
 
     /// TODO
     log_callback: Option<Arc<Mutex<CLogCallback>>>,
+
+    /// TODO
+    log_callback_async: Option<Arc<TokioMutex<CLogCallback>>>,
 }
 
 impl JsRuntimeManager {
@@ -111,6 +119,7 @@ impl JsRuntimeManager {
             stdio: js_stdio,
             unstable_features: features,
             log_callback: None,
+            log_callback_async: None,
         })
     }
 
@@ -122,38 +131,44 @@ impl JsRuntimeManager {
     /// TODO
     pub fn set_log_callback(&mut self, log_callback: CLogCallback) {
         self.log_callback = Some(Arc::new(Mutex::new(log_callback)));
+        self.log_callback_async = Some(Arc::new(TokioMutex::new(log_callback)));
     }
 }
 
 impl JsRuntimeManager {
     /// TODO
-    pub fn capture_trace(&self) -> Result<u32, JsRuntimeError> {
-        let Some(log_callback) = self.log_callback.as_ref().map(|d| d.clone()) else {
+    pub fn capture_trace(&self) -> Result<JoinHandle<u8>, JsRuntimeError> {
+        let Some(log_callback) = self.log_callback_async.as_ref() else {
             return Err(JsRuntimeError::Unknown("Log callback not yet initialized."));
         };
 
         self.async_runtime.block_on(async move {
             let _ = self.send_log("TODO: Capture tracing spans from Rust ..");
-            // let log_callback = log_callback.clone();
+            let log_callback = log_callback.clone();
 
             let log_thread = tokio::spawn(async move {
                 loop {
-                    match log_callback.lock() {
-                        Ok(log_callback) => unsafe {
-                            // let message = CString::new(format!("TODO: CAPTURE TRACE #003 ({:?})", log_callback)).expect("Failed to create CString!");
-                            // log_callback(message.as_ptr());
+                    match CString::new(format!("TODO: CAPTURE TRACE #003 ({:?})", log_callback)) {
+                        Ok(c_string) => unsafe {
+                            // let log_callback = log_callback.lock().await;
+                            // log_callback(c_string.as_ptr());
                         }
                         Err(error) => {
-                            tracing::error!("Couldn't get mutex lock: {:?}", error);
+                            tracing::error!("Log capture failed: {:}", error);
                         }
                     }
-
-                    tokio::time::sleep(Duration::from_secs(60)).await;
-                    tracing::trace!("After Sleep ..");
+                    
+                    // TODO: Remove this!
+                    tokio::time::sleep(Duration::from_secs(5)).await;
                 }
+                
+                0
             });
             
-            Ok(0)
+            // TODO: Remove this!
+            tokio::time::sleep(Duration::from_nanos(100)).await;
+            
+            Ok(log_thread)
         })
     }
 
@@ -168,7 +183,9 @@ impl JsRuntimeManager {
                             log_callback(c_string.as_ptr());
                         }
                     }
-                    Err(error) => {}
+                    Err(error) => {
+                        //..
+                    }
                 }
                 Ok(())
             }
