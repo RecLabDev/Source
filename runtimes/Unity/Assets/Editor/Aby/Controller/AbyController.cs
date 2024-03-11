@@ -118,12 +118,16 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         public void CreateGUI()
         {
-            // Mount the admin ui and bind state.
-            rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
-
-            DrawRuntimeControlToolbar();
+            if (m_VisualTreeAsset != null)
+            {
+                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
+                DrawRuntimeControlToolbar();
+            }
+            else
+            {
+                Debug.LogError("VisualTreeAsset is not assigned.");
+            }
         }
-
         /// <summary>
         /// TODO
         /// </summary>

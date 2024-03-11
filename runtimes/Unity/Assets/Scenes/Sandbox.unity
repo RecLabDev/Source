@@ -2005,7 +2005,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.2716366, y: 0.40786934, z: -9}
+  m_LocalPosition: {x: 1.08, y: 0.49, z: -9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -19498,7 +19498,7 @@ Tilemap:
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.5345911, g: 0.51989657, b: 0.48583904, a: 1}
   m_Origin: {x: -51, y: -70, z: 0}
   m_Size: {x: 463, y: 117, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}

@@ -106,10 +106,16 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         public void CreateGUI()
         {
-            rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
-
-            CreateEnvironmentMenu();
-            CreateMasthead();
+            if (m_VisualTreeAsset != null)
+            {
+                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
+                CreateEnvironmentMenu();
+                CreateMasthead();
+            }
+            else
+            {
+                Debug.LogError("VisualTreeAsset is not assigned.");
+            }
         }
 
         /// <summary>

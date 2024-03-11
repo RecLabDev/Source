@@ -64,8 +64,8 @@
     <Compile Include="Assets\Plugins\JsRuntime\JsRuntime.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Plugins\JsRuntime\JsRuntime.dll" />
     <None Include="Assets\Plugins\ThetaSDK\ThetaSDK.dll" />
+    <None Include="Assets\Plugins\JsRuntime\JsRuntime.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
