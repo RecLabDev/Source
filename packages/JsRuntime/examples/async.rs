@@ -11,7 +11,7 @@ use anyhow::Result;
 async fn main() -> Result<ExitCode> {
     println!("Before Spawn ..");
     
-    let hello = tokio::spawn(async move {
+    let _hello = tokio::spawn(async move {
         println!("Before Loop ..");
         loop {
             //..

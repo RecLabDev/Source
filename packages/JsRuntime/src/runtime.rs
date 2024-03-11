@@ -139,11 +139,9 @@ impl JsRuntimeManager {
             let log_thread = tokio::spawn(async move {
                 loop {
                     match log_callback.lock() {
-                        Ok(log_callback) => {
+                        Ok(log_callback) => unsafe {
                             // let message = CString::new(format!("TODO: CAPTURE TRACE #003 ({:?})", log_callback)).expect("Failed to create CString!");
-                            // unsafe {
-                            //     log_callback(message.as_ptr());
-                            // }
+                            // log_callback(message.as_ptr());
                         }
                         Err(error) => {
                             tracing::error!("Couldn't get mutex lock: {:?}", error);
@@ -154,9 +152,9 @@ impl JsRuntimeManager {
                     tracing::trace!("After Sleep ..");
                 }
             });
-        });
-
-        Ok(0)
+            
+            Ok(0)
+        })
     }
 
     /// TODO
@@ -254,31 +252,13 @@ impl JsRuntimeManager {
         #[cfg(not(feature = "lite"))]
         self.async_runtime.block_on(async move {
             // TODO: Revist the Clone for `main_module`.
-            if let Err(error) = worker.execute_main_module(&main_module.clone()).await {
-                tracing::error!("Failed to execute main module: {:}", error);
-                let _ = self.send_log(format!("Failed to execute main module: {:}", error));
-            }
-
-            // let poll_options = PollEventLoopOptions::default();
-            // let mut main_context = worker.js_runtime.main_context();
-            // while true {
-            //     match worker.js_runtime.poll_event_loop(&mut main_context, poll_options) {
-            //         Poll::Ready(_) => {}
-            //         Poll::Pending => {}
-            //     }
-            // }
-
-            if let Err(error) = worker
-                .js_runtime
-                .run_event_loop(PollEventLoopOptions::default())
-                .await
-            {
-                tracing::error!("Failed to run main worker event loop: {:}", error);
-                let _ = self.send_log(format!("Failed to run main worker event loop: {:}", error));
-            }
-        });
-
-        Ok(0)
+            let error = worker.execute_main_module(&main_module.clone()).await?;
+            
+            // TODO
+            worker.js_runtime.run_event_loop(PollEventLoopOptions::default()).await?;
+            
+            Ok(0)
+        })
     }
 
     /// TODO
@@ -301,6 +281,8 @@ impl JsRuntimeManager {
     }
 }
 
+use deno_core::anyhow::Error as DenoAnyError;
+
 /// TODO
 #[derive(Debug)]
 pub enum JsRuntimeError {
@@ -319,7 +301,10 @@ pub enum JsRuntimeError {
 
     /// TODO
     ModuleError(ModuleResolutionError),
-
+    
+    /// TODO
+    DenoAnyError(DenoAnyError),
+    
     /// An unknown error occurred.
     Unknown(&'static str),
 }
@@ -352,5 +337,12 @@ impl From<ModuleResolutionError> for JsRuntimeError {
     /// TODO
     fn from(error: ModuleResolutionError) -> JsRuntimeError {
         JsRuntimeError::ModuleError(error)
+    }
+}
+
+impl From<deno_core::anyhow::Error> for JsRuntimeError {
+    /// TODO
+    fn from(error: DenoAnyError) -> JsRuntimeError {
+        JsRuntimeError::DenoAnyError(error)
     }
 }

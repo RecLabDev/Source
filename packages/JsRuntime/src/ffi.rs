@@ -207,9 +207,6 @@ pub enum CMountLogResult {
     JsRuntimeMissing = 2,
 }
 
-use deno_runtime::deno_core::error::JsError;
-use deno_runtime::deno_core::anyhow::Error as DenoAnyError;
-
 /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
 #[export_name = "js_runtime__start"]
 pub unsafe extern "C" fn start(_command: u8) -> CStartResult {

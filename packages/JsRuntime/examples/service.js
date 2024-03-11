@@ -9,6 +9,8 @@ const DEFAULT_ADMIN_PORT = 9000;
  */
 export class SomeService
 {
+    
+    
     /**
      * TODO
      */
@@ -76,26 +78,38 @@ export class SomeService
     /**
      * TODO
      */
+    async #incrementCounter(value)
+    {
+        await this.#store.atomic()
+            .mutate({
+                type: "sum",
+                key: VISIT_COUNTER_KEY,
+                value: new Deno.KvU64(value),
+            })
+            .commit();
+        
+        return await this.#store.get(VISIT_COUNTER_KEY);
+    }
+    
+    /**
+     * TODO
+     */
     async handleRestRequest(request)
     {
         const requestURL = new URL(request.url);
-        console.debug("Handling api request:", request.method, requestURL.pathname);
         
         switch (requestURL.pathname)
         {
             case "/favicon.ico":
             {
-                return new Response();
+                return new Response(``);
             }
             default:
             {
-                const visitorCounter = await this.#store.get(VISIT_COUNTER_KEY, 0);
-                const currentVisitorCount = visitorCounter.value + 1n;
+                const visitorCounter = await this.#incrementCounter(1n);
+                console.debug(`Incremented counter to ${visitorCounter.value}`);
                 
-                await this.#store.set(VISIT_COUNTER_KEY, new Deno.KvU64(currentVisitorCount));
-                console.debug("Incremented Counter to", currentVisitorCount);
-                
-                return new Response(`Hello! You are visitor #${currentVisitorCount}! <3`);
+                return new Response(`Hello! You are visitor #${visitorCounter.value}! <3`);
             }
         }
     }
@@ -106,13 +120,12 @@ export class SomeService
     async handleAdminRequest(request)
     {
         const requestURL = new URL(request.url);
-        console.debug("Handling admin request:", request.method, requestURL.pathname);
         
         switch (requestURL.pathname)
         {
             case "/favicon.ico":
             {
-                return new Response();
+                return new Response(``);
             }
             case "/quit":
             {
