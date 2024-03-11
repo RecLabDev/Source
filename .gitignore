@@ -3,7 +3,7 @@
 *.user
 *.userosscache
 *.sln.docstates
-# *.dll
+*.dll
 *.pdb
 *.cache
 *.bak
@@ -19,7 +19,6 @@
 *_p.c
 *_i.h
 *.ilk
-# *.meta
 *.log
 *.sbr
 *.scc
@@ -50,6 +49,7 @@
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
+[Uu]serSettings/
 [Mm]emoryCaptures/
 
 # Deno

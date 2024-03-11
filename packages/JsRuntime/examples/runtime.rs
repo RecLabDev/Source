@@ -1,34 +1,59 @@
+#![allow(unused)]
+
 use std::process::ExitCode;
+use std::ffi::CStr;
+use std::ffi::CString;
 
 use anyhow::Result;
 
+use js_runtime::CBootstrapOptions;
+use js_runtime::CJsRuntimeConfig;
+use js_runtime::CJsRuntimeLogLevel;
+
 /// TODO
-const TRACING_FILTER: &str = "js_runtime=trace,info";
+const TRACING_FILTER: &str = "runtime=trace,js_runtime=trace,info";
+
+// Define a function that matches the expected signature for the log callback.
+extern "C" fn log_callback(message: *const std::os::raw::c_char) {
+    if !message.is_null() {
+        let c_str = unsafe { CStr::from_ptr(message) };
+        let message = c_str.to_str().expect("Failed to unpack log message!");
+        tracing::trace!("[Capt'd] {:}", message);
+    }
+}
 
 //---
 fn main() -> Result<ExitCode> {
-    // Setup a default tracing subscriber so we can see log output.
-    // In a real environment, this would typically be setup during init
-    //   with a more robust subscriber which can collect and re-route
-    //   tracing events to a host-system.
-    tracing_subscriber::fmt()
-        .with_env_filter(TRACING_FILTER)
-        .with_thread_names(true)
-        .with_thread_ids(false)
-        .with_target(true)
-        .with_file(false)
-        .with_timer(true)
-        .without_time()
-        .init();
+    // Setup logging facilities, etc.
+    js_runtime::tracing::mount(TRACING_FILTER);
     
-    // First, run the bootstrap operation to mount resources and otherwise
-    //   prepare the process, ffi boundary, etc.
-    js_runtime::bootstrap();
+    let thread_prefix = CString::new("TEST").unwrap();
+    let main_module_path = CString::new("./examples/main.js").unwrap();
     
-    // Second, start the global `MainWorker`. Status 0 is good, 1+ is bad.
-    let status = unsafe { js_runtime::start(0) };
-    tracing::trace!("JsRuntime Exited with status {:}", status);
-    
-    // Yay! <3
-    Ok(ExitCode::SUCCESS)
+    unsafe {
+        // Step 1:
+        //   Run the bootstrap operation to mount resources and otherwise
+        //   prepare the process, ffi boundary, etc.
+        js_runtime::bootstrap(CBootstrapOptions {
+            int_value: 0,
+            thread_prefix: thread_prefix.as_ptr(),
+            js_runtime_config: CJsRuntimeConfig {
+                main_module_path: main_module_path.as_ptr(),
+                log_level: CJsRuntimeLogLevel::Trace,
+            }
+            
+        });
+        
+        // Step 2:
+        //   Mount a log callback for FFI-bound log capture.
+        js_runtime::mount_log_callback(log_callback);
+        
+        // Step 3:
+        //   Start the global `MainWorker`. Status 0 is good, 1+ is bad.
+        let status = js_runtime::start(0);
+        tracing::debug!("JsRuntime exited with status {:?}", status);
+        
+        // Yay! <3
+        Ok(ExitCode::SUCCESS)
+    }
 }

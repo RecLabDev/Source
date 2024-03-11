@@ -21,6 +21,19 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
+        [System.Serializable]
+        public class State
+        {
+            /// <summary>
+            /// TODO
+            /// </summary>
+            [SerializeField]
+            public string Status;
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         const int DEFAULT_SERVICE_PORT = 9000;
 
         /// <summary>
@@ -33,7 +46,13 @@ namespace Theta.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private AbyEnvConfig m_CurrentEnvironment;
+        private State m_State = new State();
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [SerializeField]
+        private AbyEnv m_CurrentEnvironment;
 
         /// <summary>
         /// TODO
@@ -55,23 +74,6 @@ namespace Theta.Unity.Editor.Aby
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyWindowItemGUI;
         }
 
-        //--
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void Awake()
-        {
-            // TODO
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void OnDestroy()
-        {
-            // TODO
-        }
-
         /// <summary>
         /// TODO
         /// </summary>
@@ -84,26 +86,79 @@ namespace Theta.Unity.Editor.Aby
 
         //--
         /// <summary>
+        /// TODO
+        /// </summary>
+        private void Awake()
+        {
+            // Mount environment assets and pick one to use with the editor window.
+            // TODO: Move this to a static value on AbyEnvConfig itself.
+            var envConfigs = AssetDatabase.FindAssets("t:AbyEnv");
+            if (envConfigs.Length == 0)
+            {
+                Debug.LogWarning("Couldn't find Aby Environment configs.");
+            }
+            else
+            {
+                var envConfigPath = AssetDatabase.GUIDToAssetPath(envConfigs[0]);
+                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyEnv>(envConfigPath);
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void OnDestroy()
+        {
+            // TODO
+        }
+
+        //--
+        /// <summary>
         /// Mounts the root `VisualElement` and inits the start/reload buttons.
         /// </summary>
         public void CreateGUI()
         {
-            var editorVisualTree = m_VisualTreeAsset.Instantiate();
-            rootVisualElement.Add(editorVisualTree);
-            rootVisualElement.Bind(new SerializedObject(this));
+            // Mount the admin ui and bind state.
+            rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
 
-            // TODO: Move this to a static value on AbyEnvConfig itself.
-            var guids = AssetDatabase.FindAssets("t:AbyEnvConfig");
-            if (guids.Length > 0)
+            DrawRuntimeControlToolbar();
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void DrawRuntimeControlToolbar()
+        {
+            var stateLabel = rootVisualElement.Q<Label>("RuntimeState");
+            if (stateLabel == null)
             {
-                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyEnvConfig>(path);
-                //rootVisualElement.Bind(new SerializedObject(m_CurrentEnvironment));
+                Debug.LogWarning("RuntimeState element not found ..");
+            }
+            else
+            {
+                stateLabel.text = $"Runtime State: {JsRuntime.State}";
             }
 
-            MountStatusDisplay();
-            SetupToggleButton();
-            SetupReloadButton();
+            var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
+            if (toggleButton == null)
+            {
+                Debug.LogError("ToggleButton element not found!");
+            }
+            else
+            {
+                toggleButton.clicked += OnToggleButtonClicked;
+            }
+
+
+            var reloadButton = rootVisualElement.Q<Button>("ReloadButton");
+            if (reloadButton == null)
+            {
+                Debug.LogError("ReloadButton element not found!");
+            }
+            else
+            {
+                reloadButton.clicked += OnReloadButtonClicked;
+            }
         }
 
         /// <summary>
@@ -123,39 +178,6 @@ namespace Theta.Unity.Editor.Aby
         }
 
         /// <summary>
-        /// TODO
-        /// </summary>
-        private void MountStatusDisplay()
-        {
-            var stateLabel = rootVisualElement.Q<Label>("RuntimeState");
-            if (stateLabel != null)
-            {
-                stateLabel.text = $"Runtime State: {JsRuntime.State}";
-            }
-            else
-            {
-                Debug.LogWarning("RuntimeState element not found ..");
-            }
-        }
-
-        //--
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void SetupToggleButton()
-        {
-            var startBtn = rootVisualElement.Q<Button>("ToggleButton");
-            if (startBtn != null)
-            {
-                startBtn.clicked += OnToggleButtonClicked;
-            }
-            else
-            {
-                Debug.LogError("ToggleButton element not found!");
-            }
-        }
-
-        /// <summary>
         /// TODO: Setup an observer for status display.
         /// </summary>
         private void OnToggleButtonClicked()
@@ -163,41 +185,11 @@ namespace Theta.Unity.Editor.Aby
             if (JsRuntime.IsRunning == false)
             {
                 JsRuntime.StartServiceThread();
-                MountStatusDisplay();
             }
             else
             {
                 JsRuntime.StopServiceThread();
-                MountStatusDisplay();
             }
-        }
-
-        //--
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void SetupReloadButton()
-        {
-            var reloadBtn = rootVisualElement.Q<Button>("ReloadButton");
-            if (reloadBtn == null)
-            {
-                Debug.LogError("ReloadButton element not found!");
-            }
-            else
-            {
-                reloadBtn.clicked += OnReloadButtonClicked;
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void OnStopButtonClicked()
-        {
-            JsRuntime.StopServiceThread();
-            //--
-            // TODO: Setup an observer for status display.
-            MountStatusDisplay();
         }
 
         /// <summary>

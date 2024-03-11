@@ -42,8 +42,7 @@
 		//--
 		// Deno
 		"deno.enable": false,
-		// "deno.config": "./deno.json",
-		// "deno.importMap": "./imports.json",
+		"deno.config": "./deno.jsonc",
 		// TypeScript
 		"typescript.validate.enable": false,
 		"typescript.format.enable": false,
