@@ -102,7 +102,7 @@ export class SomeService
         {
             case "/favicon.ico":
             {
-                return new Response(``);
+                return new Response(null);
             }
             default:
             {

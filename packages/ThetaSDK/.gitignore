@@ -41,3 +41,6 @@
 *.dbproj.schemaview
 *.pfx
 *.publishsettings
+
+[Bb]in/
+[Oo]bj/

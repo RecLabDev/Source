@@ -55,3 +55,4 @@ features = ["include_js_files_for_snapshotting"]
 
 [dev-dependencies]
 anyhow = "1.0.79"
+csbindgen = "1.9.1"
