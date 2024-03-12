@@ -6,9 +6,9 @@ use std::ffi::CString;
 
 use anyhow::Result;
 
-use js_runtime::CBootstrapOptions;
-use js_runtime::CJsRuntimeConfig;
-use js_runtime::CJsRuntimeLogLevel;
+use js_runtime::ffi::CBootstrapOptions;
+use js_runtime::ffi::CJsRuntimeConfig;
+use js_runtime::ffi::CJsRuntimeLogLevel;
 
 /// TODO
 const TRACING_FILTER: &str = "runtime=trace,js_runtime=trace,info";
@@ -34,7 +34,7 @@ fn main() -> Result<ExitCode> {
         // Step 1:
         //   Run the bootstrap operation to mount resources and otherwise
         //   prepare the process, ffi boundary, etc.
-        js_runtime::bootstrap(CBootstrapOptions {
+        js_runtime::ffi::bootstrap(CBootstrapOptions {
             int_value: 0,
             thread_prefix: thread_prefix.as_ptr(),
             js_runtime_config: CJsRuntimeConfig {
@@ -46,11 +46,11 @@ fn main() -> Result<ExitCode> {
         
         // Step 2:
         //   Mount a log callback for FFI-bound log capture.
-        js_runtime::mount_log_callback(log_callback);
+        js_runtime::ffi::mount_log_callback(log_callback);
         
         // Step 3:
         //   Start the global `MainWorker`. Status 0 is good, 1+ is bad.
-        let status = js_runtime::start(0);
+        let status = js_runtime::ffi::start(0);
         tracing::debug!("JsRuntime exited with status {:?}", status);
         
         // Yay! <3
