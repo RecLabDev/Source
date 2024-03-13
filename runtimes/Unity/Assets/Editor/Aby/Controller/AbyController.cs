@@ -170,7 +170,11 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         public void OnGUI()
         {
-            //..
+            var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
+            if (toggleButton != null)
+            {
+                toggleButton.text = JsRuntime.IsRunning == false ? "Start" : "Stop";
+            }
         }
 
         /// <summary>
@@ -188,11 +192,11 @@ namespace Theta.Unity.Editor.Aby
         {
             if (JsRuntime.IsRunning == false)
             {
-                JsRuntime.StartServiceThread();
+                JsRuntime.StartService();
             }
             else
             {
-                JsRuntime.StopServiceThread();
+                JsRuntime.StopService();
             }
         }
 

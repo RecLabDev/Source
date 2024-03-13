@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::ffi::CStr;
 use std::panic::PanicInfo;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -7,7 +8,6 @@ use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 // use std::ffi::CStr;
 use std::ffi::CString;
-use std::os::raw::c_int;
 use std::os::raw::c_char;
 
 use crate::runtime::JsRuntimeError;
@@ -78,13 +78,185 @@ pub(crate) fn set_state(state: CJsRuntimeState) {
     JS_RUNTIME_STATE.store(state as u32, Ordering::Relaxed);
 }
 
+/// TODO
+#[inline(always)]
+#[export_name = "js_runtime__get_state"]
+pub extern "C" fn get_state() -> CJsRuntimeState {
+    match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
+        Ok(state) => state,
+        Err(error) => {
+            tracing::error!("Couldn't get state: {:?}", error);
+            CJsRuntimeState::None
+        }
+    }
+}
+
 //---
 /// TODO
-pub type CLogCallback = extern "C" fn(message: *const c_char);
+#[repr(C)]
+#[derive(Debug)]
+pub struct CBootstrapOptions {
+    pub thread_prefix: *const c_char,
+    pub js_runtime_config: CJsRuntimeConfig,
+}
+
+#[repr(C)]
+pub enum CBootstrapResult {
+    Ok = 0,
+    UnknownError = 1,
+    JsRuntimeMissing = 2,
+    JsRuntimeFailed = 3,
+    LogCaptureFailed = 4,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct CJsRuntimeConfig {
+    pub log_dir: *const c_char,
+    pub log_level: CJsRuntimeLogLevel,
+    pub log_callback_fn: CLogCallback,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub enum CJsRuntimeLogLevel {
+    None = 0,
+    Error = 1,
+    Warning = 2,
+    Info = 3,
+    Debug = 4,
+    Trace = 5,
+}
+
+//---
+/// Initialize a global static `JsRuntime`` instance.
+/// 
+/// Use this when you want to create a single, managed instance of Deno's
+///   `MainWorker` for use in another managed environment.
+#[allow(unused)]
+#[export_name = "js_runtime__bootstrap"]
+pub extern "C" fn bootstrap(options: CBootstrapOptions) -> CBootstrapResult {
+    let mut js_runtime = match JsRuntimeManager::try_new() {
+        Ok(js_runtime) => js_runtime,
+        Err(error) => return CBootstrapResult::JsRuntimeFailed,
+    };
+    
+    let log_callback = options.js_runtime_config.log_callback_fn;
+    js_runtime.set_log_callback(log_callback);
+
+    // Log panics to the supplied log_callback.
+    std::panic::set_hook(Box::new(move |panic_info| {
+        match CString::new(unwrap_panic_message(panic_info)) {
+            Ok(c_message) => {
+                log_callback(c_message.as_ptr());
+            }
+            Err(error) => {
+                eprintln!("Failed to unpack panic message: {:}", error);
+            }
+        }
+    }));
+    
+    if let Err(error) = js_runtime.capture_trace() {
+        let c_message = CString::new(format!("Error: {:}", error)).expect("TODO");
+        log_callback(c_message.as_ptr());
+    }
+    
+    JS_RUNTIME_MANAGER.get_or_init(|| Arc::new(Mutex::new(js_runtime)));
+    
+    JS_RUNTIME_STATE.store(CJsRuntimeState::Cold as u32, Ordering::Relaxed);
+    
+    CBootstrapResult::Ok
+}
+
+//---
+#[repr(C)]
+#[derive(Debug)]
+pub struct CStartOptions {
+    pub main_module_specifier: *const c_char,
+}
+
+/// TODO
+#[repr(C)]
+#[derive(Debug)]
+pub enum CStartResult {
+    Ok = 0,
+    Err = 1,
+    BindingErr = 2,
+    JsRuntimeErr = 3,
+}
+
+/// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
+#[export_name = "js_runtime__start"]
+pub unsafe extern "C" fn start(options: CStartOptions) -> CStartResult {
+    let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
+        crate::ffi::set_state(CJsRuntimeState::Panic);
+        return CStartResult::BindingErr; // </3
+    };
+    
+    let js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
+    
+    crate::ffi::set_state(CJsRuntimeState::Startup);
+    
+    if options.main_module_specifier.is_null() {
+        return CStartResult::JsRuntimeErr;
+    }
+    
+    let c_str = unsafe {
+        CStr::from_ptr(options.main_module_specifier).to_str()
+    };
+    
+    let main_module_specifier = match c_str {
+        Ok(specifier) => specifier,
+        Err(e) => {
+            println!("Failed to convert to UTF-8: {}", e);
+            return CStartResult::JsRuntimeErr;
+        }
+    };
+
+    // TODO: Maybe we should be using a panic hook instead?
+    // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
+    match std::panic::catch_unwind(|| -> Result<u32, JsRuntimeError> {
+        Ok(js_runtime.start(main_module_specifier)?)
+    }) {
+        Ok(exit_result) => match exit_result {
+            Ok(exit_status) => {
+                js_runtime.send_log(format!("Runtime exited with status {:}", exit_status));
+                crate::ffi::set_state(CJsRuntimeState::Shutdown);
+                CStartResult::Ok // <3
+            }
+            Err(error) => match error {
+                JsRuntimeError::DenoAnyError(deno_error) => {
+                    js_runtime.send_log(format!("Runtime exited with JavaScript error: {:}", deno_error));
+                    crate::ffi::set_state(CJsRuntimeState::Shutdown);
+                    CStartResult::JsRuntimeErr // </3
+                }
+                _ => {
+                    js_runtime.send_log(format!("Runtime exited with error: {:#?}", error));
+                    crate::ffi::set_state(CJsRuntimeState::Panic);
+                    CStartResult::BindingErr // </3
+                }
+            }
+        }
+        Err(payload) => {
+            handle_panic(payload);
+            crate::ffi::set_state(CJsRuntimeState::Panic);
+            CStartResult::BindingErr // </3
+        }
+    }
+}
 
 /// TODO
 pub struct SafeLogCallback {
     callback: Arc<Mutex<CLogCallback>>,
+}
+
+/// TODO
+pub type CLogCallback = extern "C" fn(message: *const c_char);
+
+/// TODO
+#[export_name = "js_runtime__verify_log_callback"]
+pub unsafe extern "C" fn verify_log_callback(_cb: CLogCallback) {
+    //..
 }
 
 impl SafeLogCallback {
@@ -108,75 +280,18 @@ impl SafeLogCallback {
 }
 
 //---
-/// TODO
 #[repr(C)]
-#[derive(Debug)]
-pub struct CBootstrapOptions {
-    pub int_value: c_int,
-    pub thread_prefix: *const c_char,
-    // pub array_value: *const c_int,
-    pub js_runtime_config: CJsRuntimeConfig,
-    // pub log_callback_fn: CLogCallback,
+pub struct CLogMessage {
+    pub body: CString,
 }
 
-impl Default for CBootstrapOptions {
-    fn default() -> Self {
-        CBootstrapOptions {
-            int_value: 0,
-            thread_prefix: CString::default().as_ptr(),
-            js_runtime_config: CJsRuntimeConfig {
-                main_module_path: CString::default().as_ptr(),
-                log_level: CJsRuntimeLogLevel::Trace,
-            }
-            
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct CJsRuntimeConfig {
-    pub main_module_path: *const c_char,
-    pub log_level: CJsRuntimeLogLevel,
-}
-
-#[repr(C)]
-#[derive(Debug)]
-pub enum CJsRuntimeLogLevel {
-    None = 0,
-    Error = 1,
-    Warning = 2,
-    Info = 3,
-    Debug = 4,
-    Trace = 5,
-}
-
-//---
-/// Initialize a global static `JsRuntime`` instance.
-/// 
-/// Use this when you want to create a single, managed instance of Deno's
-///   `MainWorker` for use in another managed environment.
-#[allow(unused)]
-#[export_name = "js_runtime__bootstrap"]
-pub extern "C" fn bootstrap(options: CBootstrapOptions) -> u8 {
-    let js_runtime_mgr = JsRuntimeManager::try_new().expect("Unable to get JsRuntimeManager");
-    JS_RUNTIME_MANAGER.get_or_init(|| Arc::new(Mutex::new(js_runtime_mgr)));
+impl TryFrom<&PanicReport<'_>> for CLogMessage {
+    type Error = JsRuntimeError;
     
-    JS_RUNTIME_STATE.store(CJsRuntimeState::Cold as u32, Ordering::Relaxed);
-    
-    0 // <3
-}
-
-/// TODO
-#[inline(always)]
-#[export_name = "js_runtime__get_state"]
-pub extern "C" fn get_state() -> CJsRuntimeState {
-    match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
-        Ok(state) => state,
-        Err(error) => {
-            tracing::error!("Couldn't get state: {:?}", error);
-            CJsRuntimeState::None
-        }
+    fn try_from(report: &PanicReport<'_>) -> Result<Self, Self::Error> {
+        Ok(CLogMessage {
+            body: CString::new(report.message())?,
+        })
     }
 }
 
@@ -198,55 +313,6 @@ impl<'info> PanicReport<'info> {
     }
 }
 
-#[repr(C)]
-pub struct CLogMessage {
-    pub body: CString,
-}
-
-impl TryFrom<&PanicReport<'_>> for CLogMessage {
-    type Error = JsRuntimeError;
-    
-    fn try_from(report: &PanicReport<'_>) -> Result<Self, Self::Error> {
-        Ok(CLogMessage {
-            body: CString::new(report.message())?,
-        })
-    }
-}
-
-/// TODO
-#[export_name = "js_runtime__mount_log_callback"]
-pub unsafe extern "C" fn mount_log_callback(log_callback: CLogCallback) -> CMountLogResult {
-    let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
-        JS_RUNTIME_STATE.store(CJsRuntimeState::Panic as u32, Ordering::Relaxed);
-        return CMountLogResult::JsRuntimeMissing; // </3
-    };
-    
-    let mut js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
-    
-    // Log panics to the supplied log_callback.
-    std::panic::set_hook(Box::new(move |panic_info| {
-        // let js_runtime = js_runtime.lock().unwrap();
-        
-        let message = unwrap_panic_message(panic_info);
-        let c_message = CString::new(message).expect("CString::new failed");
-        
-        log_callback(c_message.as_ptr());
-    }));
-    
-    js_runtime.set_log_callback(log_callback);
-    
-    match js_runtime.capture_trace() {
-        Ok(_) => {
-            CMountLogResult::Ok
-        }
-        Err(error) => {
-            let c_message = CString::new(format!("Error: {:}", error)).expect("TODO");
-            log_callback(c_message.as_ptr());
-            CMountLogResult::LogCaptureFailed
-        }
-    }
-}
-
 pub fn unwrap_panic_message(panic_info: &PanicInfo<'_>) -> String {
     let payload = panic_info.payload();
     let location = panic_info.location();
@@ -257,58 +323,6 @@ pub fn unwrap_panic_message(panic_info: &PanicInfo<'_>) -> String {
             Some(s) => format!("Encountered panic at `{:?}`: {}", location, s),
             None => format!("Encountered unknown panic at `{:?}`: {:?}", location, payload),
         },
-    }
-}
-
-#[repr(C)]
-pub enum CMountLogResult {
-    Ok = 0,
-    UnknownError = 1,
-    JsRuntimeMissing = 2,
-    LogCaptureFailed = 3,
-}
-
-/// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
-#[export_name = "js_runtime__start"]
-pub unsafe extern "C" fn start(_command: u8) -> CStartResult {
-    let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
-        crate::ffi::set_state(CJsRuntimeState::Panic);
-        return CStartResult::BindingErr; // </3
-    };
-    
-    let js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
-    
-    crate::ffi::set_state(CJsRuntimeState::Startup);
-    
-    // TODO: Maybe we should be using a panic hook instead?
-    // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
-    match std::panic::catch_unwind(|| -> Result<u32, JsRuntimeError> {
-        Ok(js_runtime.start("./examples/main.js")?)
-    }) {
-        Ok(exit_result) => match exit_result {
-            Ok(exit_status) => {
-                tracing::debug!("Runtime exited with status {:}", exit_status);
-                crate::ffi::set_state(CJsRuntimeState::Shutdown);
-                CStartResult::Ok // <3
-            }
-            Err(error) => match error {
-                JsRuntimeError::DenoAnyError(deno_error) => {
-                    tracing::error!("Runtime exited with JavaScript error: {:}", deno_error);
-                    crate::ffi::set_state(CJsRuntimeState::Shutdown);
-                    CStartResult::JsRuntimeErr // </3
-                }
-                _ => {
-                    tracing::error!("Runtime exited with error: {:#?}", error);
-                    crate::ffi::set_state(CJsRuntimeState::Panic);
-                    CStartResult::BindingErr // </3
-                }
-            }
-        }
-        Err(payload) => {
-            handle_panic(payload);
-            crate::ffi::set_state(CJsRuntimeState::Panic);
-            CStartResult::BindingErr // </3
-        }
     }
 }
 
@@ -325,14 +339,4 @@ fn handle_panic(payload: Box<dyn Any + Send>) {
     };
     
     tracing::error!("JsRuntime failed with panic: {:}", panic_message);
-}
-
-/// TODO
-#[repr(C)]
-#[derive(Debug)]
-pub enum CStartResult {
-    Ok = 0,
-    Err = 1,
-    BindingErr = 2,
-    JsRuntimeErr = 3,
 }

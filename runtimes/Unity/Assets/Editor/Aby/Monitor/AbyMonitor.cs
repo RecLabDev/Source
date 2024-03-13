@@ -25,7 +25,14 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        private static string m_LogFilePath = "examples/logs/stdout.log";
+        [SerializeField]
+        private static string m_LogDir = "./Logs";
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [SerializeField]
+        private static string m_LogFilter = "Logs/JsRuntime.*.log";
 
         /// <summary>
         /// TODO
@@ -49,7 +56,7 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         public void Awake()
         {
-            Debug.LogFormat("Monitoring log files at '{0}' ..", Path.GetFullPath(m_LogFilePath));
+            Debug.LogFormat("Monitoring log files at '{0}' ..", Path.GetFullPath(m_LogFilter));
         }
 
         /// <summary>
@@ -69,8 +76,8 @@ namespace Theta.Unity.Editor.Aby
             {
                 m_LogWatcher = new FileSystemWatcher()
                 {
-                    Path = Path.GetDirectoryName(m_LogFilePath),
-                    Filter = Path.GetFileName(m_LogFilePath),
+                    Path = Path.GetFullPath(m_LogDir),
+                    Filter = Path.GetFileName(m_LogFilter),
                     NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
                     EnableRaisingEvents = true,
                 };

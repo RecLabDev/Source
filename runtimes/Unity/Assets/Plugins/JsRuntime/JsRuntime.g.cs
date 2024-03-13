@@ -22,21 +22,21 @@ namespace Theta.Unity.Runtime
 
 
 
-        /// <summary>Initialize a global static `JsRuntime`` instance.  Use this when you want to create a single, managed instance of Deno's `MainWorker` for use in another managed environment.</summary>
-        [DllImport(__DllName, EntryPoint = "js_runtime__bootstrap", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern byte bootstrap(CBootstrapOptions options);
-
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "js_runtime__get_state", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CJsRuntimeState get_state();
 
-        /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "js_runtime__mount_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CMountLogResult mount_log_callback(mount_log_callback_log_callback_delegate log_callback);
+        /// <summary>Initialize a global static `JsRuntime`` instance.  Use this when you want to create a single, managed instance of Deno's `MainWorker` for use in another managed environment.</summary>
+        [DllImport(__DllName, EntryPoint = "js_runtime__bootstrap", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CBootstrapResult bootstrap(CBootstrapOptions options);
 
         /// <summary>TODO: Return a CJsRuntimeStartResult (repr(C)) for state.</summary>
         [DllImport(__DllName, EntryPoint = "js_runtime__start", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult start(byte _command);
+        public static extern CStartResult start(CStartOptions options);
+
+        /// <summary>TODO</summary>
+        [DllImport(__DllName, EntryPoint = "js_runtime__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void verify_log_callback(verify_log_callback__cb_delegate _cb);
 
 
     }
@@ -44,7 +44,6 @@ namespace Theta.Unity.Runtime
     [StructLayout(LayoutKind.Sequential)]
     public unsafe partial struct CBootstrapOptions
     {
-        public int int_value;
         public byte* thread_prefix;
         public CJsRuntimeConfig js_runtime_config;
     }
@@ -52,8 +51,15 @@ namespace Theta.Unity.Runtime
     [StructLayout(LayoutKind.Sequential)]
     public unsafe partial struct CJsRuntimeConfig
     {
-        public byte* main_module_path;
+        public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
+        public void* log_callback_fn;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CStartOptions
+    {
+        public byte* main_module_specifier;
     }
 
 
@@ -68,6 +74,15 @@ namespace Theta.Unity.Runtime
         Shutdown = 6,
     }
 
+    public enum CBootstrapResult : uint
+    {
+        Ok = 0,
+        UnknownError = 1,
+        JsRuntimeMissing = 2,
+        JsRuntimeFailed = 3,
+        LogCaptureFailed = 4,
+    }
+
     public enum CJsRuntimeLogLevel : uint
     {
         None = 0,
@@ -76,14 +91,6 @@ namespace Theta.Unity.Runtime
         Info = 3,
         Debug = 4,
         Trace = 5,
-    }
-
-    public enum CMountLogResult : uint
-    {
-        Ok = 0,
-        UnknownError = 1,
-        JsRuntimeMissing = 2,
-        LogCaptureFailed = 3,
     }
 
     public enum CStartResult : uint

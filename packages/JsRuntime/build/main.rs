@@ -15,8 +15,12 @@ pub fn main() -> Result<ExitCode> {
         .csharp_namespace("Theta.Unity.Runtime")
         .csharp_class_accessibility("public")
         .csharp_class_name("JsRuntime")
-        .csharp_type_rename(|type_name| type_name)
         .csharp_use_function_pointer(false)
+        .csharp_type_rename(|rust_type_name| {
+            match rust_type_name.as_str() {
+                _ => rust_type_name,
+            }
+        })
         .generate_csharp_file("./gen/Unity/JsRuntime.g.cs")
         .expect("Failed to generate CSharp bindings.");
     

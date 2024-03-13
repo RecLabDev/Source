@@ -7,3 +7,11 @@
 ## Getting Started
 
 TODO
+
+## Debugging
+
+```
+.sympath+ "C:\Theta\Aby\runtimes\Unity\Assets\Plugins\JsRuntime"
+.reload
+kv
+```

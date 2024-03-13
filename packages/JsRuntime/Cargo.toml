@@ -9,7 +9,7 @@ default = ["ffi", "stdio"]
 ffi = []
 stdio = []
 lite = []
-unity = ["csbindgen"]
+unity = []
 
 #--
 [lib]
@@ -61,4 +61,4 @@ csbindgen = "1.9.1"
 
 [build-dependencies]
 anyhow = "1.0.79"
-csbindgen = {version = "1.9.1", optional = true }
+csbindgen = { version = "1.9.1" }

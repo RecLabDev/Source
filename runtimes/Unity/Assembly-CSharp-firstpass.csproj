@@ -63,6 +63,7 @@
     <Compile Include="Assets\Plugins\JsRuntime\JsRuntimeConfig.cs" />
     <Compile Include="Assets\Plugins\JsRuntime\JsRuntime.g.cs" />
     <Compile Include="Assets\Plugins\JsRuntime\JsRuntime.cs" />
+    <Compile Include="Assets\Plugins\JsRuntime\JsRuntime.d.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Plugins\ThetaSDK\ThetaSDK.dll" />

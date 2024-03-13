@@ -84,21 +84,21 @@ impl JsRuntimeManager {
                         .read(true)
                         .write(true)
                         .create(true)
-                        .open("./examples/logs/stdin.log")?,
+                        .open("./Logs/JsRuntime.in.log")?,
                 ),
                 Some(
                     OpenOptions::new()
                         .read(true)
                         .write(true)
                         .create(true)
-                        .open("./examples/logs/stdout.log")?,
+                        .open("./Logs/JsRuntime.out.log")?,
                 ),
                 Some(
                     OpenOptions::new()
                         .read(true)
                         .write(true)
                         .create(true)
-                        .open("./examples/logs/stderr.log")?,
+                        .open("./Logs/JsRuntime.err.log")?,
                 ),
             )?
         };
@@ -138,13 +138,13 @@ impl JsRuntimeManager {
 impl JsRuntimeManager {
     /// TODO
     pub fn capture_trace(&self) -> Result<JoinHandle<u8>, JsRuntimeError> {
-        let Some(log_callback) = self.log_callback_async.as_ref() else {
-            return Err(JsRuntimeError::Unknown("Log callback not yet initialized."));
-        };
+        let log_callback = self.log_callback_async.as_ref().ok_or(JsRuntimeError::LogCallbackMissing)?;
+        
+        // TODO: We shouldn't be cloning here. Find a way to share the data more safely.
+        let log_callback = log_callback.clone();
 
         self.async_runtime.block_on(async move {
-            let _ = self.send_log("TODO: Capture tracing spans from Rust ..");
-            let log_callback = log_callback.clone();
+            self.try_send_log("TODO: Capture tracing spans from Rust ..")?;
 
             let log_thread = tokio::spawn(async move {
                 loop {
@@ -173,23 +173,27 @@ impl JsRuntimeManager {
     }
 
     /// TODO
-    pub(crate) fn send_log<T: ToString>(&self, message: T) -> Result<(), JsRuntimeError> {
-        match &self.log_callback {
-            Some(log_callback) => {
-                match log_callback.lock() {
-                    Ok(log_callback) => {
-                        let c_string = CString::new(message.to_string())?;
-                        unsafe {
-                            log_callback(c_string.as_ptr());
-                        }
+    pub(crate) fn send_log<T: ToString>(&self, message: T) {
+        // TODO: Re-enable this!
+        // self.try_send_log(message).expect("Failed to send log message!");
+    }
+    
+    pub(crate) fn try_send_log<T: ToString>(&self, message: T) -> Result<(), JsRuntimeError> {
+        match CString::new(message.to_string()) {
+            Ok(c_message) => match self.log_callback.as_ref() {
+                Some(log_callback_mtx) => match log_callback_mtx.lock() {
+                    Ok(log_callback) => unsafe {
+                        log_callback(c_message.as_ptr());
+                        Ok(())
                     }
-                    Err(error) => {
-                        //..
-                    }
+                    Err(error) => Err(JsRuntimeError::from(error)),
                 }
-                Ok(())
+                
+                None => Err(JsRuntimeError::LogCallbackMissing),
             }
-            None => Err(JsRuntimeError::Unknown("Log callback not yet initialized.")),
+            
+            // Couldn't get CString, probably because (TODO).
+            Err(error) => Err(JsRuntimeError::from(error)),
         }
     }
 
@@ -311,8 +315,7 @@ pub enum JsRuntimeError {
 
     /// TODO
     ResourceError(&'static str, std::io::Error),
-
-    /// TODO
+    
     /// TODO
     NulError(std::ffi::NulError),
 
@@ -324,6 +327,12 @@ pub enum JsRuntimeError {
     
     /// An unknown error occurred.
     Unknown(&'static str),
+
+    /// TODO
+    LogCallbackMissing,
+
+    /// TODO
+    LogCallbackPoisoned,
 }
 
 impl Error for JsRuntimeError {}
@@ -357,9 +366,19 @@ impl From<ModuleResolutionError> for JsRuntimeError {
     }
 }
 
-impl From<deno_core::anyhow::Error> for JsRuntimeError {
+impl From<DenoAnyError> for JsRuntimeError {
     /// TODO
     fn from(error: DenoAnyError) -> JsRuntimeError {
         JsRuntimeError::DenoAnyError(error)
+    }
+}
+
+use std::sync::PoisonError;
+use std::sync::MutexGuard;
+
+impl From<PoisonError<MutexGuard<'_, CLogCallback>>> for JsRuntimeError {
+    /// TODO
+    fn from(error: PoisonError<MutexGuard<'_, CLogCallback>>) -> JsRuntimeError {
+        JsRuntimeError::LogCallbackPoisoned
     }
 }
