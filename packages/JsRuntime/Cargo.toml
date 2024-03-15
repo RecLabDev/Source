@@ -17,12 +17,24 @@ name = "js_runtime"
 crate-type=["rlib", "cdylib"]
 
 [[example]]
-name = "runtime"
+name = "counter"
 required-features = ["ffi"]
 
 #--
 [dependencies]
-slab = "0.4.9"
+tempfile = { version = "3.10.1", features = ["nightly"] }
+
+[dependencies.deno_core]
+# TODO: Remove this when deno_core::extension! works without it.
+version = "0.262.0"
+features = ["include_js_files_for_snapshotting"]
+
+[dependencies.deno_runtime]
+version = "0.146.0"
+features = ["include_js_files_for_snapshotting"]
+
+[dependencies.slab]
+version = "0.4.9"
 
 [dependencies.tracing]
 version = "0.1"
@@ -46,18 +58,8 @@ features = [
 [dependencies.futures]
 version = "0.3.30"
 
-[dependencies.deno_core]
-# TODO: Remove this when deno_core::extension! works without it.
-version = "0.262.0"
-features = ["include_js_files_for_snapshotting"]
-
-[dependencies.deno_runtime]
-version = "0.146.0"
-features = ["include_js_files_for_snapshotting"]
-
 [dev-dependencies]
 anyhow = "1.0.79"
-csbindgen = "1.9.1"
 
 [build-dependencies]
 anyhow = "1.0.79"

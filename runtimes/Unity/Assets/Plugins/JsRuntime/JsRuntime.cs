@@ -46,8 +46,6 @@ namespace Theta.Unity.Runtime
         {
             try
             {
-                Bootstrap(OnRustLogMessage);
-
                 EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
                 EditorApplication.quitting += OnEditorQuitting;
 
@@ -108,16 +106,6 @@ namespace Theta.Unity.Runtime
                     m_ServiceThread = null;
                 }
             }
-        }
-
-        //---
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="message"></param>
-        private static void OnRustLogMessage(string message)
-        {
-            Debug.LogFormat("[Rust]: {0}", message);
         }
 
         //---

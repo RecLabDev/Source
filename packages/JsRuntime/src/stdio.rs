@@ -11,12 +11,9 @@ pub struct JsRuntimeStdio {
 }
 
 impl JsRuntimeStdio {
-    pub fn try_new(stdin: Option<File>, stdout: Option<File>, stderr: Option<File>) -> Result<Self, std::io::Error> {
+    pub fn try_new(stdout: Option<File>, stderr: Option<File>) -> Result<Self, std::io::Error> {
         Ok(JsRuntimeStdio {
-            stdin: match stdin {
-                Some(file) => file,
-                None => deno_runtime::deno_io::STDIN_HANDLE.try_clone()?,
-            },
+            stdin: tempfile::tempfile()?,
             stdout: match stdout {
                 Some(file) => file,
                 None => deno_runtime::deno_io::STDOUT_HANDLE.try_clone()?,

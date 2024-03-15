@@ -61,25 +61,24 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        private static verify_log_callback__cb_delegate m_LogCallback;
+        private static LogCallbackDelegate m_LogCallback;
 
         /// <summary>
         /// TODO
         /// </summary>
-        private unsafe static void Bootstrap(verify_log_callback__cb_delegate logCallback)
+        private unsafe static void Bootstrap()
         {
             try
             {
+                if (m_LogCallback == null)
+                {
+                    m_LogCallback = OnRustLogMessage;
+                    //verify_log_callback(logCallback as verify_log_callback__cb_delegate);
+                    //GCHandle.Alloc(logCallback);
+                }
+
                 fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs"))
                 {
-                    m_LogCallback = logCallback;
-                    if (m_LogCallback == null)
-                    {
-                        m_LogCallback = logCallback;
-                        verify_log_callback(logCallback);
-                        //GCHandle.Alloc(logCallback);
-                    }
-
                     var bootstrapOptions = new CBootstrapOptions
                     {
                         js_runtime_config = new CJsRuntimeConfig
@@ -105,13 +104,19 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
+        public static string MainModuleSpecifier = "./Examples/Counter/main.js";
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         /// <returns>Enumerator for co-routine.</returns>
         private unsafe static void Start()
         {
             try
             {
-                //fixed (byte* specifier = Encoding.UTF8.GetBytes("../../services/Dashboard/src/main.js"))
-                fixed (byte* specifier = Encoding.UTF8.GetBytes("./Examples/Counter/main.js"))
+                Bootstrap();
+
+                fixed (byte* specifier = Encoding.UTF8.GetBytes(MainModuleSpecifier))
                 {
                     var startOptions = new CStartOptions
                     {
@@ -135,7 +140,24 @@ namespace Theta.Unity.Runtime
                 Debug.LogErrorFormat("Failed to start JsRuntime: {0}", exc);
             }
         }
+
+        //---
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="message"></param>
+        private static void OnRustLogMessage(string message)
+        {
+            Debug.LogFormat("[Rust]: {0}", message);
+        }
     }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="message"></param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void LogCallbackDelegate(string message);
 
     /// <summary>
     /// TODO

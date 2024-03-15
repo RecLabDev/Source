@@ -1,17 +1,18 @@
-#![allow(unused)]
-
-use std::error::Error;
-use std::ffi::CStr;
-use std::ffi::CString;
-use std::fmt::Display;
 use std::fs::OpenOptions;
+use std::net::Ipv4Addr;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
+use std::time::Duration;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::OnceLock;
-use std::cell::OnceCell;
-use std::time::Duration;
+use std::sync::PoisonError;
+use std::sync::MutexGuard;
+use std::error::Error;
+use std::fmt::Display;
+use std::ffi::CString;
 
+use deno_runtime::inspector_server::InspectorServer;
 use tokio::runtime::Builder as TokioRuntimeBuilder;
 use tokio::runtime::Runtime as TokioRuntime;
 use tokio::sync::Mutex as TokioMutex;
@@ -34,11 +35,28 @@ use tokio::task::JoinHandle;
 use crate::stdio::JsRuntimeStdio;
 
 #[cfg(feature = "ffi")]
-use crate::ffi::CLogCallback;
+use crate::logging::ffi::CLogCallback;
+
+pub struct JsRuntimeConfig {
+    db_dir: Option<String>,
+    log_dir: Option<String>,
+}
+
+impl JsRuntimeConfig {
+    pub fn new() -> Self {
+        JsRuntimeConfig {
+            db_dir: None,
+            log_dir: None,
+        }
+    }
+}
 
 //---
 /// TODO
 pub struct JsRuntimeManager {
+    /// TODO
+    config: JsRuntimeConfig,
+    
     /// TODO
     async_runtime: TokioRuntime,
 
@@ -69,9 +87,11 @@ pub struct JsRuntimeManager {
 impl JsRuntimeManager {
     /// TODO
     pub fn try_new() -> Result<Self, std::io::Error> {
+        let config = JsRuntimeConfig::new();
+        
         // If the `stdio` feature is enabled, just use default stdio setup.
         #[cfg(feature = "stdio")]
-        let js_stdio = JsRuntimeStdio::try_new(None, None, None)?;
+        let js_stdio = JsRuntimeStdio::try_new(None, None)?;
 
         // Otherwise, re-route stdin, stdout, and stderr to temporary log files.
         #[cfg(not(feature = "stdio"))]
@@ -79,13 +99,6 @@ impl JsRuntimeManager {
             tracing::info!("Feature `stdio` not enabled; Re-routing stdio to logs.");
 
             JsRuntimeStdio::try_new(
-                Some(
-                    OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .create(true)
-                        .open("./Logs/JsRuntime.in.log")?,
-                ),
                 Some(
                     OpenOptions::new()
                         .read(true)
@@ -109,15 +122,16 @@ impl JsRuntimeManager {
             .enable_io()
             .build()?;
 
-        let features = UNSTABLE_GRANULAR_FLAGS
+        let unstable_features = UNSTABLE_GRANULAR_FLAGS
             .iter()
             .map(|&feature| feature.2)
             .collect();
 
         Ok(JsRuntimeManager {
+            config,
             async_runtime,
             stdio: js_stdio,
-            unstable_features: features,
+            unstable_features,
             log_callback: None,
             log_callback_async: None,
         })
@@ -135,6 +149,7 @@ impl JsRuntimeManager {
     }
 }
 
+#[allow(unused)]
 impl JsRuntimeManager {
     /// TODO
     pub fn capture_trace(&self) -> Result<JoinHandle<u8>, JsRuntimeError> {
@@ -201,19 +216,9 @@ impl JsRuntimeManager {
     pub fn start(&self, main_specifier: &str) -> Result<u32, JsRuntimeError> {
         let stdio = self.stdio.try_clone_into()?;
         let current_dir = std::env::current_dir()?;
-        #[cfg(feature = "verbose")]
-        {
-            self.send_log(format!("Current Dir is `{0:}`", current_dir.display()));
-            tracing::debug!("Current Dir is {:}", current_dir.display());
-        }
 
         // TODO: Move this to `ThetaRuntime::resolve_main_module(..)`.
         let main_module = resolve_url_or_path(main_specifier, &current_dir)?;
-        #[cfg(feature = "verbose")]
-        {
-            self.send_log(format!("Resolved Main Module at {:}", main_module));
-            tracing::debug!("Resolved Main Module at {:}", main_module);
-        }
 
         // Run a "lite" Deno runtime, with only a core.
         //  - No worker and minimal extensions.
@@ -250,9 +255,12 @@ impl JsRuntimeManager {
                 tracing::error!("Failed to run main worker event loop: {:}", error);
             }
         });
+        
+        let inspector_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 5622));
+        let inspector_server = Arc::new(InspectorServer::new(inspector_addr, "asdf"));
 
         let mut worker = MainWorker::bootstrap_from_options(
-            // TODO: Revist the Clone for `main_module`.
+            // TODO: Can we avoid cloning here?
             main_module.clone(),
             PermissionsContainer::allow_all(),
             WorkerOptions {
@@ -260,7 +268,9 @@ impl JsRuntimeManager {
                 bootstrap: self.create_bootstrap_options(),
                 feature_checker: self.create_feature_checker(),
                 module_loader: Rc::new(FsModuleLoader),
-                origin_storage_dir: Some(std::path::PathBuf::from("./examples/db")),
+                origin_storage_dir: Some(std::path::PathBuf::from("./Data/Store")),
+                maybe_inspector_server: Some(inspector_server),
+                should_wait_for_inspector_session: false,
                 extensions: vec![
                     //..
                 ],
@@ -373,12 +383,120 @@ impl From<DenoAnyError> for JsRuntimeError {
     }
 }
 
-use std::sync::PoisonError;
-use std::sync::MutexGuard;
-
 impl From<PoisonError<MutexGuard<'_, CLogCallback>>> for JsRuntimeError {
-    /// TODO
-    fn from(error: PoisonError<MutexGuard<'_, CLogCallback>>) -> JsRuntimeError {
+    /// TODO: Use the actual error!
+    fn from(_: PoisonError<MutexGuard<'_, CLogCallback>>) -> JsRuntimeError {
         JsRuntimeError::LogCallbackPoisoned
+    }
+}
+
+//---
+#[cfg(feature="ffi")]
+pub mod ffi {
+    use std::sync::atomic::AtomicU32;
+    use std::sync::atomic::Ordering;
+    use std::sync::OnceLock;
+    
+    use std::sync::Arc;
+    use std::sync::Mutex;
+    
+    use crate::logging::ffi::CJsRuntimeLogLevel;
+    use crate::logging::ffi::CLogCallback;
+
+    use super::JsRuntimeConfig;
+    use super::JsRuntimeManager;
+    use super::JsRuntimeError;
+    
+    //---
+    /// TODO
+    /// 
+    /// Uses `OnceLock` for lazy init and lock, `Arc` for sharing,
+    /// and `Mutex` for inner mutability.
+    pub(crate) static JS_RUNTIME_MANAGER: OnceLock<Arc<Mutex<JsRuntimeManager>>> = OnceLock::new();
+
+    /// TODO
+    pub(crate) static JS_RUNTIME_STATE: AtomicU32 = AtomicU32::new(CJsRuntimeState::None as u32);
+
+    /// TODO
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct CJsRuntimeConfig {
+        pub db_dir: *const std::ffi::c_char,
+        pub log_dir: *const std::ffi::c_char,
+        pub log_level: CJsRuntimeLogLevel,
+        pub log_callback_fn: CLogCallback,
+    }
+    
+    impl TryInto<JsRuntimeConfig> for CJsRuntimeConfig {
+        type Error = JsRuntimeError;
+        fn try_into(self) -> Result<JsRuntimeConfig, Self::Error> {
+            Ok(JsRuntimeConfig::new())
+        }
+    }
+    
+    /// Representing the state of the current `JsRuntime`` instance
+    /// running in the bound process.
+    /// 
+    /// Tagged repr(C) for ffi to Unity, Unreal, etc.
+    #[repr(C)]
+    pub enum CJsRuntimeState {
+        /// No state has been set, yet. Treat this as "uninitialized".
+        None = 0,
+        
+        /// Runtime has been bootstrapped but not yet "warm" (running).
+        Cold = 1,
+        
+        /// The runtime is executing startup operations. Try again next frame.
+        Startup = 2,
+        
+        /// The runtime is working and has had no problems (yet).
+        /// Check later for failures, but all good so far!
+        Warm = 3,
+        
+        /// The runtime failed in a predictable way. The host is free to attempt
+        /// to recover. Otherwise, shut down gracefully.
+        Failed = 4,
+        
+        /// The runtime encountered an unrecoverable error. The runtime should
+        /// shutdown completely before trying again or bad things can happen.
+        Panic = 5,
+        
+        /// The runtime has quit for some reason.
+        Shutdown = 6,
+    }
+
+    impl TryFrom<u32> for CJsRuntimeState {
+        /// TODO
+        type Error = JsRuntimeError;
+        
+        /// TODO
+        fn try_from(value: u32) -> Result<CJsRuntimeState, Self::Error> {
+            match value {
+                0 => Ok(CJsRuntimeState::Cold),
+                1 => Ok(CJsRuntimeState::Startup),
+                2 => Ok(CJsRuntimeState::Warm),
+                3 => Ok(CJsRuntimeState::Panic),
+                4 => Ok(CJsRuntimeState::Shutdown),
+                _ => Err(JsRuntimeError::InvalidState(value)),
+            }
+        }
+    }
+
+    /// TODO
+    pub(crate) fn set_state(state: CJsRuntimeState) {
+        JS_RUNTIME_STATE.store(state as u32, Ordering::Relaxed);
+    }
+
+    /// TODO
+    #[inline(always)]
+    #[export_name = "js_runtime__get_state"]
+    pub extern "C" fn get_state() -> CJsRuntimeState {
+        match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
+            Ok(state) => state,
+            Err(error) => {
+                tracing::error!("Couldn't get state: {:?}", error);
+                CJsRuntimeState::None
+            }
+        }
     }
 }

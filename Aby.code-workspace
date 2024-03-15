@@ -17,16 +17,6 @@
 		},
 		{
 			// TODO
-			"name": "Dashboard",
-			"path": "./services/Dashboard"
-		},
-		{
-			// TODO
-			"name": "Theta SDK",
-			"path": "./packages/ThetaSDK"
-		},
-		{
-			// TODO
 			"name": "JavaScript Runtime",
 			"path": "./packages/JsRuntime"
 		},
@@ -34,6 +24,16 @@
 			// TODO
 			"name": "Unity Runtime",
 			"path": "./runtimes/Unity"
+		},
+		{
+			// TODO
+			"name": "DotNet SDK",
+			"path": "./packages/ThetaSDK"
+		},
+		{
+			// TODO
+			"name": "Dashboard",
+			"path": "./services/Dashboard"
 		},
 	],
 	"settings": {
