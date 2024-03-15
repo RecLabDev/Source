@@ -1,4 +1,12 @@
 {
     "version": "0.2.0",
-    "configurations": []
+    "configurations": [
+        {
+            "name": "Attach to Service",
+            "type": "node",
+            "request": "attach",
+            "address": "127.0.0.1",
+            "port": 9229
+        }
+    ]
 }
