@@ -165,8 +165,8 @@ impl JsRuntimeManager {
                 loop {
                     match CString::new(format!("TODO: CAPTURE TRACE #003 ({:?})", log_callback)) {
                         Ok(c_string) => unsafe {
-                            // let log_callback = log_callback.lock().await;
-                            // log_callback(c_string.as_ptr());
+                            let log_callback = log_callback.lock().await;
+                            log_callback(c_string.as_ptr());
                         }
                         Err(error) => {
                             tracing::error!("Log capture failed: {:}", error);
