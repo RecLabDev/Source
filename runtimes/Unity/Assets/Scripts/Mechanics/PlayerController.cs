@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Platformer.Gameplay;
 using static Platformer.Core.Simulation;
 using Platformer.Model;
@@ -54,10 +55,7 @@ namespace Platformer.Mechanics
         /// </summary>
         public Vector3 Direction => spriteRenderer.flipX ? Vector3.right : Vector3.left;
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public bool IsAttacking => false;
+        public bool IsAttacking => attack;
 
         /// <summary>
         /// TODO
@@ -79,15 +77,15 @@ namespace Platformer.Mechanics
 
                 // Check if the player is attacking using the Input Manager.
                 // It could be an "f" key press or a controller button press.
-                if (Input.GetButtonDown("Attack"))
-                {
-                    attack = true;
+                //if (Input.GetButtonDown("Attack"))
+                //{
+                //    attack = true;
 
-                }
-                else if (Input.GetButtonUp("Attack"))
-                {
-                    attack = false;
-                }
+                //}
+                //else if (Input.GetButtonUp("Attack"))
+                //{
+                //    attack = false;
+                //}
 
                 //adding this for player attacking for damage
                 if (attack && animator.GetCurrentAnimatorStateInfo(0).IsName("PlayerSlash"))
@@ -116,6 +114,11 @@ namespace Platformer.Mechanics
         void UpdateAttackState()
         {
             animator.SetBool("Attacking", attack);
+        }
+
+        public void OnAttack(InputAction.CallbackContext actionContext)
+        {
+            attack = controlEnabled && actionContext.performed;
         }
 
         void HandleSlashing()
