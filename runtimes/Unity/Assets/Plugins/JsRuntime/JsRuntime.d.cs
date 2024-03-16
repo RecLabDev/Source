@@ -9,6 +9,8 @@ using static UnityEngine.CullingGroup;
 
 using UnityEditor;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 namespace Theta.Unity.Runtime
 {
@@ -104,30 +106,35 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        public static string MainModuleSpecifier = "./Examples/Counter/main.js";
-
-        /// <summary>
-        /// TODO
-        /// </summary>
         /// <returns>Enumerator for co-routine.</returns>
-        private unsafe static void Start()
+        private unsafe static void ExecuteModule(string mainModuleSpecifier)
         {
             try
             {
-                Bootstrap();
-
-                fixed (byte* specifier = Encoding.UTF8.GetBytes(MainModuleSpecifier))
+                fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs"))
+                fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store"))
+                fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes(MainModuleSpecifier))
                 {
-                    var startOptions = new CStartOptions
+                    var jsRuntimeConfig = new JsRuntimeConfig(new CJsRuntimeConfig
                     {
-                        main_module_specifier = specifier,
+                        db_dir = dataDir,
+                        log_dir = logDir,
+                    });
+
+                    // Bootstrap();
+
+                    var jsRuntime = new JsRuntime_v2(jsRuntimeConfig);
+
+                    var startOptions = new CExecuteModuleOptions
+                    {
+                        main_module_specifier = mainSpecifier,
                     };
 
                     // TODO: Use u16 for the port.
-                    var startResult = start(startOptions);
+                    var startResult = jsRuntime.Start(startOptions);
                     if (startResult != CStartResult.Ok)
                     {
-                        throw new Exception($"JsRuntime exited with exit code ERR ({startResult})");
+                        throw new Exception($"JsRuntime exited with error: {startResult}");
                     }
                     else
                     {
@@ -149,6 +156,74 @@ namespace Theta.Unity.Runtime
         private static void OnRustLogMessage(string message)
         {
             Debug.LogFormat("[Rust]: {0}", message);
+        }
+    }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    public unsafe class JsRuntime_v2 : IDisposable
+    {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private CJsRuntime* c_Instance;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public JsRuntimeConfig Config { get; private set; }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public JsRuntime_v2(JsRuntimeConfig jsRuntimeConfig)
+        {
+            Config = jsRuntimeConfig;
+            c_Instance = JsRuntime.construct_runtime(Config.Instance);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public JsRuntime_v2(CJsRuntimeConfig config)
+        {
+            Config = new JsRuntimeConfig(config);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public CStartResult Start(CExecuteModuleOptions options)
+        {
+            return JsRuntime.execute_module(c_Instance, options);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void Dispose()
+        {
+            JsRuntime.free_my_object(c_Instance);
+        }
+    }
+
+    public unsafe class JsRuntimeConfig
+    {
+        private CJsRuntimeConfig c_Instance;
+
+        internal CJsRuntimeConfig Instance => c_Instance;
+
+        public uint InspectorPort => c_Instance.inspect_port;
+
+        public JsRuntimeConfig()
+        {
+            c_Instance = new CJsRuntimeConfig { };
+        }
+
+        public JsRuntimeConfig(CJsRuntimeConfig c_config)
+        {
+            c_Instance = c_config;
         }
     }
 

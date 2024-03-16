@@ -192,11 +192,11 @@ namespace Theta.Unity.Editor.Aby
         {
             if (JsRuntime.IsRunning == false)
             {
-                JsRuntime.StartService();
+                JsRuntime.StartServiceThread();
             }
             else
             {
-                JsRuntime.StopService();
+                JsRuntime.StopServiceThread();
             }
         }
 

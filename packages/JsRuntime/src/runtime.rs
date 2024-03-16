@@ -312,7 +312,7 @@ impl JsRuntimeManager {
     }
 }
 
-use deno_core::anyhow::Error as DenoAnyError;
+use deno_runtime::deno_core::anyhow::Error as DenoAnyError;
 
 /// TODO
 #[derive(Debug)]
@@ -393,19 +393,179 @@ impl From<PoisonError<MutexGuard<'_, CLogCallback>>> for JsRuntimeError {
 //---
 #[cfg(feature="ffi")]
 pub mod ffi {
+    use std::ffi::CStr;
+    use std::path::Path;
+    use std::str::Utf8Error;
     use std::sync::atomic::AtomicU32;
     use std::sync::atomic::Ordering;
-    use std::sync::OnceLock;
-    
     use std::sync::Arc;
     use std::sync::Mutex;
-    
+    use std::sync::OnceLock;
+    use std::rc::Rc;
+    use std::net::Ipv4Addr;
+    use std::net::SocketAddr;
+    use std::net::SocketAddrV4;
+
+    use tokio::runtime::Builder as TokioRuntimeBuilder;
+
+    use deno_runtime::worker::MainWorker;
+    use deno_runtime::worker::WorkerOptions;
+    use deno_runtime::permissions::PermissionsContainer;
+    use deno_runtime::deno_core::FeatureChecker;
+    use deno_runtime::deno_core::FsModuleLoader;
+    use deno_runtime::deno_core::PollEventLoopOptions;
+    use deno_runtime::deno_core::resolve_url_or_path;
+    use deno_runtime::deno_io::Stdio;
+    use deno_runtime::deno_io::StdioPipe;
+    use deno_runtime::inspector_server::InspectorServer;
+    use deno_runtime::BootstrapOptions;
+    use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+
     use crate::logging::ffi::CJsRuntimeLogLevel;
     use crate::logging::ffi::CLogCallback;
+    use crate::start::ffi::CExecuteModuleOptions;
+    use crate::start::ffi::CStartResult;
 
     use super::JsRuntimeConfig;
     use super::JsRuntimeManager;
     use super::JsRuntimeError;
+    
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct CJsRuntime {
+        config: CJsRuntimeConfig,
+    }
+    
+    impl CJsRuntime {
+        unsafe fn create_stdio<P: AsRef<Path>>(&self, dir: P) -> Result<Stdio, std::io::Error> {
+            Ok(Stdio {
+                stdin: StdioPipe::File(tempfile::tempfile()?),
+                stdout: StdioPipe::File(tempfile::tempfile_in(&dir)?),
+                stderr: StdioPipe::File(tempfile::tempfile_in(&dir)?),
+            })
+        }
+        
+        fn create_bootsrap_options(&self) -> BootstrapOptions {
+            BootstrapOptions {
+                unstable_features: UNSTABLE_GRANULAR_FLAGS
+                    .iter()
+                    .map(|&feature| feature.2)
+                    .collect(), // TODO: Get these from the Config
+                ..Default::default()
+            }
+        }
+        
+        /// TODO
+        fn create_feature_checker(&self) -> Arc<FeatureChecker> {
+            let mut feature_checker = FeatureChecker::default();
+
+            for feature in UNSTABLE_GRANULAR_FLAGS.iter() {
+                feature_checker.enable_feature(feature.0);
+            }
+
+            Arc::new(feature_checker)
+        }
+    }
+    
+    enum StringError {
+        Uninitialized,
+        Utf8Error(Utf8Error),
+    }
+    
+    unsafe fn try_unwrap_cstr<'out>(bytes: *const i8) -> Result<&'out str, StringError> {
+        if bytes.is_null() {
+            return Err(StringError::Uninitialized);
+        }
+        
+        match CStr::from_ptr(bytes).to_str() {
+            Ok(c_str) => Ok(c_str),
+            Err(error) => Err(StringError::Utf8Error(error)),
+        }
+    }
+    
+    #[export_name = "aby__js_runtime__create_runtime"]
+    pub unsafe extern "C" fn construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
+        let js_runtime = Box::new(CJsRuntime { config });
+        
+        Box::into_raw(js_runtime)
+    }
+
+    #[export_name = "aby__js_runtime__execute_module"]
+    pub unsafe extern "C" fn execute_module(c_self: *mut CJsRuntime, options: CExecuteModuleOptions) -> CStartResult {
+        let js_runtime = &mut *c_self;
+        
+        let Ok(async_runtime) = TokioRuntimeBuilder::new_current_thread().enable_time().enable_io().build() else {
+            return CStartResult::FailedCreateAsyncRuntime;
+        };
+
+        let Ok(root_dir) = std::env::current_dir() else {
+            return CStartResult::FailedFetchingWorkDirErr;
+        };
+        
+        let Ok(data_dir) = try_unwrap_cstr(js_runtime.config.db_dir) else {
+            return CStartResult::DataDirInvalidErr;
+        };
+        
+        let Ok(log_dir) = try_unwrap_cstr(js_runtime.config.log_dir) else {
+            return CStartResult::LogDirInvalidErr;
+        };
+        
+        let Ok(main_module_specifier) = try_unwrap_cstr(options.main_module_specifier) else {
+            return CStartResult::MainModuleInvalidErr;
+        };
+        
+        // TODO: Move this to `ThetaRuntime::resolve_main_module(..)`.
+        let Ok(main_module) = resolve_url_or_path(main_module_specifier, &root_dir) else {
+            return CStartResult::MainModuleInvalidErr;
+        };
+        
+        tracing::debug!("Main Module: {:}", main_module);
+    
+        let Ok(stdio) = js_runtime.create_stdio(&log_dir) else {
+            return CStartResult::MainModuleUninitializedErr;
+        };
+        
+        let inspector_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 5622));
+        let inspector_server = Arc::new(InspectorServer::new(inspector_addr, "asdf"));
+
+        let mut worker = MainWorker::bootstrap_from_options(
+            // TODO: Can we avoid cloning here?
+            main_module.clone(),
+            PermissionsContainer::allow_all(),
+            WorkerOptions {
+                stdio,
+                bootstrap: js_runtime.create_bootsrap_options(),
+                feature_checker: js_runtime.create_feature_checker(),
+                module_loader: Rc::new(FsModuleLoader),
+                origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
+                maybe_inspector_server: Some(inspector_server),
+                should_wait_for_inspector_session: false,
+                extensions: vec![
+                    //..
+                ],
+                ..Default::default()
+            },
+        );
+
+        async_runtime.block_on(async move {
+            // TODO: Revist the Clone for `main_module`.
+            if let Err(_) = worker.execute_main_module(&main_module.clone()).await {
+                return CStartResult::Err;
+            }
+            
+            // TODO
+            if let Err(_) = worker.js_runtime.run_event_loop(PollEventLoopOptions::default()).await {
+                return CStartResult::Err;
+            }
+            
+            CStartResult::Ok
+        })
+    }
+
+    #[export_name = "js_runtime__free_my_object"]
+    pub unsafe extern "C" fn free_my_object(obj_ptr: *mut CJsRuntime) {
+        let _ = Box::from_raw(obj_ptr);
+    }
     
     //---
     /// TODO
@@ -421,6 +581,7 @@ pub mod ffi {
     #[derive(Debug)]
     #[repr(C)]
     pub struct CJsRuntimeConfig {
+        pub inspect_port: u32,
         pub db_dir: *const std::ffi::c_char,
         pub log_dir: *const std::ffi::c_char,
         pub log_level: CJsRuntimeLogLevel,

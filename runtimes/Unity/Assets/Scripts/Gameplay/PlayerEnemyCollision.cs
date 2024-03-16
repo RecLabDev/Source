@@ -3,6 +3,7 @@ using Platformer.Mechanics;
 using Platformer.Model;
 using UnityEngine;
 using static Platformer.Core.Simulation;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 namespace Platformer.Gameplay
 {
@@ -30,46 +31,39 @@ namespace Platformer.Gameplay
 
     public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
     {
-        public EnemyController enemy;
+        /// <summary>
+        /// TODO
+        /// </summary>
         public PlayerController player;
 
-        //PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public EnemyController enemy;
 
-        /*public override void Execute()
-        {
-            var willHurtEnemy = player.Bounds.center.y >= enemy.Bounds.max.y;//possibly change to x
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private Vector3 relativeDirection => (enemy.transform.position - player.transform.position).normalized;
 
-            if (willHurtEnemy)
-            {
-                var enemyHealth = enemy.GetComponent<Health>();
-                if (enemyHealth != null)
-                {
-                    enemyHealth.Decrement();
-                    if (!enemyHealth.IsAlive)
-                    {
-                        Schedule<EnemyDeath>().enemy = enemy;
-                        player.Bounce(2);
-                    }
-                    else
-                    {
-                        player.Bounce(7);
-                    }
-                }
-                else
-                {
-                    Schedule<EnemyDeath>().enemy = enemy;
-                    player.Bounce(2);
-                }
-            }
-            else
-            {
-                Schedule<PlayerDeath>();
-            }
-        }*/
-        //what it should be
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+
+        /// <summary>
+        /// Player kills enemy if the player is facing the enemy and 
+        /// </summary>
         public override void Execute()
         {
-            if (!player.animator.GetBool("Attacking"))
+            var isPlayerFacingEnemy = Vector3.Dot(player.Direction, relativeDirection) < 0;
+            var isEnemyFacingPlayer = Vector3.Dot(enemy.Direction, relativeDirection) > 0;
+
+            if (isPlayerFacingEnemy && player.IsAttacking)
+            {
+                Schedule<EnemyDeath>().enemy = enemy;
+            }
+            else if (isEnemyFacingPlayer && enemy.IsAttacking)
             {
                 Schedule<PlayerDeath>();
             }
