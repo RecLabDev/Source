@@ -13,10 +13,15 @@ namespace Platformer.Gameplay
 
         public override void Execute()
         {
-            enemy._collider.enabled = false;
             enemy.control.enabled = false;
+
+            // TODO: Should set enemy to "dead" state until re-enabled.
+            enemy._collider.enabled = false;
+
             if (enemy._audio && enemy.ouch)
+            {
                 enemy._audio.PlayOneShot(enemy.ouch);
+            }
         }
     }
 }

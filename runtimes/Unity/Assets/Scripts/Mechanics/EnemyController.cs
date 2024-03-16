@@ -23,6 +23,16 @@ namespace Platformer.Mechanics
 
         public Bounds Bounds => _collider.bounds;
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public Vector3 Direction => spriteRenderer.flipX ? Vector3.right : Vector3.left;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public bool IsAttacking => true;
+
         void Awake()
         {
             control = GetComponent<AnimationController>();
@@ -31,6 +41,10 @@ namespace Platformer.Mechanics
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="collision"></param>
         void OnCollisionEnter2D(Collision2D collision)
         {
             var player = collision.gameObject.GetComponent<PlayerController>();
@@ -42,6 +56,9 @@ namespace Platformer.Mechanics
             }
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         void Update()
         {
             if (path != null)
@@ -50,6 +67,5 @@ namespace Platformer.Mechanics
                 control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);
             }
         }
-
     }
 }

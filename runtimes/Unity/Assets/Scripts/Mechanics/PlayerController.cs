@@ -29,8 +29,10 @@ namespace Platformer.Mechanics
 
         public JumpState jumpState = JumpState.Grounded;
         private bool stopJump;
-        /*internal new*/ public Collider2D collider2d;
-        /*internal new*/ public AudioSource audioSource;
+        /*internal new*/
+        public Collider2D collider2d;
+        /*internal new*/
+        public AudioSource audioSource;
         public Health health;
         public bool controlEnabled = true;
 
@@ -40,8 +42,24 @@ namespace Platformer.Mechanics
         internal Animator animator;
         readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public Bounds Bounds => collider2d.bounds;
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public Vector3 Direction => spriteRenderer.flipX ? Vector3.right : Vector3.left;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public bool IsAttacking => false;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         void Awake()
         {
             health = GetComponent<Health>();
@@ -72,6 +90,9 @@ namespace Platformer.Mechanics
             base.Update();
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         void UpdateJumpState()
         {
             jump = false;

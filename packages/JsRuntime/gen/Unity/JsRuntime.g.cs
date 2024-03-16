@@ -30,13 +30,22 @@ namespace Theta.Unity.Runtime
         [DllImport(__DllName, EntryPoint = "js_runtime__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void verify_log_callback(verify_log_callback__cb_delegate _cb);
 
+        [DllImport(__DllName, EntryPoint = "aby__js_runtime__create_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CJsRuntime* construct_runtime(CJsRuntimeConfig config);
+
+        [DllImport(__DllName, EntryPoint = "aby__js_runtime__execute_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CStartResult execute_module(CJsRuntime* c_self, CExecuteModuleOptions options);
+
+        [DllImport(__DllName, EntryPoint = "js_runtime__free_my_object", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void free_my_object(CJsRuntime* obj_ptr);
+
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "js_runtime__get_state", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CJsRuntimeState get_state();
 
         /// <summary>TODO: Return a CJsRuntimeStartResult (repr(C)) for state.</summary>
         [DllImport(__DllName, EntryPoint = "js_runtime__start", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult start(CStartOptions options);
+        public static extern CStartResult start(CExecuteModuleOptions options);
 
 
     }
@@ -49,8 +58,15 @@ namespace Theta.Unity.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CJsRuntime
+    {
+        public CJsRuntimeConfig config;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe partial struct CJsRuntimeConfig
     {
+        public uint inspect_port;
         public byte* db_dir;
         public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
@@ -58,7 +74,7 @@ namespace Theta.Unity.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CStartOptions
+    public unsafe partial struct CExecuteModuleOptions
     {
         public byte* main_module_specifier;
     }
@@ -100,6 +116,12 @@ namespace Theta.Unity.Runtime
         Err = 1,
         BindingErr = 2,
         JsRuntimeErr = 3,
+        FailedCreateAsyncRuntime = 4,
+        FailedFetchingWorkDirErr = 5,
+        DataDirInvalidErr = 6,
+        LogDirInvalidErr = 7,
+        MainModuleInvalidErr = 8,
+        MainModuleUninitializedErr = 9,
     }
 
 

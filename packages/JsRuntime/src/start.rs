@@ -12,7 +12,7 @@ pub mod ffi {
     //---
     #[repr(C)]
     #[derive(Debug)]
-    pub struct CStartOptions {
+    pub struct CExecuteModuleOptions {
         pub main_module_specifier: *const std::ffi::c_char,
     }
 
@@ -24,23 +24,30 @@ pub mod ffi {
         Err = 1,
         BindingErr = 2,
         JsRuntimeErr = 3,
+        FailedCreateAsyncRuntime = 4,
+        FailedFetchingWorkDirErr = 5,
+        DataDirInvalidErr = 6,
+        LogDirInvalidErr = 7,
+        MainModuleInvalidErr = 8,
+        MainModuleUninitializedErr = 9,
+        
     }
 
     /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
     #[export_name = "js_runtime__start"]
-    pub unsafe extern "C" fn start(options: CStartOptions) -> CStartResult {
+    pub unsafe extern "C" fn start(options: CExecuteModuleOptions) -> CStartResult {
         let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
             crate::runtime::ffi::set_state(CJsRuntimeState::Panic);
             return CStartResult::BindingErr; // </3
         };
         
         let js_runtime = js_runtime.lock().expect("Failed to get lock for JsRuntime!");
+        js_runtime.send_log("Attempting to start ..");
         
         crate::runtime::ffi::set_state(CJsRuntimeState::Startup);
         
-        
-        
         let c_str = if options.main_module_specifier.is_null() {
+            js_runtime.send_log("Main Module not specified ..");
             return CStartResult::JsRuntimeErr;
         } else {
             CStr::from_ptr(options.main_module_specifier)
@@ -49,7 +56,7 @@ pub mod ffi {
         let main_module_specifier = match c_str.to_str() {
             Ok(specifier) => specifier,
             Err(e) => {
-                println!("Failed to convert to UTF-8: {}", e);
+                js_runtime.send_log(format!("Failed to convert to UTF-8: {}", e));
                 return CStartResult::JsRuntimeErr;
             }
         };

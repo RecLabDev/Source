@@ -23,7 +23,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        private static Thread m_ServiceThread;
+        public static Thread ServiceThread { get; private set; }
 
         /// <summary>
         /// TODO
@@ -35,7 +35,7 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public static bool IsRunning
         {
-            get => m_ServiceThread?.ThreadState == ThreadState.Running;
+            get => ServiceThread?.ThreadState == ThreadState.Running;
         }
 
         //---
@@ -58,25 +58,37 @@ namespace Theta.Unity.Runtime
             }
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public static string MainModuleSpecifier = "./Examples/Counter/main.js";
+
         //--
         /// <summary>
         /// TODO
         /// </summary>
-        public static void StartService()
+        public static void StartServiceThread()
         {
-            m_ServiceThread = new Thread(new ThreadStart(JsRuntime.Start));
+            Debug.Log("Starting Service thread..");
 
-            // TODO: Get configuration and pass it to Start.
-            m_ServiceThread.Start();
+            ServiceThread = new Thread(new ThreadStart(StartServiceThreadBody));
+            ServiceThread.Start();
 
             // TODO: Wait for the thread to become active first ..
-            Debug.LogFormat("Started Service thread to state {0} ..", State);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public static void StartServiceThreadBody()
+        {
+            JsRuntime.ExecuteModule(MainModuleSpecifier);
         }
 
         /// <summary>
         /// TODO: This should be an FFI call into the JsRuntime itself.
         /// </summary>
-        public static void StopService()
+        public static void StopServiceThread()
         {
             try
             {
@@ -96,14 +108,14 @@ namespace Theta.Unity.Runtime
             }
             finally
             {
-                if (m_ServiceThread.Join(TimeSpan.FromSeconds(10)) == false)
+                if (ServiceThread.Join(TimeSpan.FromSeconds(10)) == false)
                 {
                     Debug.LogError("Failed to join JsRuntime service thread.");
                 }
                 else
                 {
-                    Debug.LogFormat("Thread State: {0}", m_ServiceThread.ThreadState);
-                    m_ServiceThread = null;
+                    Debug.LogFormat("Thread State: {0}", ServiceThread.ThreadState);
+                    ServiceThread = null;
                 }
             }
         }
@@ -113,7 +125,7 @@ namespace Theta.Unity.Runtime
         /// TODO
         /// </summary>
         [InitializeOnLoadMethod]
-        private static void OnLoad()
+        private unsafe static void OnLoad()
         {
             try
             {
@@ -122,6 +134,31 @@ namespace Theta.Unity.Runtime
             catch (Exception exception)
             {
                 Debug.LogErrorFormat("Failed to init on load: {0}", exception);
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnBeforeAssemblyReload()
+        {
+            if (IsRunning)
+            {
+                StopServiceThread();
+                Debug.LogFormat("Stopped service before assembly reload ..");
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnAfterAssemblyReload()
+        {
+            if (!IsRunning)
+            {
+                // TODO: Re-start the server, but only if it was running before assembly reload.
+                // StartServiceThread();
+                // Debug.LogFormat("Re-started servicec after assembly reload ..");
             }
         }
 
@@ -144,43 +181,6 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        private static void OnBeforeAssemblyReload()
-        {
-            if (IsRunning)
-            {
-                StopService();
-                Debug.LogFormat("Stopped service before assembly reload ..");
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private static void OnAfterAssemblyReload()
-        {
-            if (!IsRunning)
-            {
-                // TODO: Re-start the server, but only if it was running before assembly reload.
-                // StartServiceThread();
-                // Debug.LogFormat("Re-started servicec after assembly reload ..");
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private static void OnEditorQuitting()
-        {
-            if (IsRunning)
-            {
-                Debug.LogFormat("Quitting JsRuntime service!");
-                StopService();
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
         /// <param name="stateChange"></param>
         private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
         {
@@ -194,6 +194,18 @@ namespace Theta.Unity.Runtime
         private static void OnDomainChanged(object domainChange)
         {
             Debug.LogFormat("Domain reloaded: {0}", domainChange);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnEditorQuitting()
+        {
+            if (IsRunning)
+            {
+                Debug.LogFormat("Quitting JsRuntime service!");
+                StopServiceThread();
+            }
         }
     }
 }
