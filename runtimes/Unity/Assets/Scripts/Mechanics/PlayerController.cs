@@ -34,6 +34,8 @@ namespace Platformer.Mechanics
         public Health health;
         public bool controlEnabled = true;
 
+        bool attack;
+
         bool jump;
         Vector2 move;
         SpriteRenderer spriteRenderer;
@@ -56,6 +58,26 @@ namespace Platformer.Mechanics
             if (controlEnabled)
             {
                 move.x = Input.GetAxis("Horizontal");
+
+                // Check if the player is attacking using the Input Manager.
+                // It could be an "f" key press or a controller button press.
+                if (Input.GetButtonDown("Attack"))
+                {
+                    attack = true;
+
+                }
+                else if (Input.GetButtonUp("Attack"))
+                {
+                    attack = false;
+                }
+
+                //adding this for player attacking for damage
+                if (attack && animator.GetCurrentAnimatorStateInfo(0).IsName("PlayerSlash"))
+                {
+                    HandleSlashing();
+                }
+
+
                 if (jumpState == JumpState.Grounded && Input.GetButtonDown("Jump"))
                     jumpState = JumpState.PrepareToJump;
                 else if (Input.GetButtonUp("Jump"))
@@ -69,7 +91,42 @@ namespace Platformer.Mechanics
                 move.x = 0;
             }
             UpdateJumpState();
+            UpdateAttackState();
             base.Update();
+        }
+
+        void UpdateAttackState()
+        {
+            animator.SetBool("Attacking", attack);
+        }
+
+        void HandleSlashing()
+        {
+            // Determine the direction of the attack based on the facing of the sprite.
+            float direction = spriteRenderer.flipX ? -1f : 1f; // -1 for left, 1 for right
+            // Set the attackPoint in front of the player based on the direction they are facing.
+            var attackPoint = transform.position + new Vector3(direction * 1.5f, 0, 0);
+            var attackRange = new Vector2(0.1f, 1f); // This creates a wide hitbox.
+
+            // Get all the hit enemies.
+            var hitEnemies = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0, LayerMask.GetMask("Enemies"));
+
+            foreach (var hit in hitEnemies)
+            {
+                var enemy = hit.GetComponent<EnemyController>();
+                if (enemy != null)
+                {
+                    // Check if the enemy is in the direction the player is facing.
+                    float enemyDirection = Mathf.Sign(enemy.transform.position.x - transform.position.x);
+                    if (enemyDirection == direction)
+                    {
+                        // The enemy is in the attack direction, schedule the slash event.
+                        var slashEvent = Schedule<PlayerSlashEnemy>();
+                        slashEvent.player = this;
+                        slashEvent.enemy = enemy;
+                    }
+                }
+            }
         }
 
         void UpdateJumpState()

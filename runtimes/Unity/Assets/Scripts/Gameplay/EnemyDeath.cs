@@ -13,6 +13,7 @@ namespace Platformer.Gameplay
 
         public override void Execute()
         {
+            //get rid of this line and add triggers for the animation
             enemy._collider.enabled = false;
             enemy.control.enabled = false;
             if (enemy._audio && enemy.ouch)
