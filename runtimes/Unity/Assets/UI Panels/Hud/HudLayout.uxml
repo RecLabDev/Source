@@ -1,6 +1,17 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Panels/Hud/HudStyles.uss?fileID=7433441132597879392&amp;guid=52aeae49e72f1a14fb5c1addb7483c38&amp;type=3#HudStyles" />
     <ui:VisualElement name="Overlay" style="flex-grow: 1; min-width: 100%; min-height: 100%; align-self: center;">
-        <ui:VisualElement name="Health" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: 20px; background-color: rgb(167, 87, 146); left: 0; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px;" />
-        <ui:VisualElement name="Inventory" style="flex-grow: 1; position: absolute; left: 0; bottom: 0; width: 80px; height: 20px; background-color: rgb(106, 87, 167); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px;" />
+        <ui:VisualElement name="Health" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: auto; background-color: rgb(167, 87, 146); left: 0; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+            <ui:Label tabindex="-1" text="Heath++" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />
+        </ui:VisualElement>
+        <ui:VisualElement name="Inventory" style="flex-grow: 1; position: absolute; left: 0; bottom: 0; width: 80px; height: auto; background-color: rgb(167, 132, 87); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+            <ui:Label tabindex="-1" text="Inventory" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />
+        </ui:VisualElement>
+        <ui:VisualElement name="Party" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: auto; background-color: rgb(133, 167, 87); left: auto; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; right: 0; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+            <ui:Label tabindex="-1" text="Party" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" style="align-items: center;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="Objectives" style="flex-grow: 1; position: absolute; left: auto; bottom: 0; width: 80px; height: auto; background-color: rgb(106, 87, 167); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; right: 0; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
+            <ui:Label tabindex="-1" text="Objectives" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
