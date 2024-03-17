@@ -446,11 +446,14 @@ pub mod ffi {
         }
         
         fn create_bootsrap_options(&self) -> BootstrapOptions {
-            BootstrapOptions {
-                unstable_features: UNSTABLE_GRANULAR_FLAGS
-                    .iter()
+            let unstable_features = {
+                UNSTABLE_GRANULAR_FLAGS.iter()
                     .map(|&feature| feature.2)
-                    .collect(), // TODO: Get these from the Config
+                    .collect()
+            };
+            
+            BootstrapOptions {
+                unstable_features,
                 ..Default::default()
             }
         }
