@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement name="Overlay" style="flex-grow: 1; min-width: 100%; min-height: 100%; align-self: center;">
-        <ui:VisualElement name="Health" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: 20px; background-color: rgb(255, 6, 0); left: 0; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px;" />
+        <ui:VisualElement name="Health" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: 20px; background-color: rgb(167, 87, 146); left: 0; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px;" />
         <ui:VisualElement name="Inventory" style="flex-grow: 1; position: absolute; left: 0; bottom: 0; width: 80px; height: 20px; background-color: rgb(106, 87, 167); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px;" />
     </ui:VisualElement>
 </ui:UXML>

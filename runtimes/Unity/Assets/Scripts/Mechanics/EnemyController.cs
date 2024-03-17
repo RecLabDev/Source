@@ -24,7 +24,7 @@ namespace Platformer.Mechanics
         SpriteRenderer spriteRenderer;
 
         //added this for death animation chage:
-        private bool isDead = false; // Keep track if the enemy is dead to prevent multiple death events
+        private bool isDead = false;
 
         public Bounds Bounds => _collider.bounds;
 
@@ -36,7 +36,7 @@ namespace Platformer.Mechanics
         /// <summary>
         /// TODO
         /// </summary>
-        public bool IsAttacking => true;
+        public bool IsAttacking => !isDead;
 
         void Awake()
         {
@@ -58,21 +58,21 @@ namespace Platformer.Mechanics
 
         public void Die()
         {
-            if (isDead) return; // Prevent multiple death calls
-            isDead = true;
+            if (isDead) return;
+            else
+            {
+                isDead = true;
 
-            // First trigger the hurt animation
-            Hurt();
+                _collider.density = 0.5f;
 
-            
-
-            // Start the coroutine to fade out and disable the enemy
-            StartCoroutine(DelayedDeath());
+                Hurt();
+                StartCoroutine(DelayedDeath());
+            }
         }
 
         private IEnumerator DelayedDeath()
         {
-            yield return new WaitForSeconds(1f); // Assuming your hurt animation is about 1 second long.
+            yield return new WaitForSeconds(0.5f); // Assuming your hurt animation is about 1 second long.
 
             Debug.Log("Death animation triggered");
 
@@ -125,7 +125,11 @@ namespace Platformer.Mechanics
         /// </summary>
         void Update()
         {
-            if (path != null)
+            if (isDead)
+            {
+                control.move.x = 0;
+            }
+            else if (path != null)
             {
                 if (mover == null) mover = path.CreateMover(control.maxSpeed * 0.5f);
                 control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);

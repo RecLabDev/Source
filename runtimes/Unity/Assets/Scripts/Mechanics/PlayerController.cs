@@ -73,19 +73,24 @@ namespace Platformer.Mechanics
         {
             if (controlEnabled)
             {
-                move.x = Input.GetAxis("Horizontal");
-
                 // Check if the player is attacking using the Input Manager.
                 // It could be an "f" key press or a controller button press.
                 if (Input.GetButtonDown("Attack"))
                 {
                     attack = true;
-
                 }
                 else if (Input.GetButtonUp("Attack"))
                 {
                     attack = false;
                 }
+
+                var joyStickMove = Input.GetAxis("Horizontal");
+                if (attack && jumpState == JumpState.Grounded)
+                {
+                    joyStickMove = joyStickMove / 4;
+                }
+
+                move.x = joyStickMove;
 
                 //adding this for player attacking for damage
                 if (attack && animator.GetCurrentAnimatorStateInfo(0).IsName("PlayerSlash"))
