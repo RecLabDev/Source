@@ -63,8 +63,6 @@ namespace Platformer.Mechanics
             {
                 isDead = true;
 
-                _collider.density = 0.5f;
-
                 Hurt();
                 StartCoroutine(DelayedDeath());
             }

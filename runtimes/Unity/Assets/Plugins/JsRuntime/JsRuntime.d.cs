@@ -107,21 +107,28 @@ namespace Theta.Unity.Runtime
         /// TODO
         /// </summary>
         /// <returns>Enumerator for co-routine.</returns>
-        private unsafe static void ExecuteModule(string mainModuleSpecifier)
+        private unsafe static void ExecuteModule(string moduleSpecifier)
         {
             try
             {
-                fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs"))
-                fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store"))
-                fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes(MainModuleSpecifier))
+                fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs\0"))
+                fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store\0"))
+                fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
                 {
                     var jsRuntimeConfig = new JsRuntimeConfig(new CJsRuntimeConfig
                     {
                         db_dir = dataDir,
                         log_dir = logDir,
+                        inspect_port = 9229,
                     });
 
-                    // Bootstrap();
+                    // TODO: Something is causing an off-by-one error here.
+                    Debug.LogFormat(
+                        "Executing Module with bootstrap config: Db: {0}; Log: {1}; Module: {2}",
+                        GetStringFromBytePtr(jsRuntimeConfig.Instance.db_dir),
+                        GetStringFromBytePtr(jsRuntimeConfig.Instance.log_dir),
+                        GetStringFromBytePtr(mainSpecifier)
+                    );
 
                     var jsRuntime = new JsRuntime_v2(jsRuntimeConfig);
 
@@ -146,6 +153,24 @@ namespace Theta.Unity.Runtime
             {
                 Debug.LogErrorFormat("Failed to start JsRuntime: {0}", exc);
             }
+        }
+
+        private unsafe static string GetStringFromBytePtr(byte* ptr)
+        {
+            if (ptr == null)
+            {
+                return null;
+            }
+
+            // Find the null terminator
+            int length = 0;
+            while (ptr[length] != 0)
+            {
+                length++;
+            }
+
+            // Convert the bytes to a string
+            return new string((sbyte*)ptr, 0, length, Encoding.UTF8);
         }
 
         //---
@@ -224,6 +249,11 @@ namespace Theta.Unity.Runtime
         public JsRuntimeConfig(CJsRuntimeConfig c_config)
         {
             c_Instance = c_config;
+        }
+
+        public CJsRuntimeConfig Inspect()
+        {
+            return c_Instance;
         }
     }
 
