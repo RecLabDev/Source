@@ -77,15 +77,15 @@ namespace Platformer.Mechanics
 
                 // Check if the player is attacking using the Input Manager.
                 // It could be an "f" key press or a controller button press.
-                //if (Input.GetButtonDown("Attack"))
-                //{
-                //    attack = true;
+                if (Input.GetButtonDown("Attack"))
+                {
+                    attack = true;
 
-                //}
-                //else if (Input.GetButtonUp("Attack"))
-                //{
-                //    attack = false;
-                //}
+                }
+                else if (Input.GetButtonUp("Attack"))
+                {
+                    attack = false;
+                }
 
                 //adding this for player attacking for damage
                 if (attack && animator.GetCurrentAnimatorStateInfo(0).IsName("PlayerSlash"))
@@ -126,7 +126,7 @@ namespace Platformer.Mechanics
             // Determine the direction of the attack based on the facing of the sprite.
             float direction = spriteRenderer.flipX ? -1f : 1f; // -1 for left, 1 for right
             // Set the attackPoint in front of the player based on the direction they are facing.
-            var attackPoint = transform.position + new Vector3(direction * 1.5f, 0, 0);
+            var attackPoint = transform.position + new Vector3(direction * 0.5f, 0, 0);
             var attackRange = new Vector2(0.1f, 1f); // This creates a wide hitbox.
 
             // Get all the hit enemies.
