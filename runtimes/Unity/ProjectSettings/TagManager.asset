@@ -12,9 +12,9 @@ TagManager:
   - Enemies
   - Water
   - UI
-  - 
-  - 
-  - 
+  - DeadEnemies
+  - Ground
+  - Players
   - 
   - 
   - 

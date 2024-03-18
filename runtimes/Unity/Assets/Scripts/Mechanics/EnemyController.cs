@@ -76,11 +76,36 @@ namespace Platformer.Mechanics
                 {
                     _audio.PlayOneShot(ouch);
                 }
-
+                gameObject.layer = LayerMask.NameToLayer("Ghosts");
                 // TODO: Can we do this without a co-routine?
                 StartCoroutine(DelayedDeath());
             }
         }
+
+        /*public Collider2D playerInteractionCollider;
+
+        public void Die()
+        {
+            if (isDead) return;
+            isDead = true;
+
+            // Trigger hurt animation.
+            animator.SetTrigger("hurt");
+
+            // Play the ouch sound.
+            if (_audio && ouch)
+            {
+                _audio.PlayOneShot(ouch);
+            }
+
+            // Change the layer of the enemy to DeadEnemies so it doesn't collide with the player anymore.
+            gameObject.layer = LayerMask.NameToLayer("Ghosts");
+
+            // Continue with the death sequence.
+            StartCoroutine(DelayedDeath());
+        }*/
+
+
 
         /// <summary>
         /// TODO
@@ -88,15 +113,16 @@ namespace Platformer.Mechanics
         /// <returns></returns>
         private IEnumerator DelayedDeath()
         {
-            gameObject.layer = LayerMask.NameToLayer("Ghosts");
+            // Disable enemy movement and other interactions
+            control.enabled = false; // assuming this disables the enemy's ability to move or be moved
+
+            // Play the death animation
             animator.SetTrigger("death");
 
-            // For the moment we treat "hurt" as part of the death
-            //   animation, so we explicitly wait for the hurt
-            //   animation to finish.
-            // TODO: Make hurt a seperate state.
-            yield return new WaitForSeconds(1.5f);
+            // Wait for the animation to finish
+            yield return new WaitForSeconds(1.5f); // Adjust this time to the length of your death animation
 
+            // Start the fade out and despawn process
             StartCoroutine(Despawn());
         }
 
