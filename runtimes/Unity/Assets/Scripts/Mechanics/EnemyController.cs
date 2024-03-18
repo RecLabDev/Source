@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Platformer.Gameplay;
 using UnityEngine;
 using static Platformer.Core.Simulation;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 namespace Platformer.Mechanics
 {
@@ -25,6 +26,7 @@ namespace Platformer.Mechanics
 
         //added this for death animation chage:
         private bool isDead = false;
+        public bool IsDead => isDead;
 
         public Bounds Bounds => _collider.bounds;
 
@@ -48,60 +50,78 @@ namespace Platformer.Mechanics
             animator = GetComponent<Animator>(); // Make sure the enemy GameObject has an Animator component
         }
 
-        //added this for death animation chage://///////////////////////////////////
+        /// <summary>
+        /// TODO
+        /// </summary>
         public void Hurt()
         {
-            Debug.Log("Hurt animation triggered");
-            // Trigger the hurt animation
-            animator.SetTrigger("hurt");
+            // TODO
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public void Die()
         {
             if (isDead) return;
             else
             {
-                isDead = true;
+                // Note: We'll want to trigger hurt seperately from death
+                //   when we implement heath for all the enemies.
+                // TODO: Move this to a seperate interaction.
+                animator.SetTrigger("hurt");
 
-                Hurt();
+                isDead = true;
+                if (_audio && ouch)
+                {
+                    _audio.PlayOneShot(ouch);
+                }
+
+                // TODO: Can we do this without a co-routine?
                 StartCoroutine(DelayedDeath());
             }
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <returns></returns>
         private IEnumerator DelayedDeath()
         {
-            yield return new WaitForSeconds(0.5f); // Assuming your hurt animation is about 1 second long.
-
-            Debug.Log("Death animation triggered");
-
+            gameObject.layer = LayerMask.NameToLayer("Ghosts");
             animator.SetTrigger("death");
-            if (_audio && ouch)
-                _audio.PlayOneShot(ouch);
 
-            StartCoroutine(FadeOutAndDisable());
+            // For the moment we treat "hurt" as part of the death
+            //   animation, so we explicitly wait for the hurt
+            //   animation to finish.
+            // TODO: Make hurt a seperate state.
+            yield return new WaitForSeconds(1.5f);
+
+            StartCoroutine(Despawn());
         }
 
-        IEnumerator FadeOutAndDisable()
+        private int TotalDeaths = 0;
+        private int TotalRevives = 0;
+
+        IEnumerator Despawn()
         {
-            // Wait for death animation to finish.
-            yield return new WaitForSeconds(1f);
-
-            // Start fading out.
-            SpriteRenderer sprite = GetComponent<SpriteRenderer>();
-            Color originalColor = sprite.color;
-            float fadeDuration = 1f; // Set duration for how long the fade out should take.
-            for (float t = 0; t < 1; t += Time.deltaTime / fadeDuration)
+            if (TotalDeaths > TotalRevives)
             {
-                sprite.color = new Color(originalColor.r, originalColor.g, originalColor.b, Mathf.Lerp(1, 0, t));
-                yield return null;
+                // Wait to remove the corpse from the scene.
+                yield return new WaitForSeconds(30f);
+
+                var sprite = GetComponent<SpriteRenderer>();
+                var originalColor = sprite.color;
+                var fadeDuration = 0.25f;
+                for (float t = 0; t < 1; t += Time.deltaTime / fadeDuration)
+                {
+                    sprite.color = new Color(originalColor.r, originalColor.g, originalColor.b, Mathf.Lerp(1, 0, t));
+                    yield return null;
+                }
+
+                gameObject.SetActive(false);
             }
-
-            // Disable or destroy the enemy.
-            gameObject.SetActive(false);
-            // Or if you want to destroy it: Destroy(gameObject);
         }
-
-        ////////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// TODO

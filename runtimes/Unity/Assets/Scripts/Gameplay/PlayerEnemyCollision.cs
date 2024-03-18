@@ -1,19 +1,16 @@
+using UnityEngine;
+
 using Platformer.Core;
 using Platformer.Mechanics;
 using Platformer.Model;
-using UnityEngine;
 using static Platformer.Core.Simulation;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 namespace Platformer.Gameplay
 {
-
     /// <summary>
     /// Fired when a Player collides with an Enemy.
     /// </summary>
-    /// <typeparam name="EnemyCollision"></typeparam>
-    /// 
-
+    /// <typeparam name="PlayerSlashEnemy"></typeparam>
     public class PlayerSlashEnemy : Simulation.Event<PlayerSlashEnemy>
     {
         public EnemyController enemy;
@@ -21,14 +18,14 @@ namespace Platformer.Gameplay
 
         public override void Execute()
         {
-            // Schedule an EnemyDeath event directly, bypassing health decrement.
+            if (enemy.IsDead) return;
             Schedule<EnemyDeath>().enemy = enemy;
         }
     }
 
-
-
-
+    /// <summary>
+    /// TODO
+    /// </summary>
     public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
     {
         /// <summary>
@@ -56,6 +53,8 @@ namespace Platformer.Gameplay
         /// </summary>
         public override void Execute()
         {
+            if (enemy.IsDead) return;
+
             var isPlayerFacingEnemy = Vector3.Dot(player.Direction, relativeDirection) < 0;
             var isEnemyFacingPlayer = Vector3.Dot(enemy.Direction, relativeDirection) > 0;
 
