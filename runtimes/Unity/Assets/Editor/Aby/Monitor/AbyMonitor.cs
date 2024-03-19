@@ -32,7 +32,7 @@ namespace Theta.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private static string m_LogFilter = "Logs/AbyRuntime.*.log";
+        private static string m_LogFilter = "./Logs/AbyRuntime.*.log";
 
         /// <summary>
         /// TODO

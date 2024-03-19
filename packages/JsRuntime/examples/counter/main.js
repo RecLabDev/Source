@@ -7,10 +7,10 @@ try
     // Deno.core.opAsync("op_send_host_log", { message: "test" });
     // Deno[Deno.internal].core.ops.op_send_host_log("Omfg ..");
     
-    const service = new CounterService();
+    const counterService = new CounterService();
     
-    await service.start();
-    await service.serve();
+    await counterService.start();
+    await counterService.serve();
 }
 catch (exc)
 {

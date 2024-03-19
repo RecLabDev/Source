@@ -46,7 +46,7 @@ pub mod ffi {
     pub type CLogCallback = extern "C" fn(message: *const std::ffi::c_char);
     
     /// TODO
-    #[export_name = "js_runtime__verify_log_callback"]
+    #[export_name = "aby__verify_log_callback"]
     pub unsafe extern "C" fn verify_log_callback(_cb: CLogCallback) {
         //..
     }

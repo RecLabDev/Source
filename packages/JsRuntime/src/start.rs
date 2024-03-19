@@ -34,7 +34,7 @@ pub mod ffi {
     }
 
     /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
-    #[export_name = "js_runtime__start"]
+    #[export_name = "aby__start"]
     pub unsafe extern "C" fn start(options: CExecuteModuleOptions) -> CStartResult {
         let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
             crate::runtime::ffi::set_state(CJsRuntimeState::Panic);

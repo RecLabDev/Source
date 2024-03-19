@@ -82,14 +82,12 @@ namespace Theta.Unity.Runtime
                 fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store\0"))
                 fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
                 {
-                    var logCallback = Marshal.GetFunctionPointerForDelegate(m_LogCallback);
-
                     var jsRuntimeConfig = new JsRuntimeConfig(new CJsRuntimeConfig
                     {
                         db_dir = dataDir,
                         log_dir = logDir,
-                        inspect_port = 9229,
-                        log_callback_fn = logCallback.ToPointer(),
+                        log_callback_fn = Marshal.GetFunctionPointerForDelegate(m_LogCallback).ToPointer(),
+                        inspect_port = 9224,
                     });
 
                     Debug.LogFormat(
@@ -198,7 +196,7 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public void Dispose()
         {
-            JsRuntime.free_js_runtime(c_Instance);
+            JsRuntime.free_runtime(c_Instance);
         }
     }
 
