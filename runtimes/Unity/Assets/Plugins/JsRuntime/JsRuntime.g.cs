@@ -33,11 +33,11 @@ namespace Theta.Unity.Runtime
         [DllImport(__DllName, EntryPoint = "aby__js_runtime__create_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CJsRuntime* construct_runtime(CJsRuntimeConfig config);
 
-        [DllImport(__DllName, EntryPoint = "aby__js_runtime__execute_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult execute_module(CJsRuntime* c_self, CExecuteModuleOptions options);
+        [DllImport(__DllName, EntryPoint = "aby_runtime__exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CStartResult c_exec_module(CJsRuntime* cself, CExecuteModuleOptions options);
 
-        [DllImport(__DllName, EntryPoint = "js_runtime__free_my_object", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_my_object(CJsRuntime* obj_ptr);
+        [DllImport(__DllName, EntryPoint = "js_runtime__free_js_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void free_js_runtime(CJsRuntime* obj_ptr);
 
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "js_runtime__get_state", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]

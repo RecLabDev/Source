@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
@@ -8,12 +8,10 @@ using UnityEngine;
 using static UnityEngine.CullingGroup;
 
 using UnityEditor;
-using System.Collections.Concurrent;
-using System.Xml.Linq;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 namespace Theta.Unity.Runtime
 {
+    // TODO: Move this to the DotNet SDK.
     //public class ConcurrentStringInterner : IDisposable
     //{
     //    private ConcurrentDictionary<string, (string, GCHandle)> m_strings = new ConcurrentDictionary<string, (string, GCHandle)>();
@@ -68,61 +66,32 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        private unsafe static void Bootstrap()
-        {
-            try
-            {
-                if (m_LogCallback == null)
-                {
-                    m_LogCallback = OnRustLogMessage;
-                    //verify_log_callback(logCallback as verify_log_callback__cb_delegate);
-                    //GCHandle.Alloc(logCallback);
-                }
-
-                fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs"))
-                {
-                    var bootstrapOptions = new CBootstrapOptions
-                    {
-                        js_runtime_config = new CJsRuntimeConfig
-                        {
-                            log_dir = logDir,
-                            log_callback_fn = (void*)Marshal.GetFunctionPointerForDelegate(m_LogCallback),
-                        }
-                    };
-
-                    var bootstrapResult = bootstrap(bootstrapOptions);
-                    if (bootstrapResult != CBootstrapResult.Ok)
-                    {
-                        throw new Exception($"JsRuntime exited with exit code ERR ({bootstrapResult})");
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                Debug.LogErrorFormat("Failed to bootstrap JsRuntime: {0}", exc);
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
         /// <returns>Enumerator for co-routine.</returns>
         private unsafe static void ExecuteModule(string moduleSpecifier)
         {
             try
             {
+                if (m_LogCallback == null)
+                {
+                    m_LogCallback = OnAbyLogMessage;
+                    // verify_log_callback(m_LogCallback as verify_log_callback__cb_delegate);
+                    // GCHandle.Alloc(logCallback);
+                }
+
                 fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs\0"))
                 fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store\0"))
                 fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
                 {
+                    var logCallback = Marshal.GetFunctionPointerForDelegate(m_LogCallback);
+
                     var jsRuntimeConfig = new JsRuntimeConfig(new CJsRuntimeConfig
                     {
                         db_dir = dataDir,
                         log_dir = logDir,
                         inspect_port = 9229,
+                        log_callback_fn = logCallback.ToPointer(),
                     });
 
-                    // TODO: Something is causing an off-by-one error here.
                     Debug.LogFormat(
                         "Executing Module with bootstrap config: Db: {0}; Log: {1}; Module: {2}",
                         GetStringFromBytePtr(jsRuntimeConfig.Instance.db_dir),
@@ -178,9 +147,9 @@ namespace Theta.Unity.Runtime
         /// TODO
         /// </summary>
         /// <param name="message"></param>
-        private static void OnRustLogMessage(string message)
+        private static void OnAbyLogMessage(string message)
         {
-            Debug.LogFormat("[Rust]: {0}", message);
+            Debug.LogFormat("[Aby]: {0}", message);
         }
     }
 
@@ -221,7 +190,7 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public CStartResult Start(CExecuteModuleOptions options)
         {
-            return JsRuntime.execute_module(c_Instance, options);
+            return JsRuntime.c_exec_module(c_Instance, options);
         }
 
         /// <summary>
@@ -229,10 +198,13 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public void Dispose()
         {
-            JsRuntime.free_my_object(c_Instance);
+            JsRuntime.free_js_runtime(c_Instance);
         }
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     public unsafe class JsRuntimeConfig
     {
         private CJsRuntimeConfig c_Instance;

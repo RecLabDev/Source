@@ -12,7 +12,7 @@ use js_runtime::bootstrap::ffi::CBootstrapOptions;
 use js_runtime::start::ffi::CExecuteModuleOptions;
 
 /// TODO
-const TRACING_FILTER: &str = "runtime=trace,js_runtime=trace,info";
+const TRACING_FILTER: &str = "counter=trace,js_runtime=trace,info";
 
 // Define a function that matches the expected signature for the log callback.
 extern "C" fn log_callback(message: *const std::os::raw::c_char) {
@@ -57,7 +57,7 @@ fn main() -> Result<ExitCode> {
         
         // Step 2:
         //   Start the global `MainWorker`. Status 0 is good, 1+ is bad.
-        let status = js_runtime::runtime::ffi::execute_module(runtime, CExecuteModuleOptions {
+        let status = js_runtime::runtime::ffi::c_exec_module(runtime, CExecuteModuleOptions {
             main_module_specifier: main_module_path.as_ptr(),
         });
         

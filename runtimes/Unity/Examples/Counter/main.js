@@ -1,9 +1,9 @@
-import { SomeService } from "./service.js";
+import { CounterService } from "./service.js";
 
 console.log("Hello, from main.js!");
 try
 {
-    const service = new SomeService();
+    const service = new CounterService();
     
     await service.start();
     await service.serve();
