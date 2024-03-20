@@ -585,7 +585,13 @@ pub mod ffi {
             &mut *ptr
         }
         
-        unsafe fn send_host_log<M: Into<String>>(&self, message: M) -> Result<bool, std::io::Error> {
+        pub fn send_host_log<M: Into<String>>(&self, message: M) {
+            if let Err(error) = self.try_send_host_log(message) {
+                tracing::error!("Failed to send host message: {:}", error);
+            }
+        }
+        
+        pub fn try_send_host_log<M: Into<String>>(&self, message: M) -> Result<bool, std::io::Error> {
             match CString::new(message.into()) {
                 Ok(message) => {
                     (self.config.log_callback_fn)(message.as_ptr());
@@ -642,9 +648,7 @@ pub mod ffi {
             return CStartResult::MainModuleInvalidErr;
         };
         
-        if let Err(error) = cself.send_host_log(format!("Resolved module to {:}", main_module)) {
-            tracing::error!("Failed to report main module specifier: {:}", error);
-        }
+        cself.send_host_log(format!("Resolved module to {:}", main_module));
         
         let Ok(stdio) = cself.create_stdio(&log_dir) else {
             return CStartResult::MainModuleUninitializedErr;
@@ -655,7 +659,7 @@ pub mod ffi {
             let inspector_addr = match SocketAddr::parse_ascii(b"asdf") {
                 // let socket_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), cself.config.inspector_port);
                 Ok(inspector_addr) => {
-                    tracing::debug!("Using configured inspector address: {:}", inspector_addr);
+                    cself.send_host_log(format!("Using configured inspector address: {:}", inspector_addr));
                     inspector_addr
                 }
                 Err(error) => {
@@ -664,9 +668,7 @@ pub mod ffi {
                 }
             };
             
-            if let Err(error) = cself.send_host_log(format!("Inspector address set to {:}", inspector_addr)) {
-                tracing::error!("Failed to report inspector address: {:}", error);
-            }
+            cself.send_host_log(format!("Inspector address set to {:}", inspector_addr));
             
             Some(Arc::new(InspectorServer::new(inspector_addr, inspector_name)))
         };
@@ -709,15 +711,13 @@ pub mod ffi {
         async_runtime.block_on(async move {
             // TODO: Revist the Clone for `main_module`.
             if let Err(error) = worker.execute_main_module(&main_module).await {
-                tracing::warn!("Failed module execution: {:}", error);
-                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                cself.try_send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
                 return CStartResult::FailedModuleExecErr;
             }
             
             // TODO
             if let Err(error) = worker.run_event_loop(false).await {
-                tracing::warn!("Failed to run event loop: {:}", error);
-                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                cself.try_send_host_log(format!("Failed to run main event loop: {:}", error)).unwrap_or(false);
                 return CStartResult::FailedEventLoopErr;
             }
             
