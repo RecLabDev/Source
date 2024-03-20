@@ -1,16 +1,14 @@
 const VISIT_COUNTER_KEY = ["counter"];
 
-const DEFAULT_PUBLIC_PORT = 8000;
+const DEFAULT_PUBLIC_PORT = 10000;
 
-const DEFAULT_ADMIN_PORT = 9000;
+const DEFAULT_ADMIN_PORT = 11000;
 
 /**
  * TODO
  */
-export class SomeService
+export class CounterService
 {
-    
-    
     /**
      * TODO
      */
@@ -19,7 +17,7 @@ export class SomeService
     /**
      * TODO
      */
-    #queue = undefined;
+    #channel = new BroadcastChannel("all_messages");
     
     /**
      * TODO
@@ -47,7 +45,23 @@ export class SomeService
      */
     constructor()
     {
-        //..
+        this.#channel.onmessage = this.#onBroadcastMessage.bind(this);
+        this.#channel.onmessageerror = this.#onBroadcastError.bind(this);
+    }
+    
+    #onBroadcastMessage(event)
+    {
+        console.debug(`Got broadcast message:`, event);
+        if (event.quit)
+        {
+            console.log(`Got quit message. Attempting safe shutdown ..`);
+            this.#controller.abort();
+        }
+    }
+    
+    #onBroadcastError(event)
+    {
+        console.error(`Got broadcast error:`, event);
     }
     
     /**
@@ -56,6 +70,13 @@ export class SomeService
     async start()
     {
         this.#store = await Deno.openKv();
+        this.#store.listenQueue(this.#onQueueReceive.bind(this));
+    }
+    
+    async #onQueueReceive(message)
+    {
+        console.log("Got message:", message);
+        this.#controller.abort();
     }
     
     /**
@@ -66,7 +87,7 @@ export class SomeService
     {
         try
         {
-            Deno.serve(this.#apiOptions, this.handleRestRequest.bind(this));
+            Deno.serve(this.#apiOptions, this.handleApiRequest.bind(this));
             Deno.serve(this.#adminOptions, this.handleAdminRequest.bind(this));
         }
         catch (exc)
@@ -94,7 +115,7 @@ export class SomeService
     /**
      * TODO
      */
-    async handleRestRequest(request)
+    async handleApiRequest(request)
     {
         const requestURL = new URL(request.url);
         
@@ -129,18 +150,29 @@ export class SomeService
             }
             case "/quit":
             {
-                this.#controller.abort();
-                return new Response(``);
+                const message = { quit: true };
+                const result = this.#channel.postMessage(message);
+                
+                this.#store.enqueue({ channel: "C123456", text: "Slack message" }, {
+                    delay: 1, // Seconds?
+                });
+                
+                // Note: The broadcast message isn't collected locally.
+                console.log("Posted message:", message);
+                console.debug("Broadcast Result:", result);
+                console.debug("Channel:", this.#channel);
+                
+                return new Response(`Quitting`);
             }
             case "/exit":
             {
                 Deno.exit(0);
-                return new Response(``);
+                return new Response(`Exiting`);
             }
             case "/restart":
             {
                 Deno.exit(100);
-                return new Response(``);
+                return new Response(`Restarting`);
             }
             default:
             {
