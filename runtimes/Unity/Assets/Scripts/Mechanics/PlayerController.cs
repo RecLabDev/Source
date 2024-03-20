@@ -15,35 +15,15 @@ namespace Platformer.Mechanics
     /// </summary>
     public class PlayerController : KinematicObject
     {
-        public AudioClip jumpAudio;
-        public AudioClip respawnAudio;
-        public AudioClip ouchAudio;
-
         /// <summary>
-        /// Max horizontal speed of the player.
+        /// TODO
         /// </summary>
-        public float maxSpeed = 7;
-        /// <summary>
-        /// Initial jump velocity at the start of a jump.
-        /// </summary>
-        public float jumpTakeOffSpeed = 7;
-
-        public JumpState jumpState = JumpState.Grounded;
-        private bool stopJump;
-        /*internal new*/
-        public Collider2D collider2d;
-        /*internal new*/
-        public AudioSource audioSource;
         public Health health;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         public bool controlEnabled = true;
-
-        bool attack;
-
-        bool jump;
-        Vector2 move;
-        SpriteRenderer spriteRenderer;
-        internal Animator animator;
-        readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
 
         /// <summary>
         /// TODO
@@ -55,7 +35,72 @@ namespace Platformer.Mechanics
         /// </summary>
         public Vector3 Direction => spriteRenderer.flipX ? Vector3.right : Vector3.left;
 
+
+        /// <summary>
+        /// Max horizontal speed of the player.
+        /// </summary>
+        public float maxSpeed = 7.0f;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public JumpState jumpState = JumpState.Grounded;
+        /// <summary>
+        /// Initial jump velocity at the start of a jump.
+        /// </summary>
+
+        public float jumpTakeOffSpeed = 7.0f;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public float doubleJumpForce = 0.65f;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private bool isJumping;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private bool stopJump;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         public bool IsAttacking => attack;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private bool attack;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public AudioClip jumpSound;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public AudioClip hurtSound;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public AudioClip respawnSound;
+
+        /*internal new*/
+        public Collider2D collider2d;
+
+        /*internal new*/
+        public AudioSource audioSource;
+
+        Vector2 move;
+        SpriteRenderer spriteRenderer;
+        internal Animator animator;
+        readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
 
         /// <summary>
         /// TODO
@@ -155,27 +200,51 @@ namespace Platformer.Mechanics
             }
         }
 
+        void PlayJumpSound()
+        {
+            if (audioSource != null && jumpSound != null)
+            {
+                audioSource.PlayOneShot(jumpSound);
+            }
+        }
+
+        private bool canDoubleJump = true;
+
         void UpdateJumpState()
         {
-            jump = false;
             switch (jumpState)
             {
                 case JumpState.PrepareToJump:
                     jumpState = JumpState.Jumping;
-                    jump = true;
+                    isJumping = true;
                     stopJump = false;
+                    PlayJumpSound(); // Trigger the jump sound.
+                    canDoubleJump = true; // Reset double-jump flag for each initial jump.
                     break;
                 case JumpState.Jumping:
                     if (!IsGrounded)
                     {
-                        Schedule<PlayerJumped>().player = this;
                         jumpState = JumpState.InFlight;
                     }
                     break;
                 case JumpState.InFlight:
+                    if (Input.GetButtonDown("Jump") && !stopJump && canDoubleJump)
+                    {
+                        jumpState = JumpState.DoubleJump;
+                        isJumping = true; // This is critical to trigger the double jump in ComputeVelocity.
+                        canDoubleJump = false; // Ensure double-jump can't be used again until the player lands.
+                        PlayJumpSound();
+                    }
+                    else if (IsGrounded)
+                    {
+                        jumpState = JumpState.Landed;
+                    }
+                    break;
+                case JumpState.DoubleJump:
+                    // The logic for double-jumping is handled in the InFlight case. 
+                    // This state primarily serves as a marker that a double-jump has occurred.
                     if (IsGrounded)
                     {
-                        Schedule<PlayerLanded>().player = this;
                         jumpState = JumpState.Landed;
                     }
                     break;
@@ -187,10 +256,15 @@ namespace Platformer.Mechanics
 
         protected override void ComputeVelocity()
         {
-            if (jump && IsGrounded)
+            if (isJumping)
             {
-                velocity.y = jumpTakeOffSpeed * model.jumpModifier;
-                jump = false;
+                // Apply jump velocity for a double jump or a normal jump if grounded
+                if (jumpState == JumpState.DoubleJump || IsGrounded)
+                {
+                    var jumpVelocity = jumpState == JumpState.DoubleJump ? jumpTakeOffSpeed * doubleJumpForce : jumpTakeOffSpeed;
+                    velocity.y = jumpVelocity * model.jumpModifier;
+                }
+                isJumping = false;
             }
             else if (stopJump)
             {
@@ -201,22 +275,26 @@ namespace Platformer.Mechanics
                 }
             }
 
+            // Movement and sprite direction
             if (move.x > 0.01f)
                 spriteRenderer.flipX = false;
             else if (move.x < -0.01f)
                 spriteRenderer.flipX = true;
 
+            // Animation updates
             animator.SetBool("grounded", IsGrounded);
             animator.SetFloat("velocityX", Mathf.Abs(velocity.x) / maxSpeed);
 
             targetVelocity = move * maxSpeed;
         }
 
+
         public enum JumpState
         {
             Grounded,
             PrepareToJump,
             Jumping,
+            DoubleJump,
             InFlight,
             Landed
         }

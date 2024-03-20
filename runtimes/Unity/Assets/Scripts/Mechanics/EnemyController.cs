@@ -46,8 +46,7 @@ namespace Platformer.Mechanics
             _collider = GetComponent<Collider2D>();
             _audio = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
-            //added this for death animation chage:
-            animator = GetComponent<Animator>(); // Make sure the enemy GameObject has an Animator component
+            animator = GetComponent<Animator>();
         }
 
         /// <summary>
@@ -72,6 +71,7 @@ namespace Platformer.Mechanics
                 animator.SetTrigger("hurt");
 
                 isDead = true;
+                TotalDeaths++;
                 if (_audio && ouch)
                 {
                     _audio.PlayOneShot(ouch);
@@ -128,13 +128,14 @@ namespace Platformer.Mechanics
 
         private int TotalDeaths = 0;
         private int TotalRevives = 0;
+        public float despawnDelay = 60f;
 
         IEnumerator Despawn()
         {
             if (TotalDeaths > TotalRevives)
             {
                 // Wait to remove the corpse from the scene.
-                yield return new WaitForSeconds(30f);
+                yield return new WaitForSeconds(despawnDelay);
 
                 var sprite = GetComponent<SpriteRenderer>();
                 var originalColor = sprite.color;

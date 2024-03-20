@@ -35,8 +35,8 @@ pub mod ffi {
     /// Use this when you want to create a single, managed instance of Deno's
     ///   `MainWorker` for use in another managed environment.
     #[allow(unused)]
-    #[export_name = "js_runtime__bootstrap"]
-    pub extern "C" fn bootstrap(options: CBootstrapOptions) -> CBootstrapResult {
+    #[export_name = "aby__bootstrap"]
+    pub extern "C" fn c_bootstrap(options: CBootstrapOptions) -> CBootstrapResult {
         let mut js_runtime = match JsRuntimeManager::try_new() {
             Ok(js_runtime) => js_runtime,
             Err(error) => return CBootstrapResult::JsRuntimeFailed,

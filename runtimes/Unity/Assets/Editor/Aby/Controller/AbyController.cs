@@ -190,7 +190,7 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         private void OnToggleButtonClicked()
         {
-            if (JsRuntime.IsRunning == false)
+            if (!JsRuntime.IsRunning)
             {
                 JsRuntime.StartServiceThread();
             }

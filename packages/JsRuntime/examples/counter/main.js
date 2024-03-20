@@ -1,12 +1,16 @@
-import { SomeService } from "./service.js";
+import { CounterService } from "./service.js";
 
 console.log("Hello, from main.js!");
 try
 {
-    const service = new SomeService();
+    // console.debug("Deno Internal Ops:", Deno);
+    // Deno.core.opAsync("op_send_host_log", { message: "test" });
+    // Deno[Deno.internal].core.ops.op_send_host_log("Omfg ..");
     
-    await service.start();
-    await service.serve();
+    const counterService = new CounterService();
+    
+    await counterService.start();
+    await counterService.serve();
 }
 catch (exc)
 {

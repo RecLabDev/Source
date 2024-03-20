@@ -11,6 +11,7 @@ using static UnityEngine.CullingGroup;
 
 using UnityEditor;
 using static UnityEngine.Application;
+using System.Threading.Tasks;
 
 namespace Theta.Unity.Runtime
 {
@@ -28,7 +29,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        public static CJsRuntimeState State => get_state();
+        public static CJsRuntimeState State => c_get_state();
 
         /// <summary>
         /// TODO
@@ -69,8 +70,6 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public static void StartServiceThread()
         {
-            Debug.Log("Starting Service thread..");
-
             ServiceThread = new Thread(new ThreadStart(StartServiceThreadBody));
             ServiceThread.Start();
 
@@ -94,12 +93,14 @@ namespace Theta.Unity.Runtime
             {
                 // TODO: Safely shutdown JsRuntime ..
                 var httpClient = new HttpClient();
-                httpClient.BaseAddress = new Uri("http://localhost:9000");
+                httpClient.BaseAddress = new Uri("http://localhost:11000");
 
                 var quitResponse = httpClient.GetStringAsync("/quit");
-                if (quitResponse.Result != null)
+                quitResponse.Wait(); // TODO: Ugh.
+
+                if (quitResponse.Result == null)
                 {
-                    Debug.LogFormat("Called quit endpoint: {0}", quitResponse.Result);
+                    Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
                 }
             }
             catch (Exception exc)
@@ -114,10 +115,51 @@ namespace Theta.Unity.Runtime
                 }
                 else
                 {
-                    Debug.LogFormat("Thread State: {0}", ServiceThread.ThreadState);
                     ServiceThread = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static bool receiveMessages = false;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public static void StartListening()
+        {
+            Task.Run(ConsumeMessages);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <returns></returns>
+        private async static Task ConsumeMessages()
+        {
+            receiveMessages = true;
+            while (receiveMessages)
+            {
+                Debug.Log("Checking for channel changes...");
+
+                // Check for changes in the channel here
+                // For example, check a queue, a condition, or listen for an event
+
+                // Process any changes found
+
+                // Simulate waiting for a change in the channel. Replace this with your actual change detection logic.
+                await Task.Delay(1000); // Waits asynchronously for 1 second
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public static void StopListening()
+        {
+            receiveMessages = false;
         }
 
         //---

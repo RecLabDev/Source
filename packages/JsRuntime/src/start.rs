@@ -30,12 +30,13 @@ pub mod ffi {
         LogDirInvalidErr = 7,
         MainModuleInvalidErr = 8,
         MainModuleUninitializedErr = 9,
-        
+        FailedModuleExecErr = 10,
+        FailedEventLoopErr = 11,
     }
 
     /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
-    #[export_name = "js_runtime__start"]
-    pub unsafe extern "C" fn start(options: CExecuteModuleOptions) -> CStartResult {
+    #[export_name = "aby__start"]
+    pub unsafe extern "C" fn c_start(options: CExecuteModuleOptions) -> CStartResult {
         let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
             crate::runtime::ffi::set_state(CJsRuntimeState::Panic);
             return CStartResult::BindingErr; // </3

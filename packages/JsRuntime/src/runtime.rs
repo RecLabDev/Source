@@ -1,4 +1,3 @@
-use std::fs::OpenOptions;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
@@ -11,6 +10,9 @@ use std::sync::MutexGuard;
 use std::error::Error;
 use std::fmt::Display;
 use std::ffi::CString;
+
+#[cfg(not(feature = "stdio"))]
+use std::fs::OpenOptions;
 
 use deno_runtime::inspector_server::InspectorServer;
 use tokio::runtime::Builder as TokioRuntimeBuilder;
@@ -37,6 +39,7 @@ use crate::stdio::JsRuntimeStdio;
 #[cfg(feature = "ffi")]
 use crate::logging::ffi::CLogCallback;
 
+#[allow(unused)] // TODO
 pub struct JsRuntimeConfig {
     db_dir: Option<String>,
     log_dir: Option<String>,
@@ -53,6 +56,7 @@ impl JsRuntimeConfig {
 
 //---
 /// TODO
+#[allow(unused)] // TODO
 pub struct JsRuntimeManager {
     /// TODO
     config: JsRuntimeConfig,
@@ -393,9 +397,8 @@ impl From<PoisonError<MutexGuard<'_, CLogCallback>>> for JsRuntimeError {
 //---
 #[cfg(feature="ffi")]
 pub mod ffi {
-    use std::ffi::CStr;
+    use std::ffi::CString;
     use std::path::Path;
-    use std::str::Utf8Error;
     use std::sync::atomic::AtomicU32;
     use std::sync::atomic::Ordering;
     use std::sync::Arc;
@@ -406,14 +409,20 @@ pub mod ffi {
     use std::net::SocketAddr;
     use std::net::SocketAddrV4;
 
+    use deno_runtime::deno_broadcast_channel::BroadcastChannel;
+    use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+    
     use tokio::runtime::Builder as TokioRuntimeBuilder;
+    // use tokio::runtime::Runtime as TokioRuntime;
 
     use deno_runtime::worker::MainWorker;
     use deno_runtime::worker::WorkerOptions;
     use deno_runtime::permissions::PermissionsContainer;
     use deno_runtime::deno_core::FeatureChecker;
     use deno_runtime::deno_core::FsModuleLoader;
-    use deno_runtime::deno_core::PollEventLoopOptions;
+    // use deno_runtime::deno_core::PollEventLoopOptions;
+    // use deno_runtime::deno_core::ModuleCodeString;
+    // use deno_runtime::deno_net::DefaultTlsOptions;
     use deno_runtime::deno_core::resolve_url_or_path;
     use deno_runtime::deno_io::Stdio;
     use deno_runtime::deno_io::StdioPipe;
@@ -429,6 +438,61 @@ pub mod ffi {
     use super::JsRuntimeConfig;
     use super::JsRuntimeManager;
     use super::JsRuntimeError;
+        
+    deno_runtime::deno_core::extension!(
+        aby_sdk,
+        // deps = [ deno_net ],
+        // parameters = [
+        //     P: NetPermissions
+        // ],
+        ops = [
+            op_send_host_log,
+            // ops::op_net_connect_tcp<P>,
+        ],
+        // esm_entry_point = "ext:aby_sdk/00_prelude.js",
+        esm = [
+            dir "src",
+            // "00_entry.js",
+        ],
+        lazy_loaded_esm = [
+            dir "src",
+            "00_prelude.js",
+            "99_debug.js",
+        ],
+        js = [
+            // dir "src",
+            // "00_aby.js"
+        ],
+        options = {
+            some_bool_shit: Option<bool>,
+            lol_strings: Option<Vec<String>>,
+        },
+        state = |state, options| {
+            // state.put(SomeLogState {
+            //     //..
+            // });
+        },
+    );
+    
+    #[derive(Clone)]
+    pub struct SomeLogState {
+        //..
+    }
+    
+    /// TODO
+    #[deno_runtime::deno_core::op2(fast)]
+    pub fn op_send_host_log(#[string] message: &str) {
+        tracing::trace!("[Host]: {:}", message);
+    }
+    
+    /// TODO
+    #[deno_runtime::deno_core::op2(async)]
+    #[serde] // TODO: Can we remove this?
+    pub async fn op_send_host_log_async(
+        // #[string] message: &str
+    ) {
+        tracing::trace!("[Host(Async)]: TODO");
+    }
     
     #[derive(Debug)]
     #[repr(C)]
@@ -437,14 +501,43 @@ pub mod ffi {
     }
     
     impl CJsRuntime {
+        /// TODO
+        #[allow(unused)] // TODO
         unsafe fn create_stdio<P: AsRef<Path>>(&self, dir: P) -> Result<Stdio, std::io::Error> {
-            Ok(Stdio {
-                stdin: StdioPipe::File(tempfile::tempfile()?),
-                stdout: StdioPipe::File(tempfile::tempfile_in(&dir)?),
-                stderr: StdioPipe::File(tempfile::tempfile_in(&dir)?),
-            })
+            #[cfg(feature = "stdio")]
+            {
+                Ok(Stdio {
+                    stdin: StdioPipe::File(deno_runtime::deno_io::STDIN_HANDLE.try_clone()?),
+                    stdout: StdioPipe::File(deno_runtime::deno_io::STDOUT_HANDLE.try_clone()?),
+                    stderr: StdioPipe::File(deno_runtime::deno_io::STDERR_HANDLE.try_clone()?),
+                })
+            }
+            #[cfg(not(feature = "stdio"))]
+            {
+                let outpath = dir.as_ref().join("./AbyRuntime.out.log");
+                let errpath = dir.as_ref().join("./AbyRuntime.err.log");
+                
+                Ok(Stdio {
+                    stdin: StdioPipe::File(tempfile::tempfile()?), // TODO: Security audit lol.
+                    stdout: StdioPipe::File({
+                        std::fs::OpenOptions::new()
+                            .read(true)
+                            .write(true)
+                            .create(true)
+                            .open(outpath)?
+                    }),
+                    stderr: StdioPipe::File({
+                        std::fs::OpenOptions::new()
+                            .read(true)
+                            .write(true)
+                            .create(true)
+                            .open(errpath)?
+                    }),
+                })
+            }
         }
         
+        /// TODO
         fn create_bootsrap_options(&self) -> BootstrapOptions {
             let unstable_features = {
                 UNSTABLE_GRANULAR_FLAGS.iter()
@@ -470,33 +563,60 @@ pub mod ffi {
         }
     }
     
-    enum StringError {
-        Uninitialized,
-        Utf8Error(Utf8Error),
+    #[export_name = "aby__construct_runtime"]
+    pub unsafe extern "C" fn c_construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
+        let js_runtime = CJsRuntime {
+            config,
+        };
+        
+        Box::into_raw(Box::new(js_runtime))
     }
     
-    unsafe fn try_unwrap_cstr<'out>(bytes: *const i8) -> Result<&'out str, StringError> {
-        if bytes.is_null() {
-            return Err(StringError::Uninitialized);
-        }
-        
-        match CStr::from_ptr(bytes).to_str() {
-            Ok(c_str) => Ok(c_str),
-            Err(error) => Err(StringError::Utf8Error(error)),
-        }
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct CExecModuleResult {
+        code: CStartResult,
+        message: Option<*const core::ffi::c_char>,
     }
     
-    #[export_name = "aby__js_runtime__create_runtime"]
-    pub unsafe extern "C" fn construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
-        let js_runtime = Box::new(CJsRuntime { config });
+    impl CJsRuntime {
+        unsafe fn unwrap_ptr(ptr: &mut CJsRuntime) -> &mut CJsRuntime {
+            // TODO: Ensure Pointer is safe to use.
+            &mut *ptr
+        }
         
-        Box::into_raw(js_runtime)
+        unsafe fn send_host_log<M: Into<String>>(&self, message: M) -> Result<bool, std::io::Error> {
+            match CString::new(message.into()) {
+                Ok(message) => {
+                    (self.config.log_callback_fn)(message.as_ptr());
+                    Ok(true) // <3
+                }
+                Err(error) => Err(std::io::Error::other(format!("TODO: {:}", error)))
+            }
+        }
     }
 
-    #[export_name = "aby__js_runtime__execute_module"]
-    pub unsafe extern "C" fn execute_module(c_self: *mut CJsRuntime, options: CExecuteModuleOptions) -> CStartResult {
-        let js_runtime = &mut *c_self;
+    #[allow(unused, unreachable_code)]
+    #[export_name = "aby__send_broadcast"]
+    pub unsafe extern "C" fn c_send_broadcast(cself: *mut CJsRuntime, message: core::ffi::c_uint) {
+        let js_runtime = CJsRuntime::unwrap_ptr(&mut *cself);
         
+        // TODO: We need to keep this around. Options:
+        //   - Store in a Boxed closure?
+        //   - Pin Broadcast channel?
+        let broadcast_channel = Box::new(InMemoryBroadcastChannel::default());
+        
+        let resource = todo!("Where do we get the resource?");
+        let name = format!("Some broadcast channel ..");
+        let data = vec![]; // TODO
+        
+        broadcast_channel.send(resource, name, data);
+    }
+    
+    #[export_name = "aby__exec_module"]
+    pub unsafe extern "C" fn c_exec_module(cself: *mut CJsRuntime, options: CExecuteModuleOptions) -> CStartResult {
+        let cself = CJsRuntime::unwrap_ptr(&mut *cself);
+            
         let Ok(async_runtime) = TokioRuntimeBuilder::new_current_thread().enable_time().enable_io().build() else {
             return CStartResult::FailedCreateAsyncRuntime;
         };
@@ -505,15 +625,15 @@ pub mod ffi {
             return CStartResult::FailedFetchingWorkDirErr;
         };
         
-        let Ok(data_dir) = try_unwrap_cstr(js_runtime.config.db_dir) else {
+        let Ok(data_dir) = crate::cwrap::try_unwrap_cstr(cself.config.db_dir) else {
             return CStartResult::DataDirInvalidErr;
         };
         
-        let Ok(log_dir) = try_unwrap_cstr(js_runtime.config.log_dir) else {
+        let Ok(log_dir) = crate::cwrap::try_unwrap_cstr(cself.config.log_dir) else {
             return CStartResult::LogDirInvalidErr;
         };
         
-        let Ok(main_module_specifier) = try_unwrap_cstr(options.main_module_specifier) else {
+        let Ok(main_module_specifier) = crate::cwrap::try_unwrap_cstr(options.main_module_specifier) else {
             return CStartResult::MainModuleInvalidErr;
         };
         
@@ -522,51 +642,91 @@ pub mod ffi {
             return CStartResult::MainModuleInvalidErr;
         };
         
-        tracing::debug!("Main Module: {:}", main_module);
-    
-        let Ok(stdio) = js_runtime.create_stdio(&log_dir) else {
+        if let Err(error) = cself.send_host_log(format!("Resolved module to {:}", main_module)) {
+            tracing::error!("Failed to report main module specifier: {:}", error);
+        }
+        
+        let Ok(stdio) = cself.create_stdio(&log_dir) else {
             return CStartResult::MainModuleUninitializedErr;
         };
         
-        let inspector_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 5622));
-        let inspector_server = Arc::new(InspectorServer::new(inspector_addr, "asdf"));
-
+        let maybe_inspector_server = {
+            let inspector_name = "Aby Runtime 001";
+            let inspector_addr = match SocketAddr::parse_ascii(b"asdf") {
+                // let socket_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), cself.config.inspector_port);
+                Ok(inspector_addr) => {
+                    tracing::debug!("Using configured inspector address: {:}", inspector_addr);
+                    inspector_addr
+                }
+                Err(error) => {
+                    tracing::warn!("Failed to parse configured inspector address: {:}", error);
+                    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 9222))
+                }
+            };
+            
+            if let Err(error) = cself.send_host_log(format!("Inspector address set to {:}", inspector_addr)) {
+                tracing::error!("Failed to report inspector address: {:}", error);
+            }
+            
+            Some(Arc::new(InspectorServer::new(inspector_addr, inspector_name)))
+        };
+        
+        let should_wait_for_inspector_session = cself.config.inspector_wait && maybe_inspector_server.is_some();
+        
+        #[cfg(features = "verbose")]
+        tracing::debug!("Executing Module: {:}", main_module);
+        
         let mut worker = MainWorker::bootstrap_from_options(
             // TODO: Can we avoid cloning here?
             main_module.clone(),
             PermissionsContainer::allow_all(),
             WorkerOptions {
                 stdio,
-                bootstrap: js_runtime.create_bootsrap_options(),
-                feature_checker: js_runtime.create_feature_checker(),
+                bootstrap: cself.create_bootsrap_options(),
+                feature_checker: cself.create_feature_checker(),
                 module_loader: Rc::new(FsModuleLoader),
                 origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
-                maybe_inspector_server: Some(inspector_server),
-                should_wait_for_inspector_session: false,
                 extensions: vec![
-                    //..
+                    aby_sdk::init_ops_and_esm(Some(true), None),
                 ],
+                maybe_inspector_server,
+                should_wait_for_inspector_session,
                 ..Default::default()
             },
         );
+        
+        // let aby_init_script = ModuleCodeString::Static(r#"
+        //     import * as prelude from "ext:aby_sdk/src/00_prelude.js";
+        // "#);
 
+        // tracing::trace!("Aby Init Script:\n{:?}", aby_init_script);
+        
+        // TODO
+        // if let Err(_) = worker.execute_script("<aby>", aby_init_script) {
+        //     return CStartResult::Err;
+        // }
+        
         async_runtime.block_on(async move {
             // TODO: Revist the Clone for `main_module`.
-            if let Err(_) = worker.execute_main_module(&main_module.clone()).await {
-                return CStartResult::Err;
+            if let Err(error) = worker.execute_main_module(&main_module).await {
+                tracing::warn!("Failed module execution: {:}", error);
+                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                return CStartResult::FailedModuleExecErr;
             }
             
             // TODO
-            if let Err(_) = worker.js_runtime.run_event_loop(PollEventLoopOptions::default()).await {
-                return CStartResult::Err;
+            if let Err(error) = worker.run_event_loop(false).await {
+                tracing::warn!("Failed to run event loop: {:}", error);
+                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                return CStartResult::FailedEventLoopErr;
             }
             
             CStartResult::Ok
         })
     }
 
-    #[export_name = "js_runtime__free_my_object"]
-    pub unsafe extern "C" fn free_my_object(obj_ptr: *mut CJsRuntime) {
+    #[export_name = "aby__free_runtime"]
+    pub unsafe extern "C" fn c_free_runtime(obj_ptr: *mut CJsRuntime) {
         let _ = Box::from_raw(obj_ptr);
     }
     
@@ -584,9 +744,10 @@ pub mod ffi {
     #[derive(Debug)]
     #[repr(C)]
     pub struct CJsRuntimeConfig {
-        pub inspect_port: u32,
-        pub db_dir: *const std::ffi::c_char,
-        pub log_dir: *const std::ffi::c_char,
+        pub inspector_wait: bool,
+        pub inspector_port: u16,
+        pub db_dir: *const core::ffi::c_char,
+        pub log_dir: *const core::ffi::c_char,
         pub log_level: CJsRuntimeLogLevel,
         pub log_callback_fn: CLogCallback,
     }
@@ -653,8 +814,8 @@ pub mod ffi {
 
     /// TODO
     #[inline(always)]
-    #[export_name = "js_runtime__get_state"]
-    pub extern "C" fn get_state() -> CJsRuntimeState {
+    #[export_name = "aby__get_state"]
+    pub extern "C" fn c_get_state() -> CJsRuntimeState {
         match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
             Ok(state) => state,
             Err(error) => {

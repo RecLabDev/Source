@@ -64,6 +64,7 @@
     <Compile Include="Assets\Editor\Aby\Controller\AbyController.cs" />
     <Compile Include="Assets\Editor\Aby\Actions\Build.cs" />
     <Compile Include="Assets\Editor\Aby\Monitor\AbyMonitor.cs" />
+    <Compile Include="Assets\Editor\Aby\Actions\Run.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Editor\Aby\Controller\AbyController.uss" />
@@ -422,10 +423,6 @@
     </Reference>
     <Reference Include="UnityEditor.LinuxStandalone.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.20f1\Editor\Data\PlaybackEngines\LinuxStandaloneSupport\UnityEditor.LinuxStandalone.Extensions.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEditor.UWP.Extensions">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.20f1\Editor\Data\PlaybackEngines\MetroSupport\UnityEditor.UWP.Extensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualScripting.YamlDotNet">
