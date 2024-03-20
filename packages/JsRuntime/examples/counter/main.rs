@@ -48,12 +48,15 @@ fn main() -> Result<ExitCode> {
         // Step 1:
         //   Run the bootstrap operation to mount resources and otherwise
         //   prepare the process, ffi boundary, etc.
-        let runtime = js_runtime::runtime::ffi::construct_runtime(CJsRuntimeConfig {
-            inspect_port: 9223, // TODO: Implement dynamic inspector port assignment.
-            db_dir: db_dir.as_ptr(),
-            log_dir: log_dir.as_ptr(),
-            log_level: CJsRuntimeLogLevel::Trace,
-            log_callback_fn: log_callback,
+        let runtime = js_runtime::runtime::ffi::c_construct_runtime({
+            CJsRuntimeConfig {
+                inspector_wait: false,
+                inspector_port: 9223, // TODO: Dynamic port assignment.
+                db_dir: db_dir.as_ptr(),
+                log_dir: log_dir.as_ptr(),
+                log_level: CJsRuntimeLogLevel::Trace,
+                log_callback_fn: log_callback,
+            }
         });
         
         // Step 2:

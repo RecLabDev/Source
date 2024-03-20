@@ -564,7 +564,7 @@ pub mod ffi {
     }
     
     #[export_name = "aby__construct_runtime"]
-    pub unsafe extern "C" fn construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
+    pub unsafe extern "C" fn c_construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
         let js_runtime = CJsRuntime {
             config,
         };
@@ -642,16 +642,36 @@ pub mod ffi {
             return CStartResult::MainModuleInvalidErr;
         };
         
-        if let Err(error) = cself.send_host_log(format!("Resolved main module to {:}", main_module)) {
-            tracing::error!("Failed to send host log message: {:}", error);
+        if let Err(error) = cself.send_host_log(format!("Resolved module to {:}", main_module)) {
+            tracing::error!("Failed to report main module specifier: {:}", error);
         }
         
         let Ok(stdio) = cself.create_stdio(&log_dir) else {
             return CStartResult::MainModuleUninitializedErr;
         };
         
-        let inspector_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), cself.config.inspect_port));
-        let inspector_server = Arc::new(InspectorServer::new(inspector_addr, "Aby Runtime 001"));
+        let maybe_inspector_server = {
+            let inspector_name = "Aby Runtime 001";
+            let inspector_addr = match SocketAddr::parse_ascii(b"asdf") {
+                // let socket_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), cself.config.inspector_port);
+                Ok(inspector_addr) => {
+                    tracing::debug!("Using configured inspector address: {:}", inspector_addr);
+                    inspector_addr
+                }
+                Err(error) => {
+                    tracing::warn!("Failed to parse configured inspector address: {:}", error);
+                    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 9222))
+                }
+            };
+            
+            if let Err(error) = cself.send_host_log(format!("Inspector address set to {:}", inspector_addr)) {
+                tracing::error!("Failed to report inspector address: {:}", error);
+            }
+            
+            Some(Arc::new(InspectorServer::new(inspector_addr, inspector_name)))
+        };
+        
+        let should_wait_for_inspector_session = cself.config.inspector_wait && maybe_inspector_server.is_some();
         
         #[cfg(features = "verbose")]
         tracing::debug!("Executing Module: {:}", main_module);
@@ -666,11 +686,11 @@ pub mod ffi {
                 feature_checker: cself.create_feature_checker(),
                 module_loader: Rc::new(FsModuleLoader),
                 origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
-                maybe_inspector_server: Some(inspector_server),
-                should_wait_for_inspector_session: false,
                 extensions: vec![
                     aby_sdk::init_ops_and_esm(Some(true), None),
                 ],
+                maybe_inspector_server,
+                should_wait_for_inspector_session,
                 ..Default::default()
             },
         );
@@ -689,14 +709,16 @@ pub mod ffi {
         async_runtime.block_on(async move {
             // TODO: Revist the Clone for `main_module`.
             if let Err(error) = worker.execute_main_module(&main_module).await {
-                tracing::warn!("Failed main module execution: {:}", error);
-                return CStartResult::Err;
+                tracing::warn!("Failed module execution: {:}", error);
+                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                return CStartResult::FailedModuleExecErr;
             }
             
             // TODO
             if let Err(error) = worker.run_event_loop(false).await {
-                tracing::warn!("Failed run event loop: {:}", error);
-                return CStartResult::Err;
+                tracing::warn!("Failed to run event loop: {:}", error);
+                cself.send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
+                return CStartResult::FailedEventLoopErr;
             }
             
             CStartResult::Ok
@@ -704,7 +726,7 @@ pub mod ffi {
     }
 
     #[export_name = "aby__free_runtime"]
-    pub unsafe extern "C" fn free_runtime(obj_ptr: *mut CJsRuntime) {
+    pub unsafe extern "C" fn c_free_runtime(obj_ptr: *mut CJsRuntime) {
         let _ = Box::from_raw(obj_ptr);
     }
     
@@ -722,7 +744,8 @@ pub mod ffi {
     #[derive(Debug)]
     #[repr(C)]
     pub struct CJsRuntimeConfig {
-        pub inspect_port: u16,
+        pub inspector_wait: bool,
+        pub inspector_port: u16,
         pub db_dir: *const core::ffi::c_char,
         pub log_dir: *const core::ffi::c_char,
         pub log_level: CJsRuntimeLogLevel,
@@ -792,7 +815,7 @@ pub mod ffi {
     /// TODO
     #[inline(always)]
     #[export_name = "aby__get_state"]
-    pub extern "C" fn get_state() -> CJsRuntimeState {
+    pub extern "C" fn c_get_state() -> CJsRuntimeState {
         match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
             Ok(state) => state,
             Err(error) => {

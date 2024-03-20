@@ -24,14 +24,14 @@ namespace Theta.Unity.Runtime
 
         /// <summary>Initialize a global static `JsRuntime`` instance.  Use this when you want to create a single, managed instance of Deno's `MainWorker` for use in another managed environment.</summary>
         [DllImport(__DllName, EntryPoint = "aby__bootstrap", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CBootstrapResult bootstrap(CBootstrapOptions options);
+        public static extern CBootstrapResult c_bootstrap(CBootstrapOptions options);
 
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "aby__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void verify_log_callback(verify_log_callback__cb_delegate _cb);
+        public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
         [DllImport(__DllName, EntryPoint = "aby__construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CJsRuntime* construct_runtime(CJsRuntimeConfig config);
+        public static extern CJsRuntime* c_construct_runtime(CJsRuntimeConfig config);
 
         [DllImport(__DllName, EntryPoint = "aby__send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_send_broadcast(CJsRuntime* cself, uint message);
@@ -40,15 +40,15 @@ namespace Theta.Unity.Runtime
         public static extern CStartResult c_exec_module(CJsRuntime* cself, CExecuteModuleOptions options);
 
         [DllImport(__DllName, EntryPoint = "aby__free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_runtime(CJsRuntime* obj_ptr);
+        public static extern void c_free_runtime(CJsRuntime* obj_ptr);
 
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "aby__get_state", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CJsRuntimeState get_state();
+        public static extern CJsRuntimeState c_get_state();
 
         /// <summary>TODO: Return a CJsRuntimeStartResult (repr(C)) for state.</summary>
         [DllImport(__DllName, EntryPoint = "aby__start", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult start(CExecuteModuleOptions options);
+        public static extern CStartResult c_start(CExecuteModuleOptions options);
 
 
     }

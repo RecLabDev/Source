@@ -64,6 +64,7 @@
     <Compile Include="Assets\Editor\Aby\Controller\AbyController.cs" />
     <Compile Include="Assets\Editor\Aby\Actions\Build.cs" />
     <Compile Include="Assets\Editor\Aby\Monitor\AbyMonitor.cs" />
+    <Compile Include="Assets\Editor\Aby\Actions\Run.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Editor\Aby\Controller\AbyController.uss" />

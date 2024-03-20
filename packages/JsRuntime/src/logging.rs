@@ -47,7 +47,7 @@ pub mod ffi {
     
     /// TODO
     #[export_name = "aby__verify_log_callback"]
-    pub unsafe extern "C" fn verify_log_callback(_cb: CLogCallback) {
+    pub unsafe extern "C" fn c_verify_log_callback(_cb: CLogCallback) {
         //..
     }
     

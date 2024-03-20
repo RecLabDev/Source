@@ -90,6 +90,7 @@
     <Compile Include="Assets\Scripts\Aby\AbyRuntimeSettings.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerTokenCollision.cs" />
     <Compile Include="Assets\Scripts\Mechanics\VictoryZone.cs" />
+    <Compile Include="Assets\SpawnPortalController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerEnemyCollision.cs" />
     <Compile Include="Assets\Scripts\Mechanics\Health.cs" />
     <Compile Include="Assets\Scripts\Mechanics\GameController.cs" />

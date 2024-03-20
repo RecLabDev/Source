@@ -172,7 +172,7 @@ namespace Theta.Unity.Runtime
         public JsRuntime_v2(JsRuntimeConfig jsRuntimeConfig)
         {
             Config = jsRuntimeConfig;
-            c_Instance = JsRuntime.construct_runtime(Config.Instance);
+            c_Instance = JsRuntime.c_construct_runtime(Config.Instance);
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public void Dispose()
         {
-            JsRuntime.free_runtime(c_Instance);
+            JsRuntime.c_free_runtime(c_Instance);
         }
     }
 
@@ -239,5 +239,5 @@ namespace Theta.Unity.Runtime
     /// </summary>
     /// <param name="message"></param>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void verify_log_callback__cb_delegate(string message);
+    public delegate void c_verify_log_callback__cb_delegate(string message);
 }

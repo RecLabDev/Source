@@ -4,15 +4,16 @@ SCRIPT_DIR="$(dirname $(realpath $0))"
 cd $SCRIPT_DIR
 
 UNITY_PROJECT_DIR="$(realpath '../runtimes/Unity')"
-UNITY_LOG_FILE="./Logs/Editor.log"
-UNITY_DEV_SCRIPT_NAME="Theta.Unity.Editor.Aby.Actions.Build.Sandbox"
-UNITY_DEV_SCRIPT_ARGS="-abyRuntimeStart"
+UNITY_LOG_FILE="./Logs/Server.log"
+UNITY_DEV_SCRIPT_NAME="Theta.Unity.Editor.Aby.Actions.Run.Server"
+UNITY_DEV_SCRIPT_ARGS=""
 
 while true;
 do
     cd $UNITY_PROJECT_DIR
-    echo "Opening Unity Editor with -executeMethod $UNITY_DEV_SCRIPT_NAME"
-    Unity -projectPath $UNITY_PROJECT_DIR -executeMethod $UNITY_DEV_SCRIPT_NAME -logFile $UNITY_LOG_FILE -- $UNITY_DEV_SCRIPT_ARGS
+    echo "Running Unity Server .."
+    printf "  Unity -batchmode -nographics\n\t -projectPath $UNITY_PROJECT_DIR\n\t -executeMethod $UNITY_DEV_SCRIPT_NAME\n\t -logFile $UNITY_LOG_FILE\n\t -- $UNITY_DEV_SCRIPT_ARGS\n"
+    Unity -batchmode -nographics -projectPath $UNITY_PROJECT_DIR -executeMethod $UNITY_DEV_SCRIPT_NAME -logFile $UNITY_LOG_FILE -- $UNITY_DEV_SCRIPT_ARGS
     EXIT_CODE=$? # Capture Unity's exit code for restarting/error reporting.
     
     # TODO: Tail the project log(s).

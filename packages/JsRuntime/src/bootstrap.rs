@@ -36,7 +36,7 @@ pub mod ffi {
     ///   `MainWorker` for use in another managed environment.
     #[allow(unused)]
     #[export_name = "aby__bootstrap"]
-    pub extern "C" fn bootstrap(options: CBootstrapOptions) -> CBootstrapResult {
+    pub extern "C" fn c_bootstrap(options: CBootstrapOptions) -> CBootstrapResult {
         let mut js_runtime = match JsRuntimeManager::try_new() {
             Ok(js_runtime) => js_runtime,
             Err(error) => return CBootstrapResult::JsRuntimeFailed,

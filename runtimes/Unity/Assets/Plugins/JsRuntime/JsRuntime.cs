@@ -29,7 +29,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        public static CJsRuntimeState State => get_state();
+        public static CJsRuntimeState State => c_get_state();
 
         /// <summary>
         /// TODO
@@ -70,8 +70,6 @@ namespace Theta.Unity.Runtime
         /// </summary>
         public static void StartServiceThread()
         {
-            Debug.Log("Starting Service thread..");
-
             ServiceThread = new Thread(new ThreadStart(StartServiceThreadBody));
             ServiceThread.Start();
 
@@ -98,9 +96,11 @@ namespace Theta.Unity.Runtime
                 httpClient.BaseAddress = new Uri("http://localhost:11000");
 
                 var quitResponse = httpClient.GetStringAsync("/quit");
-                if (quitResponse.Result != null)
+                quitResponse.Wait(); // TODO: Ugh.
+
+                if (quitResponse.Result == null)
                 {
-                    Debug.LogFormat("Called quit endpoint: {0}", quitResponse.Result);
+                    Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
                 }
             }
             catch (Exception exc)
