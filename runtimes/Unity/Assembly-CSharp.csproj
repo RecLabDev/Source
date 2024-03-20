@@ -74,7 +74,6 @@
     <Compile Include="Assets\Scripts\Runtime\ThetaRuntime.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PatrolPath.Mover.cs" />
     <Compile Include="Assets\Scripts\Core\Fuzzy.cs" />
-    <Compile Include="Assets\RightToLeft.cs" />
     <Compile Include="Assets\Scripts\Audio\AudioManager.cs" />
     <Compile Include="Assets\Scripts\Audio\AudioPlayer.cs" />
     <Compile Include="Assets\Scripts\Mechanics\DeathZone.cs" />
