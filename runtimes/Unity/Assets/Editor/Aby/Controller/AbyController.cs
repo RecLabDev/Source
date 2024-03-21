@@ -77,7 +77,7 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        [MenuItem("Theta/Aby Controller")]
+        [MenuItem("Aby/Aby Runtime Controller")]
         public static void ShowWindow()
         {
             var abyControllerWindow = GetWindow<AbyControllerEditorWindow>();

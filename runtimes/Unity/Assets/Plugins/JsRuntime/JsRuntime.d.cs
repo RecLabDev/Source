@@ -87,7 +87,7 @@ namespace Theta.Unity.Runtime
                         db_dir = dataDir,
                         log_dir = logDir,
                         log_callback_fn = Marshal.GetFunctionPointerForDelegate(m_LogCallback).ToPointer(),
-                        inspect_port = 9224,
+                        inspector_port = 9224, // TODO: Get this from args.
                     });
 
                     Debug.LogFormat(
@@ -99,7 +99,7 @@ namespace Theta.Unity.Runtime
 
                     var jsRuntime = new JsRuntime_v2(jsRuntimeConfig);
 
-                    var startOptions = new CExecuteModuleOptions
+                    var startOptions = new CExecModuleOptions
                     {
                         main_module_specifier = mainSpecifier,
                     };
@@ -186,7 +186,7 @@ namespace Theta.Unity.Runtime
         /// <summary>
         /// TODO
         /// </summary>
-        public CStartResult Start(CExecuteModuleOptions options)
+        public CStartResult Start(CExecModuleOptions options)
         {
             return JsRuntime.c_exec_module(c_Instance, options);
         }
@@ -209,7 +209,7 @@ namespace Theta.Unity.Runtime
 
         internal CJsRuntimeConfig Instance => c_Instance;
 
-        public uint InspectorPort => c_Instance.inspect_port;
+        public uint InspectorPort => c_Instance.inspector_port;
 
         public JsRuntimeConfig()
         {

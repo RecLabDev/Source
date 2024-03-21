@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Editor/Aby/Cloud/AbyCloud.uss?fileID=7433441132597879392&amp;guid=62766fea3b368434cb9dd8c5d7c7e070&amp;type=3#AbyCloud" />
+    <ui:VisualElement style="flex-grow: 1;">
+        <ui:Label text="TODO: Select cloud target." />
+    </ui:VisualElement>
+</ui:UXML>

@@ -43,7 +43,7 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        [MenuItem("Theta/Aby Runtime Monitor")]
+        [MenuItem("Aby/Aby Runtime Monitor")]
         public static void ShowWindow()
         {
             var abyMonitorWindow = GetWindow<AbyRuntimeMonitorEditorWindow>();

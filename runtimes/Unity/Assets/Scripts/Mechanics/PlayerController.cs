@@ -45,10 +45,10 @@ namespace Platformer.Mechanics
         /// TODO
         /// </summary>
         public JumpState jumpState = JumpState.Grounded;
+
         /// <summary>
         /// Initial jump velocity at the start of a jump.
         /// </summary>
-
         public float jumpTakeOffSpeed = 7.0f;
 
         /// <summary>

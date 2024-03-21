@@ -39,6 +39,8 @@ use crate::stdio::JsRuntimeStdio;
 #[cfg(feature = "ffi")]
 use crate::logging::ffi::CLogCallback;
 
+pub const DEFAULT_INSPECTOR_SOCKET_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 9222));
+
 #[allow(unused)] // TODO
 pub struct JsRuntimeConfig {
     db_dir: Option<String>,
@@ -412,6 +414,7 @@ pub mod ffi {
     use deno_runtime::deno_broadcast_channel::BroadcastChannel;
     use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
     
+    use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannelResource;
     use tokio::runtime::Builder as TokioRuntimeBuilder;
     // use tokio::runtime::Runtime as TokioRuntime;
 
@@ -429,10 +432,11 @@ pub mod ffi {
     use deno_runtime::inspector_server::InspectorServer;
     use deno_runtime::BootstrapOptions;
     use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+    use tokio::sync::broadcast;
 
     use crate::logging::ffi::CJsRuntimeLogLevel;
     use crate::logging::ffi::CLogCallback;
-    use crate::start::ffi::CExecuteModuleOptions;
+    use crate::start::ffi::CExecModuleOptions;
     use crate::start::ffi::CStartResult;
 
     use super::JsRuntimeConfig;
@@ -494,10 +498,10 @@ pub mod ffi {
         tracing::trace!("[Host(Async)]: TODO");
     }
     
-    #[derive(Debug)]
     #[repr(C)]
     pub struct CJsRuntime {
         config: CJsRuntimeConfig,
+        broadcast: InMemoryBroadcastChannel,
     }
     
     impl CJsRuntime {
@@ -565,22 +569,17 @@ pub mod ffi {
     
     #[export_name = "aby__construct_runtime"]
     pub unsafe extern "C" fn c_construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
+        let broadcast = InMemoryBroadcastChannel::default();
         let js_runtime = CJsRuntime {
             config,
+            broadcast,
         };
         
         Box::into_raw(Box::new(js_runtime))
     }
     
-    #[derive(Debug)]
-    #[repr(C)]
-    pub struct CExecModuleResult {
-        code: CStartResult,
-        message: Option<*const core::ffi::c_char>,
-    }
-    
     impl CJsRuntime {
-        unsafe fn unwrap_ptr(ptr: &mut CJsRuntime) -> &mut CJsRuntime {
+        unsafe fn unwrap_mut_ptr<'out>(ptr: *mut CJsRuntime) -> &'out mut CJsRuntime {
             // TODO: Ensure Pointer is safe to use.
             &mut *ptr
         }
@@ -605,23 +604,30 @@ pub mod ffi {
     #[allow(unused, unreachable_code)]
     #[export_name = "aby__send_broadcast"]
     pub unsafe extern "C" fn c_send_broadcast(cself: *mut CJsRuntime, message: core::ffi::c_uint) {
-        let js_runtime = CJsRuntime::unwrap_ptr(&mut *cself);
+        let js_runtime = CJsRuntime::unwrap_mut_ptr(cself);
         
         // TODO: We need to keep this around. Options:
-        //   - Store in a Boxed closure?
-        //   - Pin Broadcast channel?
-        let broadcast_channel = Box::new(InMemoryBroadcastChannel::default());
-        
-        let resource = todo!("Where do we get the resource?");
-        let name = format!("Some broadcast channel ..");
-        let data = vec![]; // TODO
-        
-        broadcast_channel.send(resource, name, data);
+        //  - Store in a Boxed closure?
+        //  - Pin inside CJsRuntime?
+        if let Ok(resource) = js_runtime.broadcast.subscribe() {
+            let name = format!("Some broadcast channel ..");
+            let data = vec![]; // TODO
+            
+            js_runtime.broadcast.send(&resource, name, data);
+        }
+    }
+    
+    
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct CExecModuleResult {
+        code: CStartResult,
+        message: Option<*const core::ffi::c_char>,
     }
     
     #[export_name = "aby__exec_module"]
-    pub unsafe extern "C" fn c_exec_module(cself: *mut CJsRuntime, options: CExecuteModuleOptions) -> CStartResult {
-        let cself = CJsRuntime::unwrap_ptr(&mut *cself);
+    pub unsafe extern "C" fn c_exec_module(cself: *mut CJsRuntime, options: CExecModuleOptions) -> CStartResult {
+        let cself = CJsRuntime::unwrap_mut_ptr(cself);
             
         let Ok(async_runtime) = TokioRuntimeBuilder::new_current_thread().enable_time().enable_io().build() else {
             return CStartResult::FailedCreateAsyncRuntime;
@@ -654,21 +660,20 @@ pub mod ffi {
             return CStartResult::MainModuleUninitializedErr;
         };
         
+        // TODO: Move this to a method on CJsRuntime or JsRuntime.
         let maybe_inspector_server = {
             let inspector_name = "Aby Runtime 001";
-            let inspector_addr = match SocketAddr::parse_ascii(b"asdf") {
-                // let socket_addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), cself.config.inspector_port);
-                Ok(inspector_addr) => {
-                    cself.send_host_log(format!("Using configured inspector address: {:}", inspector_addr));
-                    inspector_addr
-                }
+            
+            let inspector_addr = format!("127.0.0.1:{:}", cself.config.inspector_port);
+            let inspector_addr = match SocketAddr::parse_ascii(inspector_addr.as_bytes()) {
+                Ok(inspector_addr) => inspector_addr,
                 Err(error) => {
                     tracing::warn!("Failed to parse configured inspector address: {:}", error);
-                    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 9222))
+                    crate::runtime::DEFAULT_INSPECTOR_SOCKET_ADDR.clone()
                 }
             };
             
-            cself.send_host_log(format!("Inspector address set to {:}", inspector_addr));
+            cself.send_host_log(format!("Inspector address resolved to {:}", inspector_addr));
             
             Some(Arc::new(InspectorServer::new(inspector_addr, inspector_name)))
         };
@@ -686,6 +691,7 @@ pub mod ffi {
                 stdio,
                 bootstrap: cself.create_bootsrap_options(),
                 feature_checker: cself.create_feature_checker(),
+                skip_op_registration: false,
                 module_loader: Rc::new(FsModuleLoader),
                 origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
                 extensions: vec![
@@ -693,6 +699,7 @@ pub mod ffi {
                 ],
                 maybe_inspector_server,
                 should_wait_for_inspector_session,
+                // broadcast_channel: cself.broadcast,
                 ..Default::default()
             },
         );

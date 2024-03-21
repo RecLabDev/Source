@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Panels/Hud/HudStyles.uss?fileID=7433441132597879392&amp;guid=52aeae49e72f1a14fb5c1addb7483c38&amp;type=3#HudStyles" />
-    <ui:VisualElement name="Overlay" style="flex-grow: 1; min-width: 100%; min-height: 100%; align-self: center;">
+    <ui:VisualElement name="Overlay" style="flex-grow: 1; min-width: 100%; min-height: 100%; align-self: center; background-image: none; -unity-slice-left: 10; -unity-slice-top: initial; -unity-slice-right: initial; -unity-slice-bottom: initial; -unity-background-scale-mode: stretch-to-fill; -unity-slice-scale: 10px;">
         <ui:VisualElement name="Health" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: auto; background-color: rgb(167, 87, 146); left: 0; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
             <ui:Label tabindex="-1" text="Heath++" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />
         </ui:VisualElement>
