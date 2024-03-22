@@ -6,6 +6,7 @@ using Platformer.Gameplay;
 using static Platformer.Core.Simulation;
 using Platformer.Model;
 using Platformer.Core;
+using Theta;
 
 namespace Platformer.Mechanics
 {
@@ -91,11 +92,17 @@ namespace Platformer.Mechanics
         /// </summary>
         public AudioClip respawnSound;
 
+        public AudioClip slashSound;
+
+
+
         /*internal new*/
         public Collider2D collider2d;
 
         /*internal new*/
         public AudioSource audioSource;
+
+        public AudioClip victorySound;
 
         Vector2 move;
         SpriteRenderer spriteRenderer;
@@ -123,6 +130,7 @@ namespace Platformer.Mechanics
                 if (Input.GetButtonDown("Attack"))
                 {
                     attack = true;
+                    PlaySlashSound();
                 }
                 else if (Input.GetButtonUp("Attack"))
                 {
@@ -161,6 +169,13 @@ namespace Platformer.Mechanics
             base.Update();
         }
 
+
+
+        public void PlayVictorySound()
+        {
+            audioSource.PlayOneShot(victorySound);
+        }
+
         void UpdateAttackState()
         {
             animator.SetBool("Attacking", attack);
@@ -171,6 +186,14 @@ namespace Platformer.Mechanics
             attack = controlEnabled && actionContext.performed;
         }
 
+        void PlaySlashSound()
+        {
+            if (audioSource != null && slashSound != null)
+            {
+                audioSource.PlayOneShot(slashSound);
+            }
+        }
+
         void HandleSlashing()
         {
             // Determine the direction of the attack based on the facing of the sprite.
@@ -179,13 +202,19 @@ namespace Platformer.Mechanics
             var attackPoint = transform.position + new Vector3(direction * 0.5f, 0, 0);
             var attackRange = new Vector2(0.1f, 1f); // This creates a wide hitbox.
 
-            // Get all the hit enemies.
+
+
+            //for opening chest and enemies. 
+            var hitObjects = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0);
+            // Get all the hit enemies.// should be able to get ride of this now that we have hitObjects.
             var hitEnemies = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0, LayerMask.GetMask("Enemies"));
 
-            foreach (var hit in hitEnemies)
+            foreach (var hit in hitObjects)
             {
+                Debug.Log($"Hit: {hit.name} with tag {hit.tag}");
+
                 var enemy = hit.GetComponent<EnemyController>();
-                if (enemy != null)
+                if (hit.CompareTag("Enemy"))
                 {
                     // Check if the enemy is in the direction the player is facing.
                     float enemyDirection = Mathf.Sign(enemy.transform.position.x - transform.position.x);
@@ -196,6 +225,15 @@ namespace Platformer.Mechanics
                         slashEvent.player = this;
                         slashEvent.enemy = enemy;
                     }
+                }else if (hit.CompareTag("Chest"))
+                {
+                    Debug.Log("Chest hit detected.");
+                    Chest chest = hit.GetComponent<Chest>();
+                    if (chest != null)
+                    {
+                        chest.OpenChest();
+                    }
+
                 }
             }
         }
@@ -207,6 +245,8 @@ namespace Platformer.Mechanics
                 audioSource.PlayOneShot(jumpSound);
             }
         }
+
+        
 
         private bool canDoubleJump = true;
 

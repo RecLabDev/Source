@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - TutorialRequirement
+  - Enemy
+  - Chest
   layers:
   - Default
   - TransparentFX
