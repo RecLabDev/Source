@@ -407,32 +407,26 @@ pub mod ffi {
     use std::sync::Mutex;
     use std::sync::OnceLock;
     use std::rc::Rc;
-    use std::net::Ipv4Addr;
     use std::net::SocketAddr;
-    use std::net::SocketAddrV4;
 
-    use deno_runtime::deno_broadcast_channel::BroadcastChannel;
-    use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
-    
-    use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannelResource;
     use tokio::runtime::Builder as TokioRuntimeBuilder;
     // use tokio::runtime::Runtime as TokioRuntime;
+    // use tokio::sync::broadcast;
 
     use deno_runtime::worker::MainWorker;
     use deno_runtime::worker::WorkerOptions;
     use deno_runtime::permissions::PermissionsContainer;
     use deno_runtime::deno_core::FeatureChecker;
     use deno_runtime::deno_core::FsModuleLoader;
-    // use deno_runtime::deno_core::PollEventLoopOptions;
-    // use deno_runtime::deno_core::ModuleCodeString;
-    // use deno_runtime::deno_net::DefaultTlsOptions;
     use deno_runtime::deno_core::resolve_url_or_path;
     use deno_runtime::deno_io::Stdio;
     use deno_runtime::deno_io::StdioPipe;
+    use deno_runtime::deno_broadcast_channel::BroadcastChannel;
+    use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+    // use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannelResource;
     use deno_runtime::inspector_server::InspectorServer;
     use deno_runtime::BootstrapOptions;
     use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
-    use tokio::sync::broadcast;
 
     use crate::logging::ffi::CJsRuntimeLogLevel;
     use crate::logging::ffi::CLogCallback;
@@ -785,8 +779,8 @@ pub mod ffi {
         /// Check later for failures, but all good so far!
         Warm = 3,
         
-        /// The runtime failed in a predictable way. The host is free to attempt
-        /// to recover. Otherwise, shut down gracefully.
+        /// The runtime failed in a predictable way. The host is free to
+        /// attempt to recover. Otherwise, shut down gracefully.
         Failed = 4,
         
         /// The runtime encountered an unrecoverable error. The runtime should
@@ -823,12 +817,7 @@ pub mod ffi {
     #[inline(always)]
     #[export_name = "aby__get_state"]
     pub extern "C" fn c_get_state() -> CJsRuntimeState {
-        match CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed)) {
-            Ok(state) => state,
-            Err(error) => {
-                tracing::error!("Couldn't get state: {:?}", error);
-                CJsRuntimeState::None
-            }
-        }
+        CJsRuntimeState::try_from(JS_RUNTIME_STATE.load(Ordering::Relaxed))
+            .unwrap_or(CJsRuntimeState::None)
     }
 }
