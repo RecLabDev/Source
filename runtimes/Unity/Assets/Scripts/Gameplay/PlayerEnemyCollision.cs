@@ -4,6 +4,8 @@ using Platformer.Core;
 using Platformer.Mechanics;
 using Platformer.Model;
 using static Platformer.Core.Simulation;
+using Theta;
+using UnityEngine.UIElements;
 
 namespace Platformer.Gameplay
 {
@@ -24,9 +26,46 @@ namespace Platformer.Gameplay
     }
 
     /// <summary>
-    /// TODO
+    /// Fired when a Player slashes a chest.
     /// </summary>
-    public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
+    /// <typeparam name="PlayerSlashChest"></typeparam>
+    public class PlayerSlashChest : Simulation.Event<PlayerSlashChest>
+    {
+        public Chest chest;
+        public PlayerController player;
+
+        public override void Execute()
+        {
+            if (chest != null)
+            {
+                chest.OpenChest();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fired when player collides with a Trap
+    /// </summary>
+    /// <typeparam name="PlayerTouchesTrap"></typeparam>
+    public class PlayerTouchesTrap : Simulation.Event<PlayerTouchesTrap>
+    {
+        public PlayerController player;
+        public Trap trap;
+
+        public override void Execute()
+        {
+            if (player != null)
+            {
+                trap.TrapKill();
+            }
+        }
+    }
+
+
+/// <summary>
+/// TODO
+/// </summary>
+public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
     {
         /// <summary>
         /// TODO
@@ -37,6 +76,8 @@ namespace Platformer.Gameplay
         /// TODO
         /// </summary>
         public EnemyController enemy;
+
+        public Trap trap;
 
         /// <summary>
         /// TODO

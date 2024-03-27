@@ -77,32 +77,21 @@ namespace Platformer.Mechanics
         /// </summary>
         private bool attack;
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public AudioClip jumpSound;
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public AudioClip hurtSound;
+        /*internal new*/
+        public AudioSource audioSource;
 
         /// <summary>
         /// TODO
         /// </summary>
         public AudioClip respawnSound;
-
         public AudioClip slashSound;
-
+        public AudioClip hurtSound;
+        public AudioClip jumpSound;
+        public AudioClip victorySound;
 
 
         /*internal new*/
         public Collider2D collider2d;
-
-        /*internal new*/
-        public AudioSource audioSource;
-
-        public AudioClip victorySound;
 
         Vector2 move;
         SpriteRenderer spriteRenderer;
@@ -211,11 +200,9 @@ namespace Platformer.Mechanics
 
             foreach (var hit in hitObjects)
             {
-                Debug.Log($"Hit: {hit.name} with tag {hit.tag}");
-
-                var enemy = hit.GetComponent<EnemyController>();
                 if (hit.CompareTag("Enemy"))
                 {
+                    var enemy = hit.GetComponent<EnemyController>();
                     // Check if the enemy is in the direction the player is facing.
                     float enemyDirection = Mathf.Sign(enemy.transform.position.x - transform.position.x);
                     if (enemyDirection == direction)
@@ -227,13 +214,10 @@ namespace Platformer.Mechanics
                     }
                 }else if (hit.CompareTag("Chest"))
                 {
-                    Debug.Log("Chest hit detected.");
-                    Chest chest = hit.GetComponent<Chest>();
-                    if (chest != null)
-                    {
-                        chest.OpenChest();
-                    }
-
+                    var chest = hit.GetComponent<Chest>();
+                    var slashChest = Schedule<PlayerSlashChest>();
+                    slashChest.player = this;
+                    slashChest.chest = chest;
                 }
             }
         }

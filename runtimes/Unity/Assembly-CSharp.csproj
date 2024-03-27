@@ -68,6 +68,7 @@
     <Compile Include="Assets\Scripts\Mechanics\AnimationController.cs" />
     <Compile Include="Assets\Scripts\Core\Simulation.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PatrolPath.cs" />
+    <Compile Include="Assets\ChestEffect.cs" />
     <Compile Include="Assets\Scripts\UI\MainUIController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerEnteredDeathZone.cs" />
     <Compile Include="Assets\Scripts\Gameplay\HealthIsZero.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="Assets\Scripts\Mechanics\TokenInstance.cs" />
     <Compile Include="Assets\Scripts\Aby\AbyRuntimeSettings.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerTokenCollision.cs" />
+    <Compile Include="Assets\Trap.cs" />
     <Compile Include="Assets\Scripts\Mechanics\VictoryZone.cs" />
     <Compile Include="Assets\SpawnPortalController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerEnemyCollision.cs" />
