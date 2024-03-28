@@ -12,7 +12,7 @@ pub mod ffi {
     //---
     #[repr(C)]
     #[derive(Debug)]
-    pub struct CExecModuleOptions {
+    pub struct CStartOptions {
         pub main_module_specifier: *const std::ffi::c_char,
     }
 
@@ -36,7 +36,7 @@ pub mod ffi {
 
     /// TODO: Return a CJsRuntimeStartResult (repr(C)) for state.
     #[export_name = "aby__start"]
-    pub unsafe extern "C" fn c_start(options: CExecModuleOptions) -> CStartResult {
+    pub unsafe extern "C" fn c_start(options: CStartOptions) -> CStartResult {
         let Some(js_runtime) = JS_RUNTIME_MANAGER.get() else {
             crate::runtime::ffi::set_state(CJsRuntimeState::Panic);
             return CStartResult::BindingErr; // </3

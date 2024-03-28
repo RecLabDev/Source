@@ -429,9 +429,8 @@ pub mod ffi {
     use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
 
     use crate::logging::ffi::CJsRuntimeLogLevel;
+    
     use crate::logging::ffi::CLogCallback;
-    use crate::start::ffi::CExecModuleOptions;
-    use crate::start::ffi::CStartResult;
 
     use super::JsRuntimeConfig;
     use super::JsRuntimeManager;
@@ -494,16 +493,19 @@ pub mod ffi {
     
     #[repr(C)]
     pub struct CJsRuntime {
-        config: CJsRuntimeConfig,
-        broadcast: InMemoryBroadcastChannel,
+        pub config: CJsRuntimeConfig,
+        pub broadcast: InMemoryBroadcastChannel,
+        pub worker: *const MainWorker,
     }
     
     impl CJsRuntime {
         /// TODO
         #[allow(unused)] // TODO
-        unsafe fn create_stdio<P: AsRef<Path>>(&self, dir: P) -> Result<Stdio, std::io::Error> {
+        unsafe fn create_stdio<P: AsRef<Path>>(&self, log_dir: P) -> Result<Stdio, std::io::Error> {
             #[cfg(feature = "stdio")]
             {
+                // user has opted to enable the `stdio` feature, so we just
+                // grab Deno's preferred handles for stdio.
                 Ok(Stdio {
                     stdin: StdioPipe::File(deno_runtime::deno_io::STDIN_HANDLE.try_clone()?),
                     stdout: StdioPipe::File(deno_runtime::deno_io::STDOUT_HANDLE.try_clone()?),
@@ -512,31 +514,21 @@ pub mod ffi {
             }
             #[cfg(not(feature = "stdio"))]
             {
-                let outpath = dir.as_ref().join("./AbyRuntime.out.log");
-                let errpath = dir.as_ref().join("./AbyRuntime.err.log");
+                // Cont. >> Otherwise, we'll just pipe to log files for now.
+                // TODO: Evaluate safer, more managed stdio aggregate methods.
+                let outpath = log_dir.as_ref().join("./AbyRuntime.out.log");
+                let errpath = log_dir.as_ref().join("./AbyRuntime.err.log");
                 
                 Ok(Stdio {
-                    stdin: StdioPipe::File(tempfile::tempfile()?), // TODO: Security audit lol.
-                    stdout: StdioPipe::File({
-                        std::fs::OpenOptions::new()
-                            .read(true)
-                            .write(true)
-                            .create(true)
-                            .open(outpath)?
-                    }),
-                    stderr: StdioPipe::File({
-                        std::fs::OpenOptions::new()
-                            .read(true)
-                            .write(true)
-                            .create(true)
-                            .open(errpath)?
-                    }),
+                    stdin: StdioPipe::File(tempfile::tempfile()?),
+                    stdout: StdioPipe::File(std::fs::OpenOptions::new().read(true).write(true).create(true).open(outpath)?),
+                    stderr: StdioPipe::File(std::fs::OpenOptions::new().read(true).write(true).create(true).open(errpath)?),
                 })
             }
         }
         
-        /// TODO
-        fn create_bootsrap_options(&self) -> BootstrapOptions {
+        /// TODO: Move this to regular JsRuntime.
+        fn get_bootsrap_options(&self) -> BootstrapOptions {
             let unstable_features = {
                 UNSTABLE_GRANULAR_FLAGS.iter()
                     .map(|&feature| feature.2)
@@ -549,8 +541,8 @@ pub mod ffi {
             }
         }
         
-        /// TODO
-        fn create_feature_checker(&self) -> Arc<FeatureChecker> {
+        /// TODO: Move this to regular JsRuntime.
+        fn get_feature_checker(&self) -> Arc<FeatureChecker> {
             let mut feature_checker = FeatureChecker::default();
 
             for feature in UNSTABLE_GRANULAR_FLAGS.iter() {
@@ -561,15 +553,132 @@ pub mod ffi {
         }
     }
     
+    //---
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct CConstructRuntimeResult {
+        pub cself: *mut CJsRuntime,
+        pub code: CConstructRuntimeResultCode,
+    }
+    
+    /// TODO
+    #[repr(C)]
+    #[derive(Debug)]
+    pub enum CConstructRuntimeResultCode {
+        /// All operations completed successfully.
+        Ok,
+        
+        /// TODO
+        FailedCreateAsyncRuntime,
+        
+        /// TODO
+        FailedFetchingWorkDirErr,
+        
+        /// TODO
+        DataDirInvalidErr,
+        
+        /// TODO
+        LogDirInvalidErr,
+        
+        /// TODO
+        MainModuleInvalidErr,
+        
+        /// TODO
+        StdioErr,
+    }
+    
+    impl From<CConstructRuntimeResultCode> for CConstructRuntimeResult {
+        fn from(code: CConstructRuntimeResultCode) -> Self {
+            CConstructRuntimeResult {
+                code,
+                cself: core::ptr::null_mut(),
+            }
+        }
+    }
+    
+    /// TODO
     #[export_name = "aby__construct_runtime"]
-    pub unsafe extern "C" fn c_construct_runtime(config: CJsRuntimeConfig) -> *mut CJsRuntime {
+    pub unsafe extern "C" fn c_construct_runtime(config: CJsRuntimeConfig) -> CConstructRuntimeResult {
         let broadcast = InMemoryBroadcastChannel::default();
-        let js_runtime = CJsRuntime {
+        
+        // TODO: Move this to the return statement after we move rust-side
+        // code to the rust-side (e.g., `JsRuntime` itself).
+        let mut cself = CJsRuntime {
             config,
             broadcast,
+            worker: core::ptr::null(),
         };
         
-        Box::into_raw(Box::new(js_runtime))
+        let Ok(data_dir) = crate::cwrap::try_unwrap_cstr(cself.config.db_dir) else {
+            return CConstructRuntimeResultCode::DataDirInvalidErr.into();
+        };
+        
+        let Ok(log_dir) = crate::cwrap::try_unwrap_cstr(cself.config.log_dir) else {
+            return CConstructRuntimeResultCode::LogDirInvalidErr.into();
+        };
+        
+        let Ok(root_dir) = std::env::current_dir() else {
+            return CConstructRuntimeResultCode::FailedFetchingWorkDirErr.into();
+        };
+        
+        let Ok(main_module_specifier) = crate::cwrap::try_unwrap_cstr(cself.config.main_module_specifier) else {
+            return CConstructRuntimeResultCode::MainModuleInvalidErr.into();
+        };
+        
+        // TODO: Move this to `ThetaRuntime::resolve_main_module(..)`.
+        let Ok(main_module) = resolve_url_or_path(main_module_specifier, &root_dir) else {
+            return CConstructRuntimeResultCode::MainModuleInvalidErr.into();
+        };
+        
+        // TODO: Move this to a method on CJsRuntime or JsRuntime.
+        let maybe_inspector_server = {
+            let inspector_name = "Aby Runtime 001";
+            
+            let inspector_addr = format!("127.0.0.1:{:}", cself.config.inspector_port);
+            let inspector_addr = match SocketAddr::parse_ascii(inspector_addr.as_bytes()) {
+                Ok(inspector_addr) => inspector_addr,
+                Err(error) => {
+                    tracing::warn!("Failed to parse configured inspector address: {:}", error);
+                    crate::runtime::DEFAULT_INSPECTOR_SOCKET_ADDR.clone()
+                }
+            };
+            
+            cself.send_host_log(format!("Inspector address resolved to {:}", inspector_addr));
+            
+            Some(Arc::new(InspectorServer::new(inspector_addr, inspector_name)))
+        };
+        
+        let should_wait_for_inspector_session = cself.config.inspector_wait && maybe_inspector_server.is_some();
+        
+        let Ok(stdio) = cself.create_stdio(&log_dir) else {
+            return CConstructRuntimeResultCode::StdioErr.into();
+        };
+        
+        cself.worker = Box::into_raw(Box::new(MainWorker::bootstrap_from_options(
+            // TODO: Can we avoid cloning here?
+            main_module,
+            PermissionsContainer::allow_all(),
+            WorkerOptions {
+                stdio,
+                bootstrap: cself.get_bootsrap_options(),
+                feature_checker: cself.get_feature_checker(),
+                skip_op_registration: false,
+                module_loader: Rc::new(FsModuleLoader),
+                origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
+                extensions: vec![
+                    aby_sdk::init_ops_and_esm(Some(true), None),
+                ],
+                maybe_inspector_server,
+                should_wait_for_inspector_session,
+                // broadcast_channel: cself.broadcast,
+                ..Default::default()
+            },
+        )));
+
+        CConstructRuntimeResult {
+            code: CConstructRuntimeResultCode::Ok,
+            cself: Box::into_raw(Box::new(cself)),
+        }
     }
     
     impl CJsRuntime {
@@ -611,47 +720,85 @@ pub mod ffi {
         }
     }
     
-    
-    #[derive(Debug)]
+    //---
     #[repr(C)]
-    pub struct CExecModuleResult {
-        code: CStartResult,
-        message: Option<*const core::ffi::c_char>,
+    #[derive(Debug)]
+    pub struct CExecModuleOptions {
+        pub main_module_specifier: *const std::ffi::c_char,
     }
     
+    /// TODO
+    #[repr(C)]
+    #[derive(Debug)]
+    pub enum CExecModuleResult {
+        /// All operations completed successfully.
+        Ok,
+        
+        /// Failed during binding.
+        BindingErr,
+        
+        /// TODO
+        JsRuntimeErr,
+        
+        /// TODO
+        FailedCreateAsyncRuntime,
+        
+        /// TODO
+        FailedFetchingWorkDirErr,
+        
+        /// TODO
+        DataDirInvalidErr,
+        
+        /// TODO
+        LogDirInvalidErr,
+        
+        /// TODO
+        MainModuleInvalidErr,
+        
+        /// TODO
+        MainModuleUninitializedErr,
+        
+        /// TODO
+        FailedModuleExecErr,
+        
+        /// TODO
+        FailedEventLoopErr,
+    }
+    
+    /// TODO
     #[export_name = "aby__exec_module"]
-    pub unsafe extern "C" fn c_exec_module(cself: *mut CJsRuntime, options: CExecModuleOptions) -> CStartResult {
+    pub unsafe extern "C" fn c_exec_module(cself: *mut CJsRuntime, options: CExecModuleOptions) -> CExecModuleResult {
         let cself = CJsRuntime::unwrap_mut_ptr(cself);
             
         let Ok(async_runtime) = TokioRuntimeBuilder::new_current_thread().enable_time().enable_io().build() else {
-            return CStartResult::FailedCreateAsyncRuntime;
+            return CExecModuleResult::FailedCreateAsyncRuntime;
         };
 
         let Ok(root_dir) = std::env::current_dir() else {
-            return CStartResult::FailedFetchingWorkDirErr;
+            return CExecModuleResult::FailedFetchingWorkDirErr;
         };
         
         let Ok(data_dir) = crate::cwrap::try_unwrap_cstr(cself.config.db_dir) else {
-            return CStartResult::DataDirInvalidErr;
+            return CExecModuleResult::DataDirInvalidErr;
         };
         
         let Ok(log_dir) = crate::cwrap::try_unwrap_cstr(cself.config.log_dir) else {
-            return CStartResult::LogDirInvalidErr;
+            return CExecModuleResult::LogDirInvalidErr;
         };
         
         let Ok(main_module_specifier) = crate::cwrap::try_unwrap_cstr(options.main_module_specifier) else {
-            return CStartResult::MainModuleInvalidErr;
+            return CExecModuleResult::MainModuleInvalidErr;
         };
         
         // TODO: Move this to `ThetaRuntime::resolve_main_module(..)`.
         let Ok(main_module) = resolve_url_or_path(main_module_specifier, &root_dir) else {
-            return CStartResult::MainModuleInvalidErr;
+            return CExecModuleResult::MainModuleInvalidErr;
         };
         
         cself.send_host_log(format!("Resolved module to {:}", main_module));
         
         let Ok(stdio) = cself.create_stdio(&log_dir) else {
-            return CStartResult::MainModuleUninitializedErr;
+            return CExecModuleResult::MainModuleUninitializedErr;
         };
         
         // TODO: Move this to a method on CJsRuntime or JsRuntime.
@@ -683,8 +830,8 @@ pub mod ffi {
             PermissionsContainer::allow_all(),
             WorkerOptions {
                 stdio,
-                bootstrap: cself.create_bootsrap_options(),
-                feature_checker: cself.create_feature_checker(),
+                bootstrap: cself.get_bootsrap_options(),
+                feature_checker: cself.get_feature_checker(),
                 skip_op_registration: false,
                 module_loader: Rc::new(FsModuleLoader),
                 origin_storage_dir: Some(std::path::PathBuf::from(data_dir)),
@@ -706,23 +853,23 @@ pub mod ffi {
         
         // TODO
         // if let Err(_) = worker.execute_script("<aby>", aby_init_script) {
-        //     return CStartResult::Err;
+        //     return CExecModuleResult::Err;
         // }
         
         async_runtime.block_on(async move {
             // TODO: Revist the Clone for `main_module`.
             if let Err(error) = worker.execute_main_module(&main_module).await {
                 cself.try_send_host_log(format!("Failed main module execution: {:}", error)).unwrap_or(false);
-                return CStartResult::FailedModuleExecErr;
+                return CExecModuleResult::FailedModuleExecErr;
             }
             
             // TODO
             if let Err(error) = worker.run_event_loop(false).await {
                 cself.try_send_host_log(format!("Failed to run main event loop: {:}", error)).unwrap_or(false);
-                return CStartResult::FailedEventLoopErr;
+                return CExecModuleResult::FailedEventLoopErr;
             }
             
-            CStartResult::Ok
+            CExecModuleResult::Ok
         })
     }
 
@@ -751,6 +898,7 @@ pub mod ffi {
         pub log_dir: *const core::ffi::c_char,
         pub log_level: CJsRuntimeLogLevel,
         pub log_callback_fn: CLogCallback,
+        pub main_module_specifier: *const core::ffi::c_char,
     }
     
     impl TryInto<JsRuntimeConfig> for CJsRuntimeConfig {

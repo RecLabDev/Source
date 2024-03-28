@@ -9,7 +9,7 @@ use anyhow::Result;
 use js_runtime::logging::ffi::CJsRuntimeLogLevel;
 use js_runtime::runtime::ffi::CJsRuntimeConfig;
 use js_runtime::bootstrap::ffi::CBootstrapOptions;
-use js_runtime::start::ffi::CExecModuleOptions;
+use js_runtime::runtime::ffi::CExecModuleOptions;
 
 //---
 /// TODO
@@ -56,12 +56,13 @@ fn main() -> Result<ExitCode> {
                 log_dir: log_dir.as_ptr(),
                 log_level: CJsRuntimeLogLevel::Trace,
                 log_callback_fn: log_callback,
+                main_module_specifier: main_module_path.as_ptr(),
             }
         });
         
         // Step 2:
         //   Start the global `MainWorker`. Status 0 is good, 1+ is bad.
-        let status = js_runtime::runtime::ffi::c_exec_module(runtime, CExecModuleOptions {
+        let status = js_runtime::runtime::ffi::c_exec_module(runtime.cself, CExecModuleOptions {
             main_module_specifier: main_module_path.as_ptr(),
         });
         

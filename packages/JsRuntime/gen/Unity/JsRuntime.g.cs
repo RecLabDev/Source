@@ -30,14 +30,16 @@ namespace Theta.Unity.Runtime
         [DllImport(__DllName, EntryPoint = "aby__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
+        /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "aby__construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CJsRuntime* c_construct_runtime(CJsRuntimeConfig config);
+        public static extern CConstructRuntimeResult c_construct_runtime(CJsRuntimeConfig config);
 
         [DllImport(__DllName, EntryPoint = "aby__send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_send_broadcast(CJsRuntime* cself, uint message);
 
+        /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "aby__exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult c_exec_module(CJsRuntime* cself, CExecModuleOptions options);
+        public static extern CExecModuleResult c_exec_module(CJsRuntime* cself, CExecModuleOptions options);
 
         [DllImport(__DllName, EntryPoint = "aby__free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_free_runtime(CJsRuntime* obj_ptr);
@@ -48,7 +50,7 @@ namespace Theta.Unity.Runtime
 
         /// <summary>TODO: Return a CJsRuntimeStartResult (repr(C)) for state.</summary>
         [DllImport(__DllName, EntryPoint = "aby__start", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CStartResult c_start(CExecModuleOptions options);
+        public static extern CStartResult c_start(CStartOptions options);
 
 
     }
@@ -65,6 +67,20 @@ namespace Theta.Unity.Runtime
     {
         public CJsRuntimeConfig config;
         public InMemoryBroadcastChannel broadcast;
+        public MainWorker* worker;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CConstructRuntimeResult
+    {
+        public CJsRuntime* cself;
+        public CConstructRuntimeResultCode code;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CExecModuleOptions
+    {
+        public byte* main_module_specifier;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -76,10 +92,11 @@ namespace Theta.Unity.Runtime
         public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
         public void* log_callback_fn;
+        public byte* main_module_specifier;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CExecModuleOptions
+    public unsafe partial struct CStartOptions
     {
         public byte* main_module_specifier;
     }
@@ -102,6 +119,32 @@ namespace Theta.Unity.Runtime
         Info = 3,
         Debug = 4,
         Trace = 5,
+    }
+
+    public enum CConstructRuntimeResultCode : uint
+    {
+        Ok,
+        FailedCreateAsyncRuntime,
+        FailedFetchingWorkDirErr,
+        DataDirInvalidErr,
+        LogDirInvalidErr,
+        MainModuleInvalidErr,
+        StdioErr,
+    }
+
+    public enum CExecModuleResult : uint
+    {
+        Ok,
+        BindingErr,
+        JsRuntimeErr,
+        FailedCreateAsyncRuntime,
+        FailedFetchingWorkDirErr,
+        DataDirInvalidErr,
+        LogDirInvalidErr,
+        MainModuleInvalidErr,
+        MainModuleUninitializedErr,
+        FailedModuleExecErr,
+        FailedEventLoopErr,
     }
 
     public enum CJsRuntimeState : uint

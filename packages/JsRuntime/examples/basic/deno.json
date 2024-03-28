@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "jsx": "precompile",
+        "jsxImportSource": ".",
+        "jsxFactory": "Aby.createElement",
+        "jsxFragmentFactory": "Aby.createFragment",
+        "experimentalDecorators": true
+    },
+    "imports": {}
+}

@@ -1,0 +1,3 @@
+# [build]
+# Ref: https://github.com/mozilla/sccache?tab=readme-ov-file#usage
+# rustc-wrapper = "/path/to/sccache"

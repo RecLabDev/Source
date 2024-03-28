@@ -73,6 +73,7 @@ export class CounterService
         this.#store.listenQueue(this.#onQueueReceive.bind(this));
     }
     
+    // deno-lint-ignore require-await
     async #onQueueReceive(message)
     {
         console.log("Got message:", message);
