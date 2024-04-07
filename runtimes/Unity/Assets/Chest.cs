@@ -18,8 +18,13 @@ namespace Theta
         void Awake()
         {
             // Attempt to find the ChestEffect on the same GameObject if it's not assigned.
+            chestEffect = GetComponent<ChestEffect>();
             if (chestEffect == null)
-                chestEffect = GetComponent<ChestEffect>();
+            {
+                Debug.Log("chest effect componet not set!");
+
+            }
+
 
             // Also ensure the AudioSource is assigned
             if (audioSource == null)
@@ -32,7 +37,7 @@ namespace Theta
                 isOpened = true; // to ensure that the chest doesnt get opened again after it is already opened.
                 animator.SetTrigger("Open"); // Make sure "Open" is the name of the trigger in your Animator
                 //PlayChestOpeningSound();
-                //chestEffect.OpenChestEffect();
+                chestEffect.OpenChestEffect();
             }
         }
         /*public void OpenChest()

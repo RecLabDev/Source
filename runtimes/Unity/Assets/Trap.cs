@@ -16,7 +16,6 @@ namespace Theta
         }
     }
 
-
     //got this from the enemy controller to see if i can change it to work with traps.
     //need lorrnes help for fixing it
     /*void OnCollisionEnter2D(Collision2D collision)
