@@ -147,7 +147,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   t: 0.5
   modulus: 0
-  clip: {fileID: 8300000, guid: 8ced30da427a5784eb6cc5d35f4f5226, type: 3}
+  clip: {fileID: 0}
 --- !u!1107 &-1485749968105762052
 AnimatorStateMachine:
   serializedVersion: 6

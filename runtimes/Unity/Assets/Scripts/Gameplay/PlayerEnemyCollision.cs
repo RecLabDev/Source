@@ -50,13 +50,13 @@ namespace Platformer.Gameplay
     public class PlayerTouchesTrap : Simulation.Event<PlayerTouchesTrap>
     {
         public PlayerController player;
-        public Trap trap;
+        public TrapController trap;
 
         public override void Execute()
         {
             if (player != null)
             {
-                trap.TrapKill();
+                Schedule<PlayerDeath>();
             }
         }
     }
@@ -76,8 +76,6 @@ public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
         /// TODO
         /// </summary>
         public EnemyController enemy;
-
-        public Trap trap;
 
         /// <summary>
         /// TODO
