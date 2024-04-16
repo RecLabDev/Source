@@ -57,6 +57,7 @@ namespace Theta
             {
                 if (spawnCount < maxEntities)
                 {
+
                     var instance = Instantiate(enemyPrefab, transform.position, Quaternion.identity);
                     if (instance == null)
                     {
@@ -73,7 +74,7 @@ namespace Theta
                     instance.layer = LayerMask.NameToLayer("Enemies");
                     enemy.control.maxSpeed = defaultMaxSpeed;
                     enemy.path = patrolPath;
-
+                    enemy.tag = "Enemy";
                     spawnCount++;
                 }
             }
