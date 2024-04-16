@@ -3,14 +3,14 @@
 SCRIPT_DIR="$(dirname $(realpath $0))"
 cd $SCRIPT_DIR
 
-THETA_SDK_DIR="$(realpath '../packages/ThetaSDK')"
+THETA_SDK_DIR="$(realpath '../sdk/DotNet')"
 
 UNITY_PROJECT_DIR="$(realpath '../runtimes/Unity')"
-UNITY_PLUGIN_DIR="$UNITY_PROJECT_DIR/Assets/Plugins/ThetaSDK"
+UNITY_PLUGIN_DIR="$UNITY_PROJECT_DIR/Assets/Plugins/Aby"
 
 BUILD_TARGET="${1:-Release}"
 
-LIB_NAME="ThetaSDK.dll"
+LIB_NAME="AbySDK.dll"
 
 echo "Building SDK ($BUILD_TARGET; $THETA_SDK_DIR)"
 cd "$THETA_SDK_DIR"

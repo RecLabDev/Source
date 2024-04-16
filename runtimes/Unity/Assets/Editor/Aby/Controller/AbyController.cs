@@ -8,9 +8,9 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.SceneManagement;
 
-using Theta.Unity.Runtime;
+using Aby.Unity.Plugin;
 
-namespace Theta.Unity.Editor.Aby
+namespace Aby.Unity.Editor.Aby
 {
     /// <summary>
     /// TODO
@@ -140,7 +140,7 @@ namespace Theta.Unity.Editor.Aby
             }
             else
             {
-                stateLabel.text = $"Runtime State: {JsRuntime.State}";
+                stateLabel.text = $"Runtime State: {AbyRuntime.State}";
             }
 
             var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
@@ -173,7 +173,7 @@ namespace Theta.Unity.Editor.Aby
             var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
             if (toggleButton != null)
             {
-                toggleButton.text = JsRuntime.IsRunning == false ? "Start" : "Stop";
+                toggleButton.text = AbyRuntime.IsRunning == false ? "Start" : "Stop";
             }
         }
 
@@ -190,13 +190,13 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         private void OnToggleButtonClicked()
         {
-            if (!JsRuntime.IsRunning)
+            if (!AbyRuntime.IsRunning)
             {
-                JsRuntime.StartServiceThread();
+                AbyRuntime.StartServiceThread();
             }
             else
             {
-                JsRuntime.StopServiceThread();
+                AbyRuntime.StopServiceThread();
             }
         }
 

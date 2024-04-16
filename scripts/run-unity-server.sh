@@ -5,7 +5,7 @@ cd $SCRIPT_DIR
 
 UNITY_PROJECT_DIR="$(realpath '../runtimes/Unity')"
 UNITY_LOG_FILE="./Logs/Server.log"
-UNITY_DEV_SCRIPT_NAME="Theta.Unity.Editor.Aby.Actions.Run.Server"
+UNITY_DEV_SCRIPT_NAME="Aby.Unity.Editor.Actions.Run.Server"
 UNITY_DEV_SCRIPT_ARGS=""
 
 while true;

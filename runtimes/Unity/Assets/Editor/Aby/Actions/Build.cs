@@ -6,10 +6,10 @@ using UnityEngine.SceneManagement;
 
 using UnityEditor;
 
-using Theta.Unity.Runtime;
+using Aby.Unity.Plugin;
 using UnityEditor.SceneManagement;
 
-namespace Theta.Unity.Editor.Aby.Actions
+namespace Aby.Unity.Editor.Actions
 {
     /// <summary>
     /// Encapsulates static build actions for the Theta Unity runtime.

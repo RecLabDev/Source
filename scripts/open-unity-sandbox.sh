@@ -5,7 +5,7 @@ cd $SCRIPT_DIR
 
 UNITY_PROJECT_DIR="$(realpath '../runtimes/Unity')"
 UNITY_LOG_FILE="./Logs/Editor.log"
-UNITY_DEV_SCRIPT_NAME="Theta.Unity.Editor.Aby.Actions.Build.Sandbox"
+UNITY_DEV_SCRIPT_NAME="Aby.Unity.Editor.Actions.Build.Sandbox"
 UNITY_DEV_SCRIPT_ARGS="-abyRuntimeStart"
 
 while true;

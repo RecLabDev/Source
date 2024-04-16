@@ -6,10 +6,10 @@ using UnityEngine.SceneManagement;
 
 using UnityEditor;
 
-using Theta.Unity.Runtime;
+using Aby.Unity.Plugin;
 using UnityEditor.SceneManagement;
 
-namespace Theta.Unity.Editor.Aby.Actions
+namespace Aby.Unity.Editor.Actions
 {
     /// <summary>
     /// TODO
@@ -21,14 +21,14 @@ namespace Theta.Unity.Editor.Aby.Actions
         /// </summary>
         public static void Server()
         {
-            if (JsRuntime.IsRunning)
+            if (AbyRuntime.IsRunning)
             {
                 Debug.LogWarning("AbyRuntime already running ({0}). Can't run any further!");
             }
             else
             {
-                JsRuntime.StartServiceThread();
-                Debug.LogFormat("Running AbyRuntime for Server ({0})", JsRuntime.State);
+                AbyRuntime.StartServiceThread();
+                Debug.LogFormat("Running AbyRuntime for Server ({0})", AbyRuntime.State);
             }
         }
     }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace Theta
+namespace Aby
 {
     public class SpawnPortalController : MonoBehaviour
     {
