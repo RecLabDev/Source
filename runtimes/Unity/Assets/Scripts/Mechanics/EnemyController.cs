@@ -25,7 +25,7 @@ namespace Platformer.Mechanics
         SpriteRenderer spriteRenderer;
 
         //added this for death animation chage:
-        private bool isDead = false;
+        protected bool isDead = false; //changed from private to protected for flying enemies
         public bool IsDead => isDead;
 
         public Bounds Bounds => _collider.bounds;
@@ -81,31 +81,6 @@ namespace Platformer.Mechanics
                 StartCoroutine(DelayedDeath());
             }
         }
-
-        /*public Collider2D playerInteractionCollider;
-
-        public void Die()
-        {
-            if (isDead) return;
-            isDead = true;
-
-            // Trigger hurt animation.
-            animator.SetTrigger("hurt");
-
-            // Play the ouch sound.
-            if (_audio && ouch)
-            {
-                _audio.PlayOneShot(ouch);
-            }
-
-            // Change the layer of the enemy to DeadEnemies so it doesn't collide with the player anymore.
-            gameObject.layer = LayerMask.NameToLayer("Ghosts");
-
-            // Continue with the death sequence.
-            StartCoroutine(DelayedDeath());
-        }*/
-
-
 
         /// <summary>
         /// TODO
@@ -165,10 +140,8 @@ namespace Platformer.Mechanics
             }
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        void Update()
+        //added for flying enemies
+        protected virtual void Move()
         {
             if (isDead)
             {
@@ -179,6 +152,17 @@ namespace Platformer.Mechanics
                 if (mover == null) mover = path.CreateMover(control.maxSpeed * 0.5f);
                 control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);
             }
+        }
+
+
+
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        protected virtual void Update()
+        {
+            Move();
         }
     }
 }

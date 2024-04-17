@@ -7,6 +7,7 @@ TagManager:
   - TutorialRequirement
   - Enemy
   - Chest
+  - Trap
   layers:
   - Default
   - TransparentFX
