@@ -1,9 +1,6 @@
 pub mod ops {
-    use deno_runtime::deno_core::op2;
-    
-    //---
     /// TODO
-    #[op2(fast)]
+    #[deno_runtime::deno_core::op2(fast)]
     pub fn theta_debug(#[string] input: &str) {
         println!("Debugging {}!", input);
     }

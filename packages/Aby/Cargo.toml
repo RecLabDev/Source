@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["ffi", "stdio"]
-deb = []
+debug = []
 verbose = []
 ffi = []
 stdio = []
@@ -16,6 +16,10 @@ unity = []
 [lib]
 name = "aby"
 crate-type=["rlib", "cdylib"]
+
+[[example]]
+name = "aby-basic"
+path = "./examples/basic/main.rs"
 
 [[example]]
 name = "aby-counter"
@@ -33,12 +37,12 @@ git = "https://github.com/open-dx/oops-rs"
 git = "https://github.com/open-dx/cwrap-rs"
 
 [dependencies.deno_core]
-# TODO: Remove this when deno_core::extension! works without it.
+# TODO: Remove this when deno_runtime::deno_core::extension! works without it.
 version = "0.275.0"
 features = ["include_js_files_for_snapshotting"]
 
 [dependencies.deno_runtime]
-version = "0.154.0"
+version = "0.155.0"
 features = ["include_js_files_for_snapshotting"]
 
 [dependencies.slab]
@@ -51,9 +55,8 @@ version = "0.1"
 version = "0.3"
 default-features = false
 features = [
-    "alloc", "ansi", "env-filter", "fmt", "json", "local-time", "matchers",
-    "regex", "serde", "smallvec", "thread_local", "time", "tracing",
-    "tracing-log", "tracing-serde",
+    "ansi", "env-filter", "fmt", "json", "local-time",
+    "matchers", "regex", "serde", "smallvec", "thread_local", "time",
 ]
 
 [dependencies.tokio]

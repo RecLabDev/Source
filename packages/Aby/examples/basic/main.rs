@@ -8,27 +8,38 @@ use deno_runtime::worker::MainWorker;
 use deno_runtime::worker::WorkerOptions;
 use deno_runtime::permissions::PermissionsContainer;
 use deno_runtime::deno_core::FsModuleLoader;
-use deno_runtime::deno_core::ModuleSpecifier;
+use deno_runtime::deno_core::resolve_url_or_path;
 
-const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+//---
+/// TODO: Remove `swc_ecma_codegen` when we've resolved the sourcemap error.
+const TRACING_FILTER: &str = "aby-basic=trace,aby=trace,swc_ecma_codegen=off,warn";
 
 //---
 /// TODO
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<ExitCode> {
-    let js_path = Path::new(CARGO_MANIFEST_DIR).join("examples/basic/main.tsx");
-    let main_module = ModuleSpecifier::from_file_path(js_path).unwrap();
+    aby::tracing::mount(TRACING_FILTER);
+    
+    let working_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let module_specifier = "./examples/basic/main.tsx"; // TODO: From args ..
+    let main_module = resolve_url_or_path(module_specifier, working_dir)?;
+    let exec_module = main_module.clone();
+    
+    tracing::info!("Executing '{:}'", main_module);
+
     let mut worker = MainWorker::bootstrap_from_options(
-        main_module.clone(),
+        main_module,
         PermissionsContainer::allow_all(),
         WorkerOptions {
             module_loader: Rc::new(FsModuleLoader),
-            extensions: vec![],
+            extensions: vec![
+                //..
+            ],
             ..Default::default()
         },
     );
     
-    worker.execute_main_module(&main_module).await?;
+    worker.execute_main_module(&exec_module).await?;
     worker.run_event_loop(false).await?;
     
     Ok(ExitCode::SUCCESS)

@@ -1,5 +1,5 @@
-use deno_core::error::AnyError;
-use deno_core::*;
+use deno_runtime::deno_core::error::AnyError;
+use deno_runtime::deno_core::*;
 
 /// TODO
 pub struct ThetaModuleLoader;
@@ -8,7 +8,7 @@ impl ModuleLoader for ThetaModuleLoader {
     /// TODO
     fn resolve(&self, specifier: &str, referrer: &str, _resolution_kind: ResolutionKind) -> Result<ModuleSpecifier, AnyError> {
         // Resolve the module specifier to an absolute URL or path
-        deno_core::resolve_import(specifier, referrer).map_err(|e| e.into())
+        deno_runtime::deno_core::resolve_import(specifier, referrer).map_err(|e| e.into())
     }
     
     /// TODO

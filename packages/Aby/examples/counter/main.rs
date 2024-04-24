@@ -6,6 +6,7 @@ use std::ffi::CString;
 
 use core::ffi::CStr;
 
+use aby::runtime::ffi::CConstructRuntimeResultCode;
 use anyhow::Result;
 
 use cwrap::error::CStringError;
@@ -13,11 +14,18 @@ use cwrap::error::CStringError;
 use aby::logging::ffi::CJsRuntimeLogLevel;
 use aby::runtime::ffi::CAbyRuntimeConfig;
 use aby::runtime::ffi::CExecModuleOptions;
+use aby::runtime::AbyRuntimeError;
 
 //---
-/// TODO
-const TRACING_FILTER: &str = "aby-counter=trace,aby=trace,warn";
+/// TODO: Remove `swc_ecma_codegen` when we've resolved the sourcemap error.
+const TRACING_FILTER: &str = "aby-counter=trace,aby=trace,swc_ecma_codegen=off,warn";
 
+/// TODO
+pub fn try_path_from_cstring(path: CString) -> Result<PathBuf, CStringError> {
+    Ok(std::path::PathBuf::from(cwrap::string::try_unwrap_cstr(path.as_ptr())?))
+}
+
+/// TODO
 pub fn try_cstring_from_path(path: PathBuf) -> Result<CString, CStringError> {
     let path_str = path.as_os_str().to_str().unwrap_or_default();
     
@@ -28,24 +36,36 @@ pub fn try_cstring_from_path(path: PathBuf) -> Result<CString, CStringError> {
 }
 
 //---
-pub fn main() -> Result<ExitCode> {
+fn main() -> Result<ExitCode> {
     // Step 1:
-    //   Setup logging facilities, etc.
+    //  Setup logging facilities, etc.
     aby::tracing::mount(TRACING_FILTER);
     
     unsafe {
         // Step 2:
-        //   Setup runtime config.
+        //  Setup runtime configuration. This usually involves creating an
+        //  ffi manager which interns strings/function pointers, etc, and
+        //  provides a public api for the rest of your code to interact with
+        //  it safely and efficiently.
+        //  
+        //  *Hint: Official runtimes (mostly) do this for you.*
+        //  
+        //  In Unity, the values for these config items are managed by the
+        //  editor/asset database and passed to the `AbyPlugin` when we
+        //  setup a new mount context.
+        //  
+        //  Note: In the future, some of these values will likely probably be
+        //  pulled directly from Deno (+other) configs.
         let root_dir = try_cstring_from_path(std::env::current_dir()?)?;
         let main_module_path = CString::new("./examples/counter/main.js")?;
         let db_dir = CString::new("./examples/counter/db")?;
         let log_dir = CString::new("./examples/counter/logs")?;
         let thread_prefix = CString::new("ABY_RUNTIME_COUNTER_EXAMPLE")?;
-        let inspector_addr = CString::new("localhost:9222")?;
+        let inspector_addr = CString::new("127.0.0.1:9222")?;
         
         // Step 3:
-        //   Run the bootstrap operation to mount resources and otherwise
-        //   prepare the process, ffi boundary, etc.
+        //  Construct the runtime. Will mount resources and otherwise "warm up"
+        //  the runtime for other options (like module execution).
         let result = aby::runtime::ffi::c_construct_runtime({
             CAbyRuntimeConfig {
                 root_dir: root_dir.as_ptr(),
@@ -59,13 +79,20 @@ pub fn main() -> Result<ExitCode> {
             }
         });
         
+        let runtime = match result.code {
+            CConstructRuntimeResultCode::Ok => result.runtime.assume_init(),
+            _ => return Err(anyhow::Error::msg(format!("c_construct_runtime failed (code {:?})", result.code))),
+        };
+        
         // Step 4:
-        //   Start the global `MainWorker`. Status 0 is good, 1+ is bad.
-        let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions {
+        //  Start the global `MainWorker`. Status 0 is good, 1+ is bad.
+        let status = aby::runtime::ffi::c_exec_module(runtime.ptr, CExecModuleOptions {
             module_specifier: main_module_path.as_ptr(),
         });
         
         tracing::debug!("JsRuntime exited with status {:?}", status);
+    
+        println!("TEST");
         
         // Yay! <3
         Ok(ExitCode::SUCCESS)

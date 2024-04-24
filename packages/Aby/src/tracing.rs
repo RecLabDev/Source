@@ -1,6 +1,6 @@
 
 pub fn mount(filter: &str) {
-        // Setup a default tracing subscriber so we can see log output.
+    // Setup a default tracing subscriber so we can see log output.
     // In a real environment, this would typically be setup during init
     //   with a more robust subscriber which can collect and re-route
     //   tracing events to a host-system.

@@ -27,22 +27,18 @@ namespace Aby.Unity.Plugin
         public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
         /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ````</summary>
-        [DllImport(__DllName, EntryPoint = "aby__construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [DllImport(__DllName, EntryPoint = "aby__c_construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_config);
 
-        [DllImport(__DllName, EntryPoint = "aby__send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_send_broadcast(CAbyRuntime* cself, uint message);
 
         /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "aby__exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [DllImport(__DllName, EntryPoint = "aby__c_exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CExecModuleResult c_exec_module(CAbyRuntime* cself, CExecModuleOptions options);
 
-        [DllImport(__DllName, EntryPoint = "aby__free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [DllImport(__DllName, EntryPoint = "aby__c_free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_free_runtime(CAbyRuntime* obj_ptr);
-
-        /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "aby__get_status", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CAbyRuntimeStatus c_get_status();
 
 
     }
@@ -56,7 +52,6 @@ namespace Aby.Unity.Plugin
     public unsafe partial struct CAbyRuntime
     {
         public CAbyRuntimeConfig config;
-        public InMemoryBroadcastChannel broadcast;
         public AbyRuntime* ptr;
     }
 
@@ -82,7 +77,7 @@ namespace Aby.Unity.Plugin
         public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
         public void* log_callback_fn;
-        public ushort inspector_port;
+        public byte* inspector_addr;
         [MarshalAs(UnmanagedType.U1)] public bool inspector_wait;
     }
 
@@ -121,17 +116,6 @@ namespace Aby.Unity.Plugin
         MainModuleUninitializedErr,
         FailedModuleExecErr,
         FailedEventLoopErr,
-    }
-
-    public enum CAbyRuntimeStatus : uint
-    {
-        None = 0,
-        Cold,
-        Startup,
-        Warm,
-        Failure,
-        Panic,
-        Shutdown,
     }
 
 
