@@ -2,35 +2,35 @@
 
 console.log("TODO");
 
-// /**
-//  * TODO
-//  */
-// export class SomeNetworkedComponent
-// {
-//     /**
-//      * TODO
-//      */
-//     // @Bind("aby", "some.key")
-//     public hello: string = "asdf";
+/**
+ * TODO
+ */
+export class SomeNetworkedComponent
+{
+    /**
+     * TODO
+     */
+    // @Bind("aby", "some.key")
+    public hello: string = "asdf";
     
-//     constructor()
-//     {
-//         //..
-//     }
+    constructor()
+    {
+        //..
+    }
     
-//     /**
-//      * TODO
-//      * 
-//      * @returns TODO
-//      */
-//     public render()
-//     {
-//         console.log("OMFG");
+    /**
+     * TODO
+     * 
+     * @returns TODO
+     */
+    public render()
+    {
+        console.log("OMFG");
         
-//         // return (
-//         //     <div>
-//         //         TODO
-//         //     </div>
-//         // );
-//     }
-// }
+        // return (
+        //     <div>
+        //         TODO
+        //     </div>
+        // );
+    }
+}

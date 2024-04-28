@@ -5,6 +5,7 @@ edition = "2021"
 
 [features]
 default = ["ffi", "stdio"]
+dev = []
 debug = []
 verbose = []
 ffi = []
@@ -38,11 +39,11 @@ git = "https://github.com/open-dx/cwrap-rs"
 
 [dependencies.deno_core]
 # TODO: Remove this when deno_runtime::deno_core::extension! works without it.
-version = "0.275.0"
-features = ["include_js_files_for_snapshotting"]
+version = "0.262.0"
+# features = ["include_js_files_for_snapshotting"]
 
 [dependencies.deno_runtime]
-version = "0.155.0"
+version = "0.146.0"
 features = ["include_js_files_for_snapshotting"]
 
 [dependencies.slab]
@@ -77,16 +78,16 @@ anyhow = "1.0.79"
 csbindgen = { version = "1.9.1" }
 
 #--
-[profile.dev]
-opt-level = 1
-split-debuginfo = "unpacked"
+# [profile.dev]
+# opt-level = 1
+# split-debuginfo = "unpacked"
 
 # [profile.dev.build-override]
 # opt-level = 3
 # split-debuginfo = "unpacked"
 
-[profile.dev.package."*"]
-opt-level = 3
+# [profile.dev.package."*"]
+# opt-level = 3
 
-[profile.release]
-opt-level = "s"
+# [profile.release]
+# opt-level = "s"

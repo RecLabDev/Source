@@ -31,41 +31,24 @@ namespace Aby.Unity.Plugin
         public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_config);
 
         [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_send_broadcast(CAbyRuntime* cself, uint message);
+        public static extern void c_send_broadcast(CAbyRuntime* c_self, uint message);
 
         /// <summary>TODO</summary>
         [DllImport(__DllName, EntryPoint = "aby__c_exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CExecModuleResult c_exec_module(CAbyRuntime* cself, CExecModuleOptions options);
+        public static extern CExecModuleResult c_exec_module(CAbyRuntime* c_self, CExecModuleOptions options);
 
         [DllImport(__DllName, EntryPoint = "aby__c_free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_free_runtime(CAbyRuntime* obj_ptr);
+        public static extern void c_free_runtime(CAbyRuntime* c_aby_runtime);
 
 
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct AbyRuntime
-    {
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe partial struct CAbyRuntime
     {
         public CAbyRuntimeConfig config;
-        public AbyRuntime* ptr;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CConstructRuntimeResult
-    {
-        public CConstructRuntimeError code;
-        public CAbyRuntime* runtime;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CExecModuleOptions
-    {
-        public byte* module_specifier;
+        public CAbyRuntimeStatus status;
+        public void* ptr;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -81,6 +64,19 @@ namespace Aby.Unity.Plugin
         [MarshalAs(UnmanagedType.U1)] public bool inspector_wait;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CConstructRuntimeResult
+    {
+        public CConstructRuntimeResultCode code;
+        public CAbyRuntime* runtime;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CExecModuleOptions
+    {
+        public byte* module_specifier;
+    }
+
 
     public enum CJsRuntimeLogLevel : uint
     {
@@ -92,7 +88,7 @@ namespace Aby.Unity.Plugin
         Trace = 5,
     }
 
-    public enum CConstructRuntimeError : uint
+    public enum CConstructRuntimeResultCode : uint
     {
         Ok,
         FailedCreateAsyncRuntime,
@@ -116,6 +112,17 @@ namespace Aby.Unity.Plugin
         MainModuleUninitializedErr,
         FailedModuleExecErr,
         FailedEventLoopErr,
+    }
+
+    public enum CAbyRuntimeStatus : uint
+    {
+        None = 0,
+        Cold,
+        Startup,
+        Warm,
+        Failure,
+        Panic,
+        Shutdown,
     }
 
 

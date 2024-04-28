@@ -30,7 +30,7 @@ namespace Aby.Unity.Plugin
         /// <summary>
         /// TODO
         /// </summary>
-        public static CAbyRuntimeStatus State => NativeMethods.c_get_status();
+        public static CAbyRuntimeStatus State => CAbyRuntimeStatus.None; // TODO: Get this value from the actual runtime instance.
 
         /// <summary>
         /// TODO

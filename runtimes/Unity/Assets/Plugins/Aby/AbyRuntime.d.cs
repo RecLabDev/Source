@@ -9,6 +9,7 @@ using static UnityEngine.CullingGroup;
 
 using UnityEditor;
 using Aby.Unity.Plugin;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 namespace Aby.Unity.Plugin
 {
@@ -81,6 +82,7 @@ namespace Aby.Unity.Plugin
 
                 fixed (byte* logDir = Encoding.UTF8.GetBytes("./Logs\0"))
                 fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store\0"))
+                fixed (byte* inspectorAddr = Encoding.UTF8.GetBytes("127.0.0.1:9222\0"))
                 fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
                 {
                     var jsRuntimeConfig = new JsRuntimeConfig(new CAbyRuntimeConfig
@@ -88,7 +90,7 @@ namespace Aby.Unity.Plugin
                         db_dir = dataDir,
                         log_dir = logDir,
                         log_callback_fn = Marshal.GetFunctionPointerForDelegate(m_LogCallback).ToPointer(),
-                        inspector_port = 9224, // TODO: Get this from args.
+                        inspector_addr = inspectorAddr, // TODO: Get this from args.
                     });
 
                     Debug.LogFormat(
@@ -173,7 +175,7 @@ namespace Aby.Unity.Plugin
         public AbyRuntime_v2(JsRuntimeConfig config)
         {
             var result = NativeMethods.c_construct_runtime(config.c_Instance);
-            if (result.code != CConstructRuntimeError.Ok)
+            if (result.code != CConstructRuntimeResultCode.Ok)
             {
                 Debug.LogErrorFormat("Failed to mount AbyRuntime: {0}", result.code);
             }
@@ -214,7 +216,7 @@ namespace Aby.Unity.Plugin
     /// </summary>
     public unsafe class JsRuntimeConfig
     {
-        public uint InspectorPort => c_Instance.inspector_port;
+        public string InspectorAddress => c_Instance.InspectorAddress;
 
         internal CAbyRuntimeConfig c_Instance;
 
@@ -234,6 +236,12 @@ namespace Aby.Unity.Plugin
         }
     }
 
+    public unsafe partial struct CAbyRuntimeConfig
+    {
+        //..
+        public string InspectorAddress => NativeMethods.PtrToStringUtf8(inspector_addr);
+    }
+
     public static unsafe partial class NativeMethods
     {
         /// <summary>
@@ -242,18 +250,30 @@ namespace Aby.Unity.Plugin
         /// <param name="message"></param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void c_verify_log_callback__cb_delegate(string message);
-    }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct InMemoryBroadcastChannel
-    {
-        //..
-    }
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="ptr"></param>
+        /// <returns></returns>
+        public static unsafe string PtrToStringUtf8(byte* ptr)
+        {
+            if (ptr == null)
+            {
+                return null;
+            }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct MainWorker
-    {
-        //..
+            byte* temp = ptr;
+            while (*temp != 0)
+            {
+                temp++;
+            }
+
+            int length = (int)(temp - ptr);
+
+            // Create a string from the byte array
+            return Encoding.UTF8.GetString(ptr, length);
+        }
     }
 
     /// <summary>

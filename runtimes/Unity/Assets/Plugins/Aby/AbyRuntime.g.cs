@@ -18,7 +18,7 @@ namespace Aby.Unity.Plugin
 #else
         const string __DllName = "AbyRuntime";
 #endif
-
+        
 
 
 
@@ -26,23 +26,19 @@ namespace Aby.Unity.Plugin
         [DllImport(__DllName, EntryPoint = "aby__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
-        /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "aby__construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig config);
+        /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ````</summary>
+        [DllImport(__DllName, EntryPoint = "aby__c_construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_config);
 
-        [DllImport(__DllName, EntryPoint = "aby__send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_send_broadcast(CAbyRuntime* cself, uint message);
-
-        /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "aby__exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CExecModuleResult c_exec_module(CAbyRuntime* cself, CExecModuleOptions options);
-
-        [DllImport(__DllName, EntryPoint = "aby__free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_free_runtime(CAbyRuntime* obj_ptr);
+        [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void c_send_broadcast(CAbyRuntime* c_self, uint message);
 
         /// <summary>TODO</summary>
-        [DllImport(__DllName, EntryPoint = "aby__get_status", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CAbyRuntimeStatus c_get_status();
+        [DllImport(__DllName, EntryPoint = "aby__c_exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CExecModuleResult c_exec_module(CAbyRuntime* c_self, CExecModuleOptions options);
+
+        [DllImport(__DllName, EntryPoint = "aby__c_free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void c_free_runtime(CAbyRuntime* c_aby_runtime);
 
 
     }
@@ -51,21 +47,8 @@ namespace Aby.Unity.Plugin
     public unsafe partial struct CAbyRuntime
     {
         public CAbyRuntimeConfig config;
-        public InMemoryBroadcastChannel broadcast;
-        public MainWorker* worker;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CConstructRuntimeResult
-    {
-        public CConstructRuntimeError code;
-        public CAbyRuntime* runtime;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct CExecModuleOptions
-    {
-        public byte* module_specifier;
+        public CAbyRuntimeStatus status;
+        public void* ptr;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -77,8 +60,21 @@ namespace Aby.Unity.Plugin
         public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
         public void* log_callback_fn;
-        public ushort inspector_port;
+        public byte* inspector_addr;
         [MarshalAs(UnmanagedType.U1)] public bool inspector_wait;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CConstructRuntimeResult
+    {
+        public CConstructRuntimeResultCode code;
+        public CAbyRuntime* runtime;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CExecModuleOptions
+    {
+        public byte* module_specifier;
     }
 
 
@@ -92,7 +88,7 @@ namespace Aby.Unity.Plugin
         Trace = 5,
     }
 
-    public enum CConstructRuntimeError : uint
+    public enum CConstructRuntimeResultCode : uint
     {
         Ok,
         FailedCreateAsyncRuntime,

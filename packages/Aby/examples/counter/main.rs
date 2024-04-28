@@ -79,14 +79,14 @@ fn main() -> Result<ExitCode> {
             }
         });
         
-        let runtime = match result.code {
-            CConstructRuntimeResultCode::Ok => result.runtime.assume_init(),
+        let mut runtime = match result.code {
+            CConstructRuntimeResultCode::Ok => result.runtime,
             _ => return Err(anyhow::Error::msg(format!("c_construct_runtime failed (code {:?})", result.code))),
         };
         
         // Step 4:
         //  Start the global `MainWorker`. Status 0 is good, 1+ is bad.
-        let status = aby::runtime::ffi::c_exec_module(runtime.ptr, CExecModuleOptions {
+        let status = aby::runtime::ffi::c_exec_module(&mut *runtime, CExecModuleOptions {
             module_specifier: main_module_path.as_ptr(),
         });
         

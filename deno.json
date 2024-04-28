@@ -3,8 +3,8 @@
         "build-sdk": "bash scripts/build-sdk.sh",
         "build-sdk-new": "deno run --allow-env --allow-run --allow-read ./scripts/build-sdk.tsx",
         "build-runtime": "bash scripts/build-runtime.sh debug",
-        "open-unity-sandbox": "bash scripts/open-unity-sandbox.sh",
-        "run-unity-server": "bash scripts/run-unity-server.sh"
+        "run-unity-server": "bash scripts/run-unity-server.sh",
+        "open-unity-sandbox": "bash scripts/open-unity-sandbox.sh"
     },
     "unstable": [
         "kv"

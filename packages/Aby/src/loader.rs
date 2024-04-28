@@ -16,12 +16,12 @@ impl ModuleLoader for ThetaModuleLoader {
         let module_specifier = module_specifier.to_owned();
         let module_type = ModuleType::JavaScript;
         let module_code = ModuleSourceCode::String(ModuleCodeString::from_static("console.log('Hello from the module!');"));
-        let code_cache = None; // TODO: This.
+        // let code_cache = None; // TODO: This.
         
         println!("Loading module {:}", module_specifier);
         
         ModuleLoadResponse::Async(Box::pin(async move {
-            Ok(ModuleSource::new(module_type, module_code, &module_specifier, code_cache))
+            Ok(ModuleSource::new(module_type, module_code, &module_specifier)) // , code_cache))
         }))
     }
 }

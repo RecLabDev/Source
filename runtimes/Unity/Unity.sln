@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperTiled2UnityEditor", "SuperTiled2UnityEditor.csproj", "{FBDA3211-B91C-BEFA-58E0-982B1411B84F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperTiled2Unity", "SuperTiled2Unity.csproj", "{12D63FDC-743C-5C4E-0BB0-822F93738AB2}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{6311E6C6-0A20-383B-320B-694068DE37A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{CD8C9303-404B-FB8D-6B9B-21988D5CAC0A}"
@@ -13,6 +17,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Release|Any CPU.ActiveCfg = Release|Any CPU

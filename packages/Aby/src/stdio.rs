@@ -33,9 +33,9 @@ impl JsRuntimeStdio {
     /// TODO: This shoiuld probably be a `try_clone_into()`
     pub fn try_clone_into(&self) -> Result<DenoStdio, std::io::Error> {
         Ok(DenoStdio {
-            stdin: DenoStdioPipe::file(self.stdin.try_clone()?),
-            stdout: DenoStdioPipe::file(self.stdout.try_clone()?),
-            stderr: DenoStdioPipe::file(self.stderr.try_clone()?),
+            stdin: DenoStdioPipe::File(self.stdin.try_clone()?),
+            stdout: DenoStdioPipe::File(self.stdout.try_clone()?),
+            stderr: DenoStdioPipe::File(self.stderr.try_clone()?),
         })
     }
 }
