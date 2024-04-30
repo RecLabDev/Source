@@ -11,7 +11,7 @@ use anyhow::Result;
 
 use cwrap::error::CStringError;
 
-use aby::logging::ffi::CJsRuntimeLogLevel;
+use aby::tracing::ffi::CJsRuntimeLogLevel;
 use aby::runtime::ffi::CAbyRuntimeConfig;
 use aby::runtime::ffi::CExecModuleOptions;
 use aby::runtime::AbyRuntimeError;

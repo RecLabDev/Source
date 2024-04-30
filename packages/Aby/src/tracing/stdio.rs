@@ -4,15 +4,15 @@ use deno_runtime::deno_io::Stdio as DenoStdio;
 use deno_runtime::deno_io::StdioPipe as DenoStdioPipe;
 
 // #[repr(C)]
-pub struct JsRuntimeStdio {
+pub struct AbyRuntimeTracer {
     stdin: File,
     stdout: File,
     stderr: File,
 }
 
-impl JsRuntimeStdio {
+impl AbyRuntimeTracer {
     pub fn try_new(stdout: Option<File>, stderr: Option<File>) -> Result<Self, std::io::Error> {
-        Ok(JsRuntimeStdio {
+        Ok(AbyRuntimeTracer {
             stdin: tempfile::tempfile()?,
             stdout: match stdout {
                 Some(file) => file,
@@ -26,7 +26,7 @@ impl JsRuntimeStdio {
     }
 }
 
-impl JsRuntimeStdio {
+impl AbyRuntimeTracer {
     /// Turn an instance of JsRuntimeStdio into a deno_runtime::io::Stdio,
     /// by cloning the inner file handles.
     ///
