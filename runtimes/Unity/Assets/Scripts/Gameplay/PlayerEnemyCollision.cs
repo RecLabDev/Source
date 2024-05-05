@@ -6,6 +6,7 @@ using Platformer.Model;
 using static Platformer.Core.Simulation;
 using Theta;
 using UnityEngine.UIElements;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 namespace Platformer.Gameplay
 {
@@ -60,12 +61,13 @@ namespace Platformer.Gameplay
             }
         }
     }
+    
 
 
-/// <summary>
-/// TODO
-/// </summary>
-public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
+    /// <summary>
+    /// TODO
+    /// </summary>
+    public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
     {
         /// <summary>
         /// TODO
@@ -86,6 +88,7 @@ public class PlayerEnemyCollision : Simulation.Event<PlayerEnemyCollision>
         /// TODO
         /// </summary>
         private PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+
 
         /// <summary>
         /// Player kills enemy if the player is facing the enemy and 
