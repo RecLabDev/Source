@@ -56,7 +56,7 @@ namespace Aby.Unity.Plugin
             }
             catch (Exception exception)
             {
-                Debug.LogErrorFormat("Failed to bootstrap `JsRuntime`: {0}", exception);
+                Debug.LogErrorFormat("Failed to bootstrap `AbyRuntime`: {0}", exception);
             }
         }
 
@@ -86,23 +86,23 @@ namespace Aby.Unity.Plugin
         }
 
         /// <summary>
-        /// TODO: This should be an FFI call into the JsRuntime itself.
+        /// TODO: This should be an FFI call into the AbyRuntime itself.
         /// </summary>
         public static void StopServiceThread()
         {
             try
             {
-                // TODO: Safely shutdown JsRuntime ..
-                var httpClient = new HttpClient();
-                httpClient.BaseAddress = new Uri("http://localhost:11000");
+                // TODO: Safely shutdown AbyRuntime ..
+                //var httpClient = new HttpClient();
+                //httpClient.BaseAddress = new Uri("http://localhost:11000");
 
-                var quitResponse = httpClient.GetStringAsync("/quit");
-                quitResponse.Wait(); // TODO: Ugh.
+                //var quitResponse = httpClient.GetStringAsync("/quit");
+                //quitResponse.Wait(); // TODO: Ugh.
 
-                if (quitResponse.Result == null)
-                {
-                    Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
-                }
+                //if (quitResponse.Result == null)
+                //{
+                //    Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
+                //}
             }
             catch (Exception exc)
             {
@@ -112,7 +112,7 @@ namespace Aby.Unity.Plugin
             {
                 if (ServiceThread.Join(TimeSpan.FromSeconds(10)) == false)
                 {
-                    Debug.LogError("Failed to join JsRuntime service thread.");
+                    Debug.LogError("Failed to join AbyRuntime service thread.");
                 }
                 else
                 {
@@ -246,7 +246,7 @@ namespace Aby.Unity.Plugin
         {
             if (IsRunning)
             {
-                Debug.LogFormat("Quitting JsRuntime service!");
+                Debug.LogFormat("Quitting AbyRuntime service!");
                 StopServiceThread();
             }
         }

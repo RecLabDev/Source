@@ -73,7 +73,7 @@ fn main() -> Result<ExitCode> {
                 main_module_specifier: main_module_path.as_ptr(),
                 log_dir: log_dir.as_ptr(),
                 log_level: CJsRuntimeLogLevel::Trace,
-                log_callback_fn: log_callback,
+                log_callback_fn: example_log_callback,
                 inspector_wait: false,
                 inspector_addr: inspector_addr.as_ptr(),
             }
@@ -107,7 +107,7 @@ fn wrapped_log_callback(message: &str) {
     tracing::trace!("[Capt'd] {:}", message);
 }
 // .. into something like this:
-extern "C" fn log_callback(level: CJsRuntimeLogLevel, message: *const std::os::raw::c_char) {
+extern "C" fn example_log_callback(level: CJsRuntimeLogLevel, message: *const std::os::raw::c_char) {
     unsafe {
         if !message.is_null() {
             let c_str =  CStr::from_ptr(message);

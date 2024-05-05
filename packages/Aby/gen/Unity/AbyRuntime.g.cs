@@ -28,7 +28,7 @@ namespace Aby.Unity.Plugin
 
         /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ````</summary>
         [DllImport(__DllName, EntryPoint = "aby__c_construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_config);
+        public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_runtime_config);
 
         [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_send_broadcast(CAbyRuntime* c_self, uint message);
@@ -94,6 +94,7 @@ namespace Aby.Unity.Plugin
         FailedCreateAsyncRuntime,
         FailedFetchingWorkDirErr,
         DataDirInvalidErr,
+        InvalidConfigErr,
         LogDirInvalidErr,
         MainModuleInvalidErr,
         StdioErr,
@@ -103,7 +104,7 @@ namespace Aby.Unity.Plugin
     {
         Ok,
         RuntimeNul,
-        JsRuntimeErr,
+        RuntimePanic,
         FailedCreateAsyncRuntime,
         FailedFetchingWorkDirErr,
         DataDirInvalidErr,

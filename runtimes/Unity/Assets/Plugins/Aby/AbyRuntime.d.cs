@@ -10,6 +10,7 @@ using static UnityEngine.CullingGroup;
 using UnityEditor;
 using Aby.Unity.Plugin;
 using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
+using Aby.SDK;
 
 namespace Aby.Unity.Plugin
 {
@@ -84,8 +85,9 @@ namespace Aby.Unity.Plugin
                 fixed (byte* dataDir = Encoding.UTF8.GetBytes("./Data/Store\0"))
                 fixed (byte* inspectorAddr = Encoding.UTF8.GetBytes("127.0.0.1:9222\0"))
                 fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
+                fixed (byte* execSpecifier = Encoding.UTF8.GetBytes($"{moduleSpecifier}\0"))
                 {
-                    var jsRuntimeConfig = new JsRuntimeConfig(new CAbyRuntimeConfig
+                    var runtimeConfig = new AbyRuntimeConfig(new CAbyRuntimeConfig
                     {
                         db_dir = dataDir,
                         log_dir = logDir,
@@ -95,33 +97,32 @@ namespace Aby.Unity.Plugin
 
                     Debug.LogFormat(
                         "Executing Module with bootstrap config: Db: {0}; Log: {1}; Module: {2}",
-                        GetStringFromBytePtr(jsRuntimeConfig.c_Instance.db_dir),
-                        GetStringFromBytePtr(jsRuntimeConfig.c_Instance.log_dir),
+                        GetStringFromBytePtr(runtimeConfig.c_instance.db_dir),
+                        GetStringFromBytePtr(runtimeConfig.c_instance.log_dir),
                         GetStringFromBytePtr(mainSpecifier)
                     );
 
-                    var jsRuntime = new AbyRuntime_v2(jsRuntimeConfig);
-
-                    var startOptions = new CExecModuleOptions
+                    var runtime = new AbyRuntimeModule(runtimeConfig);
+                    var execOptions = new CExecModuleOptions
                     {
-                        module_specifier = mainSpecifier,
+                        module_specifier = execSpecifier,
                     };
 
                     // TODO: Use u16 for the port.
-                    var startResult = jsRuntime.Start(startOptions);
+                    var startResult = runtime.ExecModule(execOptions);
                     if (startResult != CExecModuleResult.Ok)
                     {
-                        throw new Exception($"JsRuntime exited with error: {startResult}");
+                        throw new Exception($"AbyRuntime exited with error: {startResult}");
                     }
                     else
                     {
-                        Debug.LogFormat("JsRuntime exited safely with code OK ({0}) ..", startResult);
+                        Debug.LogFormat("AbyRuntime exited safely with code OK ({0}) ..", startResult);
                     }
                 }
             }
             catch (Exception exc)
             {
-                Debug.LogErrorFormat("Failed to start JsRuntime: {0}", exc);
+                Debug.LogErrorFormat("Failed to start AbyRuntime: {0}", exc);
             }
         }
 
@@ -157,49 +158,67 @@ namespace Aby.Unity.Plugin
     /// <summary>
     /// TODO
     /// </summary>
-    public unsafe class AbyRuntime_v2 : IDisposable
+    public unsafe class AbyRuntimeModule : IDisposable
     {
         /// <summary>
         /// TODO
         /// </summary>
-        private CAbyRuntime* c_Instance;
+        public AbyRuntimeConfig Config { get; private set; }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public JsRuntimeConfig Config { get; private set; }
+        private CAbyRuntime* c_instance;
 
         /// <summary>
         /// TODO
         /// </summary>
-        public AbyRuntime_v2(JsRuntimeConfig config)
+        public AbyRuntimeModule(AbyRuntimeConfig config)
         {
-            var result = NativeMethods.c_construct_runtime(config.c_Instance);
+            Config = config;
+            MountRuntime();
+
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public AbyRuntimeModule(CAbyRuntimeConfig config)
+        {
+            Debug.Log("---------------------------");
+            Config = new AbyRuntimeConfig(config);
+            MountRuntime();
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void MountRuntime()
+        {
+            var result = NativeMethods.c_construct_runtime(Config.c_instance);
             if (result.code != CConstructRuntimeResultCode.Ok)
             {
                 Debug.LogErrorFormat("Failed to mount AbyRuntime: {0}", result.code);
             }
             else
             {
-                c_Instance = result.runtime;
-                Config = config;
+                c_instance = result.runtime;
             }
         }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public AbyRuntime_v2(CAbyRuntimeConfig config)
+        public CExecModuleResult ExecModule(CExecModuleOptions options)
         {
-            Config = new JsRuntimeConfig(config);
-        }
+            if (c_instance == null)
+            {
+                Debug.LogErrorFormat("Failed to exec module; no runtime available!");
+                return CExecModuleResult.RuntimeNul;
+            }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public CExecModuleResult Start(CExecModuleOptions options)
-        {
-            return NativeMethods.c_exec_module(c_Instance, options);
+            return CExecModuleResult.Ok;
+            // return NativeMethods.c_exec_module(c_instance, options);
         }
 
         /// <summary>
@@ -207,32 +226,32 @@ namespace Aby.Unity.Plugin
         /// </summary>
         public void Dispose()
         {
-            NativeMethods.c_free_runtime(c_Instance);
+            NativeMethods.c_free_runtime(c_instance);
         }
     }
 
     /// <summary>
     /// TODO
     /// </summary>
-    public unsafe class JsRuntimeConfig
+    public unsafe class AbyRuntimeConfig
     {
-        public string InspectorAddress => c_Instance.InspectorAddress;
+        public string InspectorAddress => c_instance.InspectorAddress;
 
-        internal CAbyRuntimeConfig c_Instance;
+        internal CAbyRuntimeConfig c_instance;
 
-        public JsRuntimeConfig()
+        public AbyRuntimeConfig()
         {
-            c_Instance = new CAbyRuntimeConfig { };
+            c_instance = new CAbyRuntimeConfig { };
         }
 
-        public JsRuntimeConfig(CAbyRuntimeConfig c_config)
+        public AbyRuntimeConfig(CAbyRuntimeConfig c_config)
         {
-            c_Instance = c_config;
+            c_instance = c_config;
         }
 
         public CAbyRuntimeConfig Inspect()
         {
-            return c_Instance;
+            return c_instance;
         }
     }
 

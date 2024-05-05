@@ -7,14 +7,8 @@ fn main() -> Result<ExitCode> {
     // Generate Unity-frinedly Bindings
     #[cfg(feature = "unity")]
     csbindgen::Builder::default()
-        .input_extern_file("./src/lib.rs")
-        .input_extern_file("./src/config.rs")
-        .input_extern_file("./src/stdio.rs")
-        .input_extern_file("./src/loader.rs")
-        .input_extern_file("./src/logging.rs")
-        .input_extern_file("./src/tracing.rs")
-        .input_extern_file("./src/event.rs")
-        .input_extern_file("./src/runtime.rs")
+        .input_extern_file("./src/tracing/ffi.rs")
+        .input_extern_file("./src/runtime/ffi.rs")
         .csharp_dll_name("AbyRuntime")
         .csharp_dll_name_if("UNITY_IOS && !UNITY_EDITOR", "__Internal")
         .csharp_file_header("#if !UNITY_WEBGL")

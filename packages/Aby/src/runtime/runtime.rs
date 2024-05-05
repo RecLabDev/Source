@@ -4,8 +4,6 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::sync::PoisonError;
 use std::path::PathBuf;
-#[cfg(not(feature = "stdio"))]
-use std::fs::OpenOptions;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
@@ -113,7 +111,7 @@ impl AbyRuntime {
     }
     
     /// TODO
-    fn get_data_dir(&self) -> Result<PathBuf, AbyRuntimeError> {
+    pub fn get_data_dir(&self) -> Result<PathBuf, AbyRuntimeError> {
         match &self.config.db_dir {
             Some(data_dir) => Ok(PathBuf::from(data_dir)),
             None => Err(AbyRuntimeError::Unknown("TODO: failed to get data dir"))
@@ -122,7 +120,7 @@ impl AbyRuntime {
     
     /// TODO
     #[cfg(not(feature = "stdio"))]
-    fn get_log_dir(&self) -> Result<PathBuf, AbyRuntimeError> {
+    pub fn get_log_dir(&self) -> Result<PathBuf, AbyRuntimeError> {
         match &self.config.log_dir {
             Some(log_dir) => Ok(PathBuf::from(log_dir)),
             None => Err(AbyRuntimeError::Unknown("TODO: failed to get log dir"))
@@ -149,12 +147,12 @@ impl AbyRuntime {
     }
     
     /// TODO: Move this to the config.
-    pub fn inspector_addr(&self) -> String {
+    fn inspector_addr(&self) -> String {
         self.config.inspector_addr.to_owned().unwrap_or_else(|| String::from("localhost:9222"))
     }
     
     /// TODO
-    pub fn default_main_module_specifier(&self) -> Url {
+    fn default_main_module_specifier(&self) -> Url {
         Url::from_file_path(Self::DEFAULT_MAIN_MODULE_SPECIFIER).expect("main module specifier")
     }
     
@@ -169,10 +167,17 @@ impl AbyRuntime {
         })
     }
     
+    /// TODO
+    fn get_broadcast_channel(&self) -> Result<InMemoryBroadcastChannel, AbyRuntimeError> {
+        self.broadcast.as_ref()
+            .map(|broadcast| broadcast.clone())
+            .ok_or(AbyRuntimeError::Uninitialized)
+    }
+    
     /// Cont. >> Otherwise, we'll just pipe to log files for now.
     /// TODO: Evaluate safer, more managed stdio aggregate methods.
     #[cfg(not(feature = "stdio"))]
-    fn create_stdio<P: AsRef<Path>>(&self, log_dir: P) -> Result<Stdio, std::io::Error> {
+    fn create_stdio<P: AsRef<std::path::Path>>(&self, log_dir: P) -> Result<Stdio, std::io::Error> {
         let outpath = log_dir.as_ref().join("./AbyRuntime.out.log");
         let errpath = log_dir.as_ref().join("./AbyRuntime.err.log");
         
@@ -184,7 +189,7 @@ impl AbyRuntime {
     }
     
     /// TODO: Move this to regular AbyRuntime.
-    fn get_bootsrap_options(&self) -> BootstrapOptions {
+    fn create_bootsrap_options(&self) -> BootstrapOptions {
         let unstable_features = self.config.unstable_deno_features.to_owned();
         
         BootstrapOptions {
@@ -194,7 +199,7 @@ impl AbyRuntime {
     }
     
     /// TODO: Move this to regular `AbyRuntime``.
-    fn get_feature_checker(&self) -> Arc<FeatureChecker> {
+    fn create_feature_checker(&self) -> Arc<FeatureChecker> {
         let mut feature_checker = FeatureChecker::default();
 
         for feature in UNSTABLE_GRANULAR_FLAGS.iter() {
@@ -208,7 +213,7 @@ impl AbyRuntime {
     }
     
     /// TODO
-    pub fn create_inspector_server(&self) -> Result<InspectorServer, AbyRuntimeError> {
+    fn create_inspector_server(&self) -> Result<InspectorServer, AbyRuntimeError> {
         let inspector_name: &str = "Aby Runtime 001";
         let inspector_addr: String = self.inspector_addr();
         
@@ -232,22 +237,7 @@ impl AbyRuntime {
     }
     
     /// TODO
-    fn create_broadcast_channel(&self) -> Result<InMemoryBroadcastChannel, AbyRuntimeError> {
-        Ok(InMemoryBroadcastChannel::default())
-    }
-    
-    /// TODO
-    #[allow(unused_variables)] // TODO: Remove this.
-    fn resolve_module_specifier(&self, module_specifier: &str) -> Result<Url, AbyRuntimeError> {
-        resolve_url_or_path(module_specifier, &self.get_root_dir()?)
-            .map_err(|error| {
-                // TODO: Expose the actual error!
-                AbyRuntimeError::Unknown("TODO: failed to resolve module at specifier")
-            })
-    }
-    
-    /// TODO
-    pub fn create_worker(&self) -> Result<MainWorker, AbyRuntimeError> {
+    fn create_worker(&self) -> Result<MainWorker, AbyRuntimeError> {
         // TODO: Get these from config input ..
         let main_module_specifier = self.get_main_module_url()?;
         
@@ -257,14 +247,14 @@ impl AbyRuntime {
         #[cfg(not(feature = "stdio"))]
         let stdio = self.create_stdio(self.get_log_dir()?)?;
         
-        let bootstrap = self.get_bootsrap_options();
+        let bootstrap = self.create_bootsrap_options();
         
         let permissions_container = PermissionsContainer::allow_all();
-        let feature_checker = self.get_feature_checker();
+        let feature_checker = self.create_feature_checker();
         
         let origin_storage_dir = self.get_data_dir()?;
         let maybe_inspector_server = self.create_inspector_server()?;
-        let broadcast_channel = self.create_broadcast_channel()?;
+        let broadcast_channel = self.get_broadcast_channel()?;
         
         // let aby_init_script = ModuleCodeString::Static(r#"
         //     import * as prelude from "ext:aby_sdk/src/00_prelude.js";
@@ -335,29 +325,37 @@ impl AbyRuntime {
     }
     
     /// TODO
-    pub fn send_broadcast(&self) -> Result<bool, AbyRuntimeError> {
+    #[allow(unused_variables)] // TODO: Remove this.
+    fn resolve_module_specifier(&self, module_specifier: &str) -> Result<Url, AbyRuntimeError> {
+        resolve_url_or_path(module_specifier, &self.get_root_dir()?)
+            .map_err(|error| {
+                // TODO: Expose the actual error!
+                AbyRuntimeError::Unknown("TODO: failed to resolve module at specifier")
+            })
+    }
+    
+    /// TODO
+    pub async fn send_broadcast(&self) -> Result<bool, AbyRuntimeError> {
         let broadcast = self.broadcast.as_ref().ok_or(AbyRuntimeError::Uninitialized)?;
+        let resource = broadcast.subscribe()?;
         
-        let Ok(resource) = broadcast.subscribe() else {
-            return Err(AbyRuntimeError::Unknown("TODO: failed to subscribe to broadcast channel"))
-        };
-        
-        let name = format!("Some broadcast channel ..");
+        let name = format!("ABY_BIFROST");
         let data = vec![]; // TODO
         
-        let _error = broadcast.send(&resource, name, data);
+        if let Err(error) = broadcast.send(&resource, name, data).await {
+            return Err(AbyRuntimeError::Unknown("TODO: failed to send broadcast message"))
+        }
         
         Ok(true)
     }
     
     /// TODO
-    pub fn collect_error(error: impl Error + Display) {
-        // TODO: If we get to this point it means we're trying to use our
-        //  fallback and even that isn't working. We don't typically want to
-        //  kill the whole runtime at this point since something else up
-        //  the stream might want to try to recover. In this case, we should
-        //  set a "mount failed" switch/alert somewhere.
-        tracing::error!("{:}", error)
+    pub fn send_broadcast_sync(&self) -> Result<bool, AbyRuntimeError> {
+        self.async_runtime.as_ref()
+            .ok_or(AbyRuntimeError::Uninitialized)?
+            .block_on(async {
+                self.send_broadcast().await
+            })
     }
     
     /// TODO
@@ -376,6 +374,16 @@ impl AbyRuntime {
             worker.run_event_loop(false).await?;
             Ok(true)
         })
+    }
+    
+    /// TODO
+    pub fn collect_error(error: impl Error + Display) {
+        // TODO: If we get to this point it means we're trying to use our
+        //  fallback and even that isn't working. We don't typically want to
+        //  kill the whole runtime at this point since something else up
+        //  the stream might want to try to recover. In this case, we should
+        //  set a "mount failed" switch/alert somewhere.
+        tracing::error!("{:}", error)
     }
 }
 

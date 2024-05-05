@@ -177,16 +177,16 @@ impl TryFrom<crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
     type Error = AbyRuntimeError;
     
     /// TODO
-    fn try_from(c_config: crate::runtime::ffi::CAbyRuntimeConfig) -> Result<Self, Self::Error> {
+    fn try_from(c_runtime_config: crate::runtime::ffi::CAbyRuntimeConfig) -> Result<Self, Self::Error> {
         use cwrap::string::try_unwrap_cstr;
         
         let config = AbyRuntimeConfig::new()
-            .with_main_module_specifier(try_unwrap_cstr(c_config.main_module_specifier)?)
-            .with_root_dir(try_unwrap_cstr(c_config.root_dir)?)
-            .with_db_dir(try_unwrap_cstr(c_config.db_dir)?)
-            .with_log_dir(try_unwrap_cstr(c_config.log_dir)?)
-            .with_inspector_addr(try_unwrap_cstr(c_config.inspector_addr)?)
-            .with_inspector_wait(c_config.inspector_wait)
+            .with_main_module_specifier(try_unwrap_cstr(c_runtime_config.main_module_specifier)?)
+            .with_root_dir(try_unwrap_cstr(c_runtime_config.root_dir)?)
+            .with_db_dir(try_unwrap_cstr(c_runtime_config.db_dir)?)
+            .with_log_dir(try_unwrap_cstr(c_runtime_config.log_dir)?)
+            .with_inspector_addr(try_unwrap_cstr(c_runtime_config.inspector_addr)?)
+            .with_inspector_wait(c_runtime_config.inspector_wait)
             .with_unstable_deno_features({
                 // TODO: Get this from `CAbyRuntimeConfig` ..
                 UNSTABLE_GRANULAR_FLAGS.iter()
@@ -230,6 +230,12 @@ impl CConstructRuntimeResult {
     }
 }
 
+impl From<AbyRuntimeError> for CConstructRuntimeResult {
+    fn from(error: AbyRuntimeError) -> Self {
+        CConstructRuntimeResult::new(CConstructRuntimeResultCode::from(error), None)
+    }
+}
+
 /// TODO
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -245,6 +251,9 @@ pub enum CConstructRuntimeResultCode {
     
     /// TODO
     DataDirInvalidErr,
+    
+    /// TODO
+    InvalidConfigErr,
     
     /// TODO
     LogDirInvalidErr,
@@ -266,6 +275,23 @@ impl From<CConstructRuntimeResultCode> for CConstructRuntimeResult {
     }
 }
 
+impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
+    fn from(error: AbyRuntimeError) -> Self {
+        match error {
+            AbyRuntimeError::Uninitialized => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::NulError(_) => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::FailedResolution(_) => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::InvalidMainModule(_) => CConstructRuntimeResultCode::MainModuleInvalidErr,
+            AbyRuntimeError::InvalidModuleSpecifier(_) => CConstructRuntimeResultCode::MainModuleInvalidErr,
+            AbyRuntimeError::InvalidState(_) => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::LoggingSetupFailed(_) => CConstructRuntimeResultCode::LogDirInvalidErr,
+            AbyRuntimeError::ResourceError(_, _) => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::AnyError(_) => CConstructRuntimeResultCode::InvalidConfigErr,
+            AbyRuntimeError::Unknown(_) => CConstructRuntimeResultCode::InvalidConfigErr,
+        }
+    }
+}
+
 /// Construct an instance of AbyRuntime from a c-like boundary.
 /// 
 /// ### Example:
@@ -281,29 +307,31 @@ impl From<CConstructRuntimeResultCode> for CConstructRuntimeResult {
 /// });
 /// ````
 #[export_name = "aby__c_construct_runtime"]
-pub extern "C" fn c_construct_runtime(c_config: CAbyRuntimeConfig) -> CConstructRuntimeResult {
+pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CConstructRuntimeResult {
     // Get a new copy of the target config for the new runtime instance.
-    let Ok(config) = AbyRuntimeConfig::try_from(c_config.to_owned()) else {
-        return CConstructRuntimeResult::from(CConstructRuntimeResultCode::DataDirInvalidErr)
-    };
-    
-    // TODO: Move to `self.create_async_runtime(..)` ..
-    let async_runtime = match {
-        TokioRuntimeBuilder::new_current_thread()
-            .enable_all()
-            .build()
-    } {
-        Ok(async_runtime) => async_runtime,
+    let runtime_config = match AbyRuntimeConfig::try_from(c_runtime_config.to_owned()) {
+        Ok(runtime_config) => runtime_config,
         Err(error) => {
-            tracing::error!("Failed to construct async runtime: {:}", error);
-            return CConstructRuntimeResult {
-                code: CConstructRuntimeResultCode::LogDirInvalidErr,
-                runtime: core::ptr::null_mut(),
-            }
+            // TODO: Send trace messages back to Rust via log fn.
+            // let c_message = CString::new(format!("Error: {:}", error)).expect("TODO");
+            // (c_runtime_config.log_callback_fn)(CJsRuntimeLogLevel::Error, c_message.as_ptr());
+            tracing::error!("Failed to get `AbyRuntimeConfig`: {:}", error);
+            return CConstructRuntimeResult::from(error);
         }
     };
     
-    let aby_runtime = AbyRuntime::new(config)
+    // TODO: Create the async runtime in`aby_runtime.build()`.
+    let async_runtime = match TokioRuntimeBuilder::new_current_thread().enable_all().build() {
+        Ok(async_runtime) => async_runtime,
+        Err(error) => {
+            // TODO: ..
+            // return CConstructRuntimeResult::from(AbyRuntimeError::AsyncRuntimeFailed(error));
+            tracing::error!("Failed to construct async runtime: {:}", error);
+            return CConstructRuntimeResult::from(CConstructRuntimeResultCode::LogDirInvalidErr);
+        }
+    };
+    
+    let aby_runtime = AbyRuntime::new(runtime_config)
         .with_broadcast_channel(InMemoryBroadcastChannel::default())
         .with_async_runtime(async_runtime)
         .build();
@@ -324,14 +352,14 @@ pub extern "C" fn c_construct_runtime(c_config: CAbyRuntimeConfig) -> CConstruct
     //     }
     // };
     
-    let c_aby_runtime = CAbyRuntime::new(c_config, Box::new(aby_runtime));
+    let c_aby_runtime = CAbyRuntime::new(c_runtime_config, Box::new(aby_runtime));
     CConstructRuntimeResult::new(CConstructRuntimeResultCode::Ok, Some(c_aby_runtime))
 }
 
 impl CAbyRuntime {
-    unsafe fn unwrap_mut_ptr<'out>(ptr: *mut CAbyRuntime) -> &'out mut CAbyRuntime {
+    unsafe fn try_from_mut_ptr<'out>(ptr: *mut CAbyRuntime) -> Option<&'out mut CAbyRuntime> {
         // TODO: Ensure Pointer is safe to use.
-        &mut *ptr
+        Some(&mut *ptr)
     }
     
     pub fn send_host_log<M: Into<String>>(&self, message: M) {
@@ -354,10 +382,16 @@ impl CAbyRuntime {
 #[allow(unused, unreachable_code)]
 #[export_name = "aby__c_send_broadcast"]
 pub unsafe extern "C" fn c_send_broadcast(c_self: *mut CAbyRuntime, message: core::ffi::c_uint) {
-    let c_self = CAbyRuntime::unwrap_mut_ptr(c_self);
+    let Some(c_self) = CAbyRuntime::try_from_mut_ptr(c_self) else {
+        return; // TODO: Return an error to caller.
+    };
     
-    if let Err(error) = c_self.send_broadcast() {
-        tracing::warn!("Failed to send broadcast message: {:}", error);
+    let Some(aby_runtime) = c_self.as_ref() else {
+        return; // TODO: Return an error to caller.
+    };
+    
+    if let Err(error) = aby_runtime.send_broadcast_sync() {
+        tracing::error!("Failed to send broadcast message: {:}", error);
     }
 }
 
@@ -379,7 +413,7 @@ pub enum CExecModuleResult {
     RuntimeNul,
     
     /// TODO
-    JsRuntimeErr,
+    RuntimePanic,
     
     /// TODO
     FailedCreateAsyncRuntime,
@@ -412,21 +446,48 @@ use deno_runtime::deno_core::url::Url as ModuleUrl;
 #[allow(unused_variables)]
 #[export_name = "aby__c_exec_module"]
 pub unsafe extern "C" fn c_exec_module(c_self: *mut CAbyRuntime, options: CExecModuleOptions) -> CExecModuleResult {
-    let c_self = &mut *c_self;
+    // match c_self.exec_sync(exec_module_specifier) {
+    //     Ok(result) => {
+    //         // TODO: Report the exec result to the host.
+    //         tracing::debug!("Executed module '{:}' with result ({:}) ..", exec_module_specifier, result);
+    //         CExecModuleResult::Ok
+    //     }
+    //     Err(error) => {
+    //         tracing::error!("Failed to execute module '{:}': {:}", exec_module_specifier, error);
+    //         CExecModuleResult::FailedModuleExecErr
+    //     }
+    // }
     
-    let Ok(exec_module_specifier) = cwrap::string::try_unwrap_cstr(options.module_specifier) else {
-        return CExecModuleResult::MainModuleInvalidErr;
-    };
     
-    match c_self.exec_sync(exec_module_specifier) {
-        Ok(result) => {
-            // TODO: Report the exec result to the host.
-            tracing::debug!("Executed module '{:}' with result ({:}) ..", exec_module_specifier, result);
-            CExecModuleResult::Ok
+    // TODO: Maybe we should be using a panic hook instead?
+    // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
+    match std::panic::catch_unwind(|| -> Result<bool, AbyRuntimeError> {
+        let c_self = &mut *c_self;
+        
+        let exec_module_specifier = cwrap::string::try_unwrap_cstr(options.module_specifier)?;
+        let exec_result = c_self.exec_sync(exec_module_specifier)?;
+        
+        Ok(exec_result)
+    }) {
+        Ok(exit_result) => match exit_result {
+            Ok(exit_status) => {
+                tracing::debug!("Exited with status {:}", exit_status);
+                CExecModuleResult::Ok // <3
+            }
+            Err(error) => match error {
+                // AbyRuntimeError::DenoAnyError(deno_error) => {
+                //     tracing::error!("Runtime exited with JavaScript error: {:}", deno_error);
+                //     CExecModuleResult::JsRuntimeErr // </3
+                // }
+                _ => {
+                    tracing::error!("Failed to execute module: {:}", error);
+                    CExecModuleResult::FailedModuleExecErr
+                }
+            }
         }
-        Err(error) => {
-            tracing::error!("Failed to execute module '{:}': {:}", exec_module_specifier, error);
-            CExecModuleResult::FailedModuleExecErr
+        Err(payload) => {
+            crate::tracing::ffi::handle_panic(payload);
+            CExecModuleResult::RuntimePanic // </3
         }
     }
 }
@@ -499,4 +560,10 @@ impl TryFrom<u32> for CAbyRuntimeStatus {
             _ => Err(AbyRuntimeError::InvalidState(value)),
         }
     }
+}
+
+/// TODO
+#[repr(C)]
+pub enum CJsRuntimeEventKind {
+    Hup = 0,
 }
