@@ -87,37 +87,38 @@ namespace Aby.Unity.Plugin
                 fixed (byte* mainSpecifier = Encoding.UTF8.GetBytes($"{MainModuleSpecifier}\0"))
                 fixed (byte* execSpecifier = Encoding.UTF8.GetBytes($"{moduleSpecifier}\0"))
                 {
-                    var runtimeConfig = new AbyRuntimeConfig(new CAbyRuntimeConfig
+                    var runtimeConfig = new CAbyRuntimeConfig
                     {
                         db_dir = dataDir,
                         log_dir = logDir,
                         log_callback_fn = Marshal.GetFunctionPointerForDelegate(m_LogCallback).ToPointer(),
                         inspector_addr = inspectorAddr, // TODO: Get this from args.
-                    });
+                    };
 
                     Debug.LogFormat(
                         "Executing Module with bootstrap config: Db: {0}; Log: {1}; Module: {2}",
-                        GetStringFromBytePtr(runtimeConfig.c_instance.db_dir),
-                        GetStringFromBytePtr(runtimeConfig.c_instance.log_dir),
+                        GetStringFromBytePtr(runtimeConfig.db_dir),
+                        GetStringFromBytePtr(runtimeConfig.log_dir),
                         GetStringFromBytePtr(mainSpecifier)
                     );
 
-                    var runtime = new AbyRuntimeModule(runtimeConfig);
-                    var execOptions = new CExecModuleOptions
-                    {
-                        module_specifier = execSpecifier,
-                    };
+                    Debug.Log("TODO: Implement the exec call!");
+                    //var runtime = new AbyRuntimeModule(runtimeConfig);
+                    //var execOptions = new CExecModuleOptions
+                    //{
+                    //    module_specifier = execSpecifier,
+                    //};
 
-                    // TODO: Use u16 for the port.
-                    var startResult = runtime.ExecModule(execOptions);
-                    if (startResult != CExecModuleResult.Ok)
-                    {
-                        throw new Exception($"AbyRuntime exited with error: {startResult}");
-                    }
-                    else
-                    {
-                        Debug.LogFormat("AbyRuntime exited safely with code OK ({0}) ..", startResult);
-                    }
+                    //// TODO: Use u16 for the port.
+                    //var startResult = runtime.ExecModule(execOptions);
+                    //if (startResult != CExecModuleResult.Ok)
+                    //{
+                    //    throw new Exception($"AbyRuntime exited with error: {startResult}");
+                    //}
+                    //else
+                    //{
+                    //    Debug.LogFormat("AbyRuntime exited safely with code OK ({0}) ..", startResult);
+                    //}
                 }
             }
             catch (Exception exc)
@@ -152,106 +153,6 @@ namespace Aby.Unity.Plugin
         private static void OnAbyLogMessage(string message)
         {
             Debug.LogFormat("[Aby]: {0}", message);
-        }
-    }
-
-    /// <summary>
-    /// TODO
-    /// </summary>
-    public unsafe class AbyRuntimeModule : IDisposable
-    {
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public AbyRuntimeConfig Config { get; private set; }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private CAbyRuntime* c_instance;
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public AbyRuntimeModule(AbyRuntimeConfig config)
-        {
-            Config = config;
-            MountRuntime();
-
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public AbyRuntimeModule(CAbyRuntimeConfig config)
-        {
-            Debug.Log("---------------------------");
-            Config = new AbyRuntimeConfig(config);
-            MountRuntime();
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void MountRuntime()
-        {
-            var result = NativeMethods.c_construct_runtime(Config.c_instance);
-            if (result.code != CConstructRuntimeResultCode.Ok)
-            {
-                Debug.LogErrorFormat("Failed to mount AbyRuntime: {0}", result.code);
-            }
-            else
-            {
-                c_instance = result.runtime;
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public CExecModuleResult ExecModule(CExecModuleOptions options)
-        {
-            if (c_instance == null)
-            {
-                Debug.LogErrorFormat("Failed to exec module; no runtime available!");
-                return CExecModuleResult.RuntimeNul;
-            }
-
-            return CExecModuleResult.Ok;
-            // return NativeMethods.c_exec_module(c_instance, options);
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public void Dispose()
-        {
-            NativeMethods.c_free_runtime(c_instance);
-        }
-    }
-
-    /// <summary>
-    /// TODO
-    /// </summary>
-    public unsafe class AbyRuntimeConfig
-    {
-        public string InspectorAddress => c_instance.InspectorAddress;
-
-        internal CAbyRuntimeConfig c_instance;
-
-        public AbyRuntimeConfig()
-        {
-            c_instance = new CAbyRuntimeConfig { };
-        }
-
-        public AbyRuntimeConfig(CAbyRuntimeConfig c_config)
-        {
-            c_instance = c_config;
-        }
-
-        public CAbyRuntimeConfig Inspect()
-        {
-            return c_instance;
         }
     }
 

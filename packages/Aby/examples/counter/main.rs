@@ -61,6 +61,7 @@ fn main() -> Result<ExitCode> {
         let db_dir = CString::new("./examples/counter/db")?;
         let log_dir = CString::new("./examples/counter/logs")?;
         let thread_prefix = CString::new("ABY_RUNTIME_COUNTER_EXAMPLE")?;
+        let inspector_name = CString::new("Aby Runtime Inspector (Counter)")?;
         let inspector_addr = CString::new("127.0.0.1:9222")?;
         
         // Step 3:
@@ -69,13 +70,14 @@ fn main() -> Result<ExitCode> {
         let result = aby::runtime::ffi::c_construct_runtime({
             CAbyRuntimeConfig {
                 root_dir: root_dir.as_ptr(),
-                db_dir: db_dir.as_ptr(),
                 main_module_specifier: main_module_path.as_ptr(),
+                db_dir: db_dir.as_ptr(),
                 log_dir: log_dir.as_ptr(),
                 log_level: CJsRuntimeLogLevel::Trace,
                 log_callback_fn: example_log_callback,
-                inspector_wait: false,
+                inspector_name: inspector_name.as_ptr(),
                 inspector_addr: inspector_addr.as_ptr(),
+                inspector_wait: false,
             }
         });
         
@@ -90,9 +92,7 @@ fn main() -> Result<ExitCode> {
             module_specifier: main_module_path.as_ptr(),
         });
         
-        tracing::debug!("JsRuntime exited with status {:?}", status);
-    
-        println!("TEST");
+        tracing::debug!("AbyRuntime exited with status {:?}", status);
         
         // Yay! <3
         Ok(ExitCode::SUCCESS)
