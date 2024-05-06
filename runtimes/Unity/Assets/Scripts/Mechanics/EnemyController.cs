@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using Platformer.Gameplay;
+using Unity.VisualScripting;
 using UnityEngine;
 using static Platformer.Core.Simulation;
 using static UnityEditor.Experimental.GraphView.GraphView;
@@ -28,6 +29,9 @@ namespace Platformer.Mechanics
         protected bool isDead = false; //changed from private to protected for flying enemies
         public bool IsDead => isDead;
 
+        public bool isFlying = false;
+        public bool IsFlying => isFlying;
+
         public Bounds Bounds => _collider.bounds;
 
         /// <summary>
@@ -40,6 +44,21 @@ namespace Platformer.Mechanics
         /// </summary>
         public bool IsAttacking => !isDead;
 
+        //for chase stuff
+        private GameObject player;
+
+        public float speed;
+
+        public bool chase = false;
+        public Transform startingPoint;
+
+        // Add a detection radius field.
+        public float detectionRadius = 5.0f;
+
+        // Flag to check if the enemy is currently chasing.
+        private bool isChasing = false;
+
+
         void Awake()
         {
             control = GetComponent<AnimationController>();
@@ -47,6 +66,7 @@ namespace Platformer.Mechanics
             _audio = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
+            player = GameObject.FindGameObjectWithTag("Player");
         }
 
         /// <summary>
@@ -55,6 +75,51 @@ namespace Platformer.Mechanics
         public void Hurt()
         {
             // TODO
+        }
+
+        public void Chase()
+        {
+            // Make sure the move.x is set so that the walking animation can be triggered.
+            control.move.x = (player.transform.position.x > transform.position.x) ? 1 : -1;
+
+            // Calculate the target position with the player's x position but maintain the enemy's current y position.
+            Vector3 targetPosition = new Vector3(player.transform.position.x, transform.position.y, transform.position.z);
+
+            // Move towards the target position at the defined speed, only on the x-axis.
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+
+            // Update the velocityX parameter of the animator to trigger the walking animation.
+            animator.SetFloat("velocityX", Mathf.Abs(control.move.x));
+
+            /*var isEnemyFacingPlayer = Vector3.Dot(enemy.Direction, relativeDirection) > 0;
+            var isEnemyCloseToPlayer = 
+            if (isEnemyFacingPlayer)
+            {
+                //trigger attack animation
+                
+            }*/
+        }
+
+        public void Flip()
+        {
+            // Determine the direction by comparing the enemy's position with the player's position.
+            bool shouldFaceRight = player.transform.position.x > transform.position.x;
+
+            // If the direction to face is right and the sprite is not already facing right, flip it.
+            if (shouldFaceRight && spriteRenderer.flipX)
+            {
+                spriteRenderer.flipX = false;
+            }
+            // If the direction to face is left and the sprite is not already facing left, flip it.
+            else if (!shouldFaceRight && !spriteRenderer.flipX)
+            {
+                spriteRenderer.flipX = true;
+            }
+        }
+
+        public void ReturnStartPosition()
+        {
+            transform.position = Vector2.MoveTowards(transform.position, startingPoint.position, speed * Time.deltaTime);
         }
 
         /// <summary>
@@ -140,6 +205,14 @@ namespace Platformer.Mechanics
             }
         }
 
+
+        void Patrol()
+        {
+            // Your existing patrol logic here.
+            if (mover == null) mover = path.CreateMover(control.maxSpeed * 0.5f);
+            control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);
+        }
+
         //added for flying enemies
         protected virtual void Move()
         {
@@ -149,8 +222,14 @@ namespace Platformer.Mechanics
             }
             else if (path != null)
             {
-                if (mover == null) mover = path.CreateMover(control.maxSpeed * 0.5f);
-                control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);
+                // If not chasing and a patrol path is set, continue patrolling.
+                Patrol();
+            }
+
+            if (isFlying)
+            {
+                // Negate gravity by subtracting it, multiplied by gravityModifier and deltaTime
+                control.velocity += Vector2.up * control.gravityModifier * Physics2D.gravity * Time.deltaTime;
             }
         }
 
@@ -162,7 +241,56 @@ namespace Platformer.Mechanics
         /// </summary>
         protected virtual void Update()
         {
-            Move();
+
+            /*Move();
+
+            if (player == null)
+            {
+                return;
+            }
+            if (chase == true)
+            {
+                Chase();
+            }
+            else
+            {
+                //ReturnStartPosition();
+            }
+            
+            Flip();*/
+
+            // Check the distance to the player on the x-axis.
+            float distanceToPlayerX = Mathf.Abs(transform.position.x - player.transform.position.x);
+
+            // If the player is close enough on the x-axis and the enemy is not dead, start chasing.
+            if (distanceToPlayerX <= detectionRadius && !isDead)
+            {
+                isChasing = true;
+            }
+            else
+            {
+                // Otherwise, stop chasing.
+                isChasing = false;
+            }
+
+            // If the enemy is chasing, perform the chase logic.
+            //Also check if the enemy is dead
+            if (isChasing)
+            {
+                Chase();
+            }
+            else if (path != null)
+            {
+                // If not chasing and a patrol path is set, continue patrolling.
+                Patrol();
+            }
+
+            // Handle the flipping of the enemy sprite.
+            if (!isDead)
+            {
+                Flip();
+            }
+            
         }
     }
 }

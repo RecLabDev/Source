@@ -98,6 +98,11 @@ impl AbyRuntime {
     }
     
     /// TODO
+    fn default_main_module_specifier(&self) -> Url {
+        Url::from_file_path(Self::DEFAULT_MAIN_MODULE_SPECIFIER).expect("main module specifier")
+    }
+    
+    /// TODO
     pub fn build(mut self) -> Self {
         if self.broadcast.is_none() {
             self.broadcast = Some(InMemoryBroadcastChannel::default());
@@ -147,13 +152,30 @@ impl AbyRuntime {
     }
     
     /// TODO: Move this to the config.
-    fn inspector_addr(&self) -> String {
-        self.config.inspector_addr.to_owned().unwrap_or_else(|| String::from("localhost:9222"))
+    fn inspector_addr(&self) -> &str {
+        match &self.config.inspector_addr {
+            Some(inspector_addr) => inspector_addr,
+            None => Self::DEFAULT_INSPECTOR_ADDR,
+        }
     }
     
     /// TODO
-    fn default_main_module_specifier(&self) -> Url {
-        Url::from_file_path(Self::DEFAULT_MAIN_MODULE_SPECIFIER).expect("main module specifier")
+    fn parse_inspector_addr(&self) -> Result<SocketAddr, AbyRuntimeError> {
+        let inspector_addr = self.inspector_addr();
+        match SocketAddr::parse_ascii(self.inspector_addr().as_bytes()) {
+            Ok(inspector_addr) => Ok(inspector_addr),
+            Err(error) => {
+                tracing::warn!("Failed to parse inspector addr '{:}': {:}", inspector_addr, error);
+                #[cfg(feature = "verbose")]
+                {
+                    // TODO: We should probably bail here, since starting with 
+                    //  a default when we've given explicit instructions could
+                    //  lead to unexpected and difficult to debug behavior.
+                    tracing::debug!("Falling back to default inspectr addr '{:?}'", DEFAULT_INSPECTOR_SOCKET_ADDR);
+                }
+                Err(AbyRuntimeError::InvalidInspectorAddr(error))
+            }
+        }
     }
     
     /// User has enabled the `stdio` feature, so we just grab Deno's 
@@ -214,25 +236,8 @@ impl AbyRuntime {
     
     /// TODO
     fn create_inspector_server(&self) -> Result<InspectorServer, AbyRuntimeError> {
-        let inspector_name: &str = "Aby Runtime 001";
-        let inspector_addr: String = self.inspector_addr();
-        
-        let inspector_addr = match SocketAddr::parse_ascii(inspector_addr.as_bytes()) {
-            Ok(inspector_addr) => inspector_addr,
-            Err(error) => {
-                tracing::warn!("Failed to parse inspector addr '{:}': {:}", inspector_addr, error);
-                #[cfg(feature = "verbose")]
-                {
-                    // TODO: We should probably bail here, since starting with 
-                    //  a default when we've given explicit instructions could
-                    //  lead to unexpected and difficult to debug behavior.
-                    tracing::debug!("Falling back to default inspectr addr '{:?}'", DEFAULT_INSPECTOR_SOCKET_ADDR);
-                }
-                
-                SocketAddr::V4(DEFAULT_INSPECTOR_SOCKET_ADDR)
-            }
-        };
-        
+        let inspector_name = "Aby Runtime Inspector";
+        let inspector_addr = self.parse_inspector_addr()?;
         Ok(InspectorServer::new(inspector_addr, inspector_name))
     }
     
@@ -517,6 +522,10 @@ pub enum AbyRuntimeError {
     /// TODO: Move this one to CAbyRuntimeError.
     #[msg("invalid main module '{0:}'")]
     InvalidMainModule(cwrap::error::CStringError),
+    
+    /// TODO: Move this one to CAbyRuntimeError.
+    #[msg("invalid inspector addr '{0:}'")]
+    InvalidInspectorAddr(std::net::AddrParseError),
     
     /// TODO
     #[msg("failed module resolution: {0:}")]

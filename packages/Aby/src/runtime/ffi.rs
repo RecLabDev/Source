@@ -283,6 +283,7 @@ impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
             AbyRuntimeError::FailedResolution(_) => CConstructRuntimeResultCode::InvalidConfigErr,
             AbyRuntimeError::InvalidMainModule(_) => CConstructRuntimeResultCode::MainModuleInvalidErr,
             AbyRuntimeError::InvalidModuleSpecifier(_) => CConstructRuntimeResultCode::MainModuleInvalidErr,
+            AbyRuntimeError::InvalidInspectorAddr(_) => CConstructRuntimeResultCode::InvalidConfigErr,
             AbyRuntimeError::InvalidState(_) => CConstructRuntimeResultCode::InvalidConfigErr,
             AbyRuntimeError::LoggingSetupFailed(_) => CConstructRuntimeResultCode::LogDirInvalidErr,
             AbyRuntimeError::ResourceError(_, _) => CConstructRuntimeResultCode::InvalidConfigErr,

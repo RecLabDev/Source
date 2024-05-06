@@ -5,6 +5,7 @@ using Platformer.Mechanics;
 using Platformer.Model;
 using static Platformer.Core.Simulation;
 using UnityEngine.UIElements;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 using Aby;
 
@@ -61,6 +62,7 @@ namespace Platformer.Gameplay
             }
         }
     }
+    
 
 
     /// <summary>
@@ -87,6 +89,7 @@ namespace Platformer.Gameplay
         /// TODO
         /// </summary>
         private PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+
 
         /// <summary>
         /// Player kills enemy if the player is facing the enemy and 
