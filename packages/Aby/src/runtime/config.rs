@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 /// TODO
 #[derive(Default, Debug)]
@@ -107,35 +108,32 @@ impl AbyRuntimeConfig {
 
     /// TODO
     pub fn main_module_specifier(&self) -> Option<&str> {
-        self.main_module_specifier.as_ref()
-            .map(|specifier| specifier.as_str())
+        self.main_module_specifier.as_deref()
     }
     
     /// TODO
     pub fn root_dir(&self) -> Option<&Path> {
-        self.root_dir.as_ref().map(|dir| dir.as_path())
+        self.root_dir.as_deref()
     }
     
     /// TODO
     pub fn db_dir(&self) -> Option<&Path> {
-        self.db_dir.as_ref().map(|dir| dir.as_path())
+        self.db_dir.as_deref()
     }
     
     /// TODO
     pub fn log_dir(&self) -> Option<&Path> {
-        self.log_dir.as_ref().map(|dir| dir.as_path())
+        self.log_dir.as_deref()
     }
     
     /// TODO
     pub fn inspector_name(&self) -> Option<&str> {
-        self.inspector_name.as_ref()
-            .map(|specifier| specifier.as_str())
+        self.inspector_name.as_deref()
     }
     
     /// TODO
     pub fn inspector_addr(&self) -> &str {
-        self.inspector_addr.as_ref()
-            .map(|addr| addr.as_str())
+        self.inspector_addr.as_deref()
             .unwrap_or(Self::DEFAULT_INSPECTOR_SOCKET_ADDR)
     }
     
@@ -145,7 +143,7 @@ impl AbyRuntimeConfig {
     }
     
     /// TODO
-    pub fn unstable_deno_features(&self) -> &Vec<i32> {
+    pub fn unstable_deno_features(&self) -> &[i32] {
         self.unstable_deno_features.as_ref()
     }
 }

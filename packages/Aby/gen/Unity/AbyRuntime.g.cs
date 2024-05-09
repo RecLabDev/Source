@@ -60,6 +60,7 @@ namespace Aby.Unity.Plugin
         public byte* log_dir;
         public CJsRuntimeLogLevel log_level;
         public void* log_callback_fn;
+        public byte* inspector_name;
         public byte* inspector_addr;
         [MarshalAs(UnmanagedType.U1)] public bool inspector_wait;
     }
@@ -91,13 +92,12 @@ namespace Aby.Unity.Plugin
     public enum CConstructRuntimeResultCode : uint
     {
         Ok,
-        FailedCreateAsyncRuntime,
-        FailedFetchingWorkDirErr,
-        DataDirInvalidErr,
-        InvalidConfigErr,
-        LogDirInvalidErr,
-        MainModuleInvalidErr,
-        StdioErr,
+        InvalidDataDir,
+        InvalidLogDir,
+        InvalidMainModule,
+        InvalidConfig,
+        FailedSetup,
+        FailedBroadcast,
     }
 
     public enum CExecModuleResult : uint

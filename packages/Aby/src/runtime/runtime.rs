@@ -92,71 +92,69 @@ impl AbyRuntime {
 impl AbyRuntime {
     /// TODO
     pub fn get_log_dir(&self) -> Result<&Path, AbyRuntimeConfigError> {
-        self.config
-            .log_dir()
+        self.config.log_dir()
             .ok_or_else(|| AbyRuntimeConfigError::MissingLogDir)
     }
 
     /// TODO
     pub fn get_root_dir(&self) -> Result<&Path, AbyRuntimeConfigError> {
-        self.config
-            .root_dir()
+        self.config.root_dir()
             .ok_or_else(|| AbyRuntimeConfigError::MissingRootDir)
     }
 
     /// TODO
     pub fn get_main_module_specifier(&self) -> Result<&str, AbyRuntimeConfigError> {
-        self.config
-            .main_module_specifier()
+        self.config.main_module_specifier()
             .ok_or_else(|| AbyRuntimeConfigError::MissingMainModuleSpecifier)
     }
 
     /// TODO
     pub fn get_storage_dir(&self) -> Result<&Path, AbyRuntimeConfigError> {
-        self.config
-            .db_dir()
+        self.config.db_dir()
             .ok_or_else(|| AbyRuntimeConfigError::MissingInspectorAddr)
     }
-
+    
     /// TODO
     fn _get_inspector_name(&self) -> Result<&str, AbyRuntimeConfigError> {
-        self.config
-            .inspector_name()
+        self.config.inspector_name()
             .ok_or_else(|| AbyRuntimeConfigError::MissingInspectorName)
     }
-
+    
+    /// TODO
+    fn get_async_executor(&self) -> Result<&TokioRuntime, AbyRuntimeError> {
+        self.async_executor.as_ref()
+            .ok_or_else(|| AbyRuntimeError::Uninitialized)
+    }
+    
     /// TODO
     fn get_inspector_addr(&self) -> Result<SocketAddr, AbyRuntimeConfigError> {
         SocketAddr::parse_ascii(self.config.inspector_addr().as_bytes())
             .map_err(|error| AbyRuntimeConfigError::InvalidInspectorAddr(error))
     }
-
+    
     /// TODO
     fn get_broadcast_channel(&self) -> Result<InMemoryBroadcastChannel, AbyRuntimeError> {
-        self.broadcast_channel
-            .as_ref()
+        self.broadcast_channel.as_ref()
             .map(|broadcast| broadcast.clone())
             .ok_or(AbyRuntimeError::Uninitialized)
     }
-
+    
     /// TODO
     #[cfg(not(feature = "stdio"))]
     fn create_stdio<P: AsRef<std::path::Path>>(&self, log_dir: P) -> Result<Stdio, std::io::Error> {
+        use std::fs::OpenOptions;
+        
         // TODO: Get log out name from config.
         let outpath = log_dir.as_ref().join("./AbyRuntime.out.log");
         let errpath = log_dir.as_ref().join("./AbyRuntime.err.log");
-
-        let stdin = tempfile::tempfile()?;
-        let stdout = std::fs::OpenOptions::new().read(true).write(true);
-        let stderr = std::fs::OpenOptions::new().read(true).write(true);
-
+        
         Ok(Stdio {
-            stdin: StdioPipe::File(stdin),
-            stdout: StdioPipe::File(stdout.create(true).open(outpath)?),
-            stderr: StdioPipe::File(stderr.create(true).open(errpath)?),
+            stdin: StdioPipe::File(tempfile::tempfile()?),
+            stdout: StdioPipe::File(OpenOptions::new().read(true).write(true).create(true).open(outpath)?),
+            stderr: StdioPipe::File(OpenOptions::new().read(true).write(true).create(true).read(true).write(true).create(true).open(errpath)?),
         })
     }
-
+    
     /// User has enabled the `stdio` feature, so we just grab Deno's
     /// preferred handles for stdio.
     #[cfg(feature = "stdio")]
@@ -171,15 +169,15 @@ impl AbyRuntime {
             stderr: StdioPipe::File(stderr),
         })
     }
-
+    
     /// TODO: Move this to regular AbyRuntime.
     fn create_bootsrap_options(&self) -> BootstrapOptions {
         BootstrapOptions {
-            unstable_features: self.config.unstable_deno_features().clone(),
+            unstable_features: Vec::from(self.config.unstable_deno_features()),
             ..Default::default()
         }
     }
-
+    
     /// TODO: Move this to regular `AbyRuntime``.
     fn create_feature_checker(&self) -> Arc<FeatureChecker> {
         let mut feature_checker = FeatureChecker::default();
@@ -193,7 +191,7 @@ impl AbyRuntime {
 
         Arc::new(feature_checker)
     }
-
+    
     /// TODO
     fn create_inspector_server(&self) -> Result<InspectorServer, AbyRuntimeError> {
         // TODO: let inspector_name = format!("{:}", self.get_inspector_name()?);
@@ -202,39 +200,38 @@ impl AbyRuntime {
             "Aby Runtime Inspector",
         ))
     }
-
+    
     /// TODO
     fn create_worker(&self) -> Result<MainWorker, AbyRuntimeError> {
         // TODO: Get these from config input ..
-        let main_module_specifier = self.get_main_module_specifier()?;
-        let main_module_url = self.resolve_module_url(main_module_specifier)?;
-
+        let main_module_url = self.resolve_main_module_url()?;
+        
         #[cfg(feature = "stdio")]
         let stdio = self.create_stdio()?;
-
+        
         #[cfg(not(feature = "stdio"))]
         let stdio = self.create_stdio(self.get_log_dir()?)?;
-
+        
         let bootstrap = self.create_bootsrap_options();
-
+        
         let permissions_container = PermissionsContainer::allow_all();
         let feature_checker = self.create_feature_checker();
-
+        
         let origin_storage_dir = self.get_storage_dir()?;
         let maybe_inspector_server = self.create_inspector_server()?;
         let broadcast_channel = self.get_broadcast_channel()?;
-
+        
         // let aby_init_script = ModuleCodeString::Static(r#"
         //     import * as prelude from "ext:aby_sdk/src/00_prelude.js";
         // "#);
-
+        
         // tracing::trace!("Aby Init Script:\n{:?}", aby_init_script);
-
+        
         // /// TODO
         // if let Err(_) = worker.execute_script("<aby>", aby_init_script) {
         //     return CExecModuleResult::Err;
         // }
-
+        
         // TODO
         deno_runtime::deno_core::extension!(
             aby_sdk,
@@ -289,22 +286,21 @@ impl AbyRuntime {
             },
         ))
     }
-
+    
     /// TODO
-    #[allow(unused_variables)] // TODO: Remove this.
-    fn resolve_module_url(&self, module_specifier: &str) -> Result<Url, AbyRuntimeError> {
-        resolve_url_or_path(module_specifier, &self.get_root_dir()?).map_err(|error| {
-            // TODO: Expose the actual error!
-            AbyRuntimeError::InvalidModuleSpecifier(error)
-        })
+    pub fn resolve_main_module_url(&self) -> Result<Url, AbyRuntimeError> {
+        self.resolve_module_url(self.get_main_module_specifier()?)
     }
-
+    
+    /// TODO
+    fn resolve_module_url(&self, module_specifier: &str) -> Result<Url, AbyRuntimeError> {
+        resolve_url_or_path(module_specifier, &self.get_root_dir()?)
+            .map_err(|error| AbyRuntimeError::InvalidModuleSpecifier(error))
+    }
+    
     /// TODO
     pub async fn send_broadcast(&self) -> Result<bool, AbyRuntimeError> {
-        let broadcast = self
-            .broadcast_channel
-            .as_ref()
-            .ok_or(AbyRuntimeError::Uninitialized)?;
+        let broadcast = self.get_broadcast_channel()?;
         let resource = broadcast.subscribe()?;
 
         let name = format!("ABY_BIFROST");
@@ -316,34 +312,36 @@ impl AbyRuntime {
 
         Ok(true)
     }
-
+    
     /// TODO
     pub fn send_broadcast_sync(&self) -> Result<bool, AbyRuntimeError> {
-        self.async_executor
-            .as_ref()
-            .ok_or(AbyRuntimeError::Uninitialized)?
-            .block_on(async { self.send_broadcast().await })
+        self.get_async_executor()?.block_on(async {
+            self.send_broadcast().await
+        })
     }
-
+    
     /// TODO
     pub fn exec_sync(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
-        let exec_module_specifier = self.resolve_module_url(exec_module_specifier)?;
-
+        self.get_async_executor()?.block_on(async {
+            self.exec(exec_module_specifier).await
+        })
+    }
+    
+    /// TODO
+    pub async fn exec(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
         #[cfg(features = "dev")]
         tracing::debug!("Executing Module: {:}", exec_module_specifier);
-
+        
+        let exec_module_url = self.resolve_module_url(exec_module_specifier)?;
         let mut worker = self.create_worker()?;
-
-        self.async_executor
-            .as_ref()
-            .ok_or(AbyRuntimeError::Uninitialized)?
-            .block_on(async move {
-                worker.execute_main_module(&exec_module_specifier).await?;
-                worker.run_event_loop(false).await?;
-                Ok(true)
-            })
+        
+        worker.execute_main_module(&exec_module_url).await?;
+        worker.run_event_loop(false).await?;
+        
+        // TODO: Collect (and return) run report ..
+        Ok(true)
     }
-
+    
     /// TODO
     pub fn collect_error(error: impl Error + Display) {
         // TODO: If we get to this point it means we're trying to use our
