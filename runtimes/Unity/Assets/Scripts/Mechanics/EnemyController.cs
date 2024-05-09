@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Platformer.Gameplay;
 using Unity.VisualScripting;
@@ -46,25 +47,16 @@ namespace Platformer.Mechanics
         public bool IsAttacking = false;
 
         //for chase stuff
-        private GameObject player;
+        private GameObject playerLockOn;
 
         public bool chase = false;
         public Transform startingPoint;
 
         // Add a detection radius field.
-        public float detectionRadius = 5.0f;
+        public float detectionRadius = 0.1f;
 
         // Flag to check if the enemy is currently chasing.
         private bool isChasing = false;
-
-
-        //for attacking colider
-        public Vector2 normalColliderSize = new Vector2(1/2, 1);  // Default size
-        public Vector2 attackingColliderSize = new Vector2(1, 1);  // Expanded size during an attack
-        public Vector2 normalColliderOffset = new Vector2(0, 0);
-        public Vector2 attackingColliderOffset = new Vector2(0.5f, 0);  // Adjusted if necessary
-
-
 
         void Awake()
         {
@@ -75,7 +67,7 @@ namespace Platformer.Mechanics
             _audio = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
-            player = GameObject.FindGameObjectWithTag("Player");
+            playerLockOn = GameObject.FindGameObjectWithTag("Player");
         }
 
         /// <summary>
@@ -88,11 +80,14 @@ namespace Platformer.Mechanics
 
         public void Chase()
         {
+            //
+
+
             // Make sure the move.x is set so that the walking animation can be triggered.
-            control.move.x = (player.transform.position.x > transform.position.x) ? 1 : -1;
+            control.move.x = (playerLockOn.transform.position.x > transform.position.x) ? 1 : -1;
 
             // Calculate the target position with the player's x position but maintain the enemy's current y position.
-            Vector3 targetPosition = new Vector3(player.transform.position.x, transform.position.y, transform.position.z);
+            Vector3 targetPosition = new Vector3(playerLockOn.transform.position.x, transform.position.y, transform.position.z);
 
             // Move towards the target position at the defined speed, only on the x-axis.
             transform.position = Vector3.MoveTowards(transform.position, targetPosition, control.maxSpeed * Time.deltaTime);
@@ -100,31 +95,28 @@ namespace Platformer.Mechanics
             // Update the velocityX parameter of the animator to trigger the walking animation.
             animator.SetFloat("velocityX", Mathf.Abs(control.move.x));
 
-            var relativeDirection = (transform.position - player.transform.position).normalized;
+            var relativeDirection = (transform.position - playerLockOn.transform.position).normalized;
             var isEnemyFacingPlayer = Vector3.Dot(Direction, relativeDirection) > 0;
-            float distanceToPlayerX = Mathf.Abs(transform.position.x - player.transform.position.x);
-            /*if (isEnemyFacingPlayer && (distanceToPlayerX < 1))
+            float distanceToPlayerX = Mathf.Abs(transform.position.x - playerLockOn.transform.position.x);
+            if (isEnemyFacingPlayer && (distanceToPlayerX < 1))
             {
                 IsAttacking = true;
                 animator.SetBool("attacking", true);
-                // Expand the collider to match the attack range
-                _collider2.size = attackingColliderSize;
-                _collider2.offset = attackingColliderOffset;
+                //schedule player death
+
 
             }
             else
             {
                 IsAttacking = false;
                 animator.SetBool("attacking", false);
-                _collider2.size = normalColliderSize;
-                _collider2.offset = normalColliderOffset;
-            }*/
+            }
         }
 
         public void Flip()
         {
             // Determine the direction by comparing the enemy's position with the player's position.
-            bool shouldFaceRight = player.transform.position.x > transform.position.x;
+            bool shouldFaceRight = playerLockOn.transform.position.x > transform.position.x;
 
             // If the direction to face is right and the sprite is not already facing right, flip it.
             if (shouldFaceRight && spriteRenderer.flipX)
@@ -262,29 +254,24 @@ namespace Platformer.Mechanics
         /// </summary>
         protected virtual void Update()
         {
-
-            // Check the distance to the player on the x-axis.
-            float distanceToPlayerX = Mathf.Abs(transform.position.x - player.transform.position.x);
-
-            // If the player is close enough on the x-axis and the enemy is not dead, start chasing.
-            if (distanceToPlayerX <= detectionRadius && !isDead && !player.GetComponent<PlayerController>().isDead)
+            Debug.LogFormat("player lock on: {0}", playerLockOn);
+            if (!isDead && playerLockOn == null)
             {
-                isChasing = true;
+                var closestPlayers = Physics2D.OverlapCircleAll(transform.position, detectionRadius);
+                foreach (var closestPlayer in closestPlayers)
+                {
+                    Debug.LogFormat("Found Player: {0}", closestPlayer);
+                    var closestPlayerController = closestPlayer.GetComponent<PlayerController>();
+                    if (!closestPlayerController.isDead)
+                    {
+                        playerLockOn = closestPlayer.gameObject;
+                    }
+                }
             }
-            else
-            {
-                // Otherwise, stop chasing.
-                isChasing = false;
-            }
 
-            // If the enemy is chasing, perform the chase logic.
-            //Also check if the enemy is dead
-            if (isChasing)
+            if (playerLockOn != null)
             {
-
                 Chase();
-                Flip();
-
             }
             else if (path != null)
             {
