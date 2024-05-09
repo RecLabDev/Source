@@ -29,6 +29,7 @@ namespace Platformer.Gameplay
                     player.audioSource.PlayOneShot(player.hurtSound);
                 player.gameObject.layer = LayerMask.NameToLayer("Ghosts");
                 player.animator.SetTrigger("hurt");
+                player.isDead = true;
                 player.animator.SetBool("dead", true);
                 Simulation.Schedule<PlayerSpawn>(2);
             }
