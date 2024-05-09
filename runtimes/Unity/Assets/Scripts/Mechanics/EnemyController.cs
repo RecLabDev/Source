@@ -20,6 +20,7 @@ namespace Platformer.Mechanics
         internal PatrolPath.Mover mover;
         internal AnimationController control;
         internal Collider2D _collider;
+        internal CapsuleCollider2D _collider2;
         internal AudioSource _audio;
         //added this for death animation chage:
         internal Animator animator; // Make sure to assign this in Awake or in the Editor.
@@ -42,12 +43,10 @@ namespace Platformer.Mechanics
         /// <summary>
         /// TODO
         /// </summary>
-        public bool IsAttacking => !isDead;
+        public bool IsAttacking = false;
 
         //for chase stuff
         private GameObject player;
-
-        public float speed;
 
         public bool chase = false;
         public Transform startingPoint;
@@ -59,10 +58,20 @@ namespace Platformer.Mechanics
         private bool isChasing = false;
 
 
+        //for attacking colider
+        public Vector2 normalColliderSize = new Vector2(1/2, 1);  // Default size
+        public Vector2 attackingColliderSize = new Vector2(1, 1);  // Expanded size during an attack
+        public Vector2 normalColliderOffset = new Vector2(0, 0);
+        public Vector2 attackingColliderOffset = new Vector2(0.5f, 0);  // Adjusted if necessary
+
+
+
         void Awake()
         {
             control = GetComponent<AnimationController>();
+            //changed from Collider2D to CapsuleCollider2D
             _collider = GetComponent<Collider2D>();
+            _collider2 = GetComponent<CapsuleCollider2D>();
             _audio = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
@@ -86,17 +95,29 @@ namespace Platformer.Mechanics
             Vector3 targetPosition = new Vector3(player.transform.position.x, transform.position.y, transform.position.z);
 
             // Move towards the target position at the defined speed, only on the x-axis.
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, control.maxSpeed * Time.deltaTime);
 
             // Update the velocityX parameter of the animator to trigger the walking animation.
             animator.SetFloat("velocityX", Mathf.Abs(control.move.x));
 
-            /*var isEnemyFacingPlayer = Vector3.Dot(enemy.Direction, relativeDirection) > 0;
-            var isEnemyCloseToPlayer = 
-            if (isEnemyFacingPlayer)
+            var relativeDirection = (transform.position - player.transform.position).normalized;
+            var isEnemyFacingPlayer = Vector3.Dot(Direction, relativeDirection) > 0;
+            float distanceToPlayerX = Mathf.Abs(transform.position.x - player.transform.position.x);
+            /*if (isEnemyFacingPlayer && (distanceToPlayerX < 1))
             {
-                //trigger attack animation
-                
+                IsAttacking = true;
+                animator.SetBool("attacking", true);
+                // Expand the collider to match the attack range
+                _collider2.size = attackingColliderSize;
+                _collider2.offset = attackingColliderOffset;
+
+            }
+            else
+            {
+                IsAttacking = false;
+                animator.SetBool("attacking", false);
+                _collider2.size = normalColliderSize;
+                _collider2.offset = normalColliderOffset;
             }*/
         }
 
@@ -119,7 +140,7 @@ namespace Platformer.Mechanics
 
         public void ReturnStartPosition()
         {
-            transform.position = Vector2.MoveTowards(transform.position, startingPoint.position, speed * Time.deltaTime);
+            transform.position = Vector2.MoveTowards(transform.position, startingPoint.position, control.maxSpeed * Time.deltaTime);
         }
 
         /// <summary>
@@ -242,28 +263,11 @@ namespace Platformer.Mechanics
         protected virtual void Update()
         {
 
-            /*Move();
-
-            if (player == null)
-            {
-                return;
-            }
-            if (chase == true)
-            {
-                Chase();
-            }
-            else
-            {
-                //ReturnStartPosition();
-            }
-            
-            Flip();*/
-
             // Check the distance to the player on the x-axis.
             float distanceToPlayerX = Mathf.Abs(transform.position.x - player.transform.position.x);
 
             // If the player is close enough on the x-axis and the enemy is not dead, start chasing.
-            if (distanceToPlayerX <= detectionRadius && !isDead)
+            if (distanceToPlayerX <= detectionRadius && !isDead && !player.GetComponent<PlayerController>().isDead)
             {
                 isChasing = true;
             }
@@ -277,20 +281,16 @@ namespace Platformer.Mechanics
             //Also check if the enemy is dead
             if (isChasing)
             {
+
                 Chase();
+                Flip();
+
             }
             else if (path != null)
             {
                 // If not chasing and a patrol path is set, continue patrolling.
                 Patrol();
             }
-
-            // Handle the flipping of the enemy sprite.
-            if (!isDead)
-            {
-                Flip();
-            }
-            
         }
     }
 }

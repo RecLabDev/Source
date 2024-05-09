@@ -21,6 +21,7 @@ namespace Platformer.Mechanics
         /// </summary>
         public Health health;
 
+        public bool isDead = false;
         /// <summary>
         /// TODO
         /// </summary>
@@ -196,7 +197,7 @@ namespace Platformer.Mechanics
             //for opening chest and enemies. 
             var hitObjects = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0);
             // Get all the hit enemies.// should be able to get ride of this now that we have hitObjects.
-            var hitEnemies = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0, LayerMask.GetMask("Enemies"));
+            //var hitEnemies = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0, LayerMask.GetMask("Enemies"));
 
             foreach (var hit in hitObjects)
             {

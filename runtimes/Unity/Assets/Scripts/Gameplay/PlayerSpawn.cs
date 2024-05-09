@@ -1,6 +1,7 @@
 using Platformer.Core;
 using Platformer.Mechanics;
 using Platformer.Model;
+using UnityEngine;
 
 namespace Platformer.Gameplay
 {
@@ -24,6 +25,8 @@ namespace Platformer.Gameplay
             player.animator.SetBool("dead", false);
             model.virtualCamera.m_Follow = player.transform;
             model.virtualCamera.m_LookAt = player.transform;
+            player.gameObject.layer = LayerMask.NameToLayer("Players");
+            player.isDead = false;
             Simulation.Schedule<EnablePlayerInput>(2f);
         }
     }
