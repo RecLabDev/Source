@@ -1,15 +1,15 @@
 #![allow(unused)]
 
+use std::ffi::CString;
+use std::net::SocketAddr;
 use std::path::Path;
 use std::path::PathBuf;
-use std::net::SocketAddr;
+use std::rc::Rc;
 use std::result;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::rc::Rc;
-use std::ffi::CString;
 
 // use tokio::runtime::Runtime as TokioRuntime;
 use tokio::runtime::Builder as TokioRuntimeBuilder;
@@ -17,31 +17,31 @@ use tokio::sync::broadcast;
 
 use cwrap::error::CStringError;
 
-use deno_runtime::worker::MainWorker;
-use deno_runtime::worker::WorkerOptions;
-use deno_runtime::permissions::PermissionsContainer;
-use deno_runtime::deno_core::FeatureChecker;
-use deno_runtime::deno_core::FsModuleLoader;
-use deno_runtime::deno_core::ModuleSpecifier;
-use deno_runtime::deno_core::ModuleResolutionError;
-use deno_runtime::deno_core::resolve_url_or_path;
-use deno_runtime::deno_io::Stdio;
-use deno_runtime::deno_io::StdioPipe;
 use deno_runtime::deno_broadcast_channel::BroadcastChannel;
 use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+use deno_runtime::deno_core::resolve_url_or_path;
+use deno_runtime::deno_core::FeatureChecker;
+use deno_runtime::deno_core::FsModuleLoader;
+use deno_runtime::deno_core::ModuleResolutionError;
+use deno_runtime::deno_core::ModuleSpecifier;
+use deno_runtime::deno_io::Stdio;
+use deno_runtime::deno_io::StdioPipe;
 use deno_runtime::inspector_server::InspectorServer;
+use deno_runtime::permissions::PermissionsContainer;
+use deno_runtime::worker::MainWorker;
+use deno_runtime::worker::WorkerOptions;
 use deno_runtime::BootstrapOptions;
 use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
 
-use crate::runtime::AbyRuntime;
-use crate::runtime::AbyRuntimeError;
 use crate::runtime::config::AbyRuntimeConfig;
 use crate::runtime::state::AbyRuntimeState;
+use crate::runtime::AbyRuntime;
+use crate::runtime::AbyRuntimeError;
 use crate::tracing::ffi::CJsRuntimeLogLevel;
 use crate::tracing::ffi::CLogCallback;
 
 // /// TODO: Probably remove this.
-// /// 
+// ///
 // /// Uses `OnceLock` for lazy init and lock, `Arc` for sharing,
 // /// and `Mutex` for inner mutability.
 // pub(crate) static TRACING_DATA: OnceLock<Arc<Mutex<CryptKeeper>>> = OnceLock::new();
@@ -52,10 +52,10 @@ use crate::tracing::ffi::CLogCallback;
 pub struct CAbyRuntime {
     /// TODO
     pub config: CAbyRuntimeConfig,
-    
+
     /// TODO
     pub status: CAbyRuntimeStatus,
-    
+
     /// TODO: Drop this when we're finished with it!!!
     pub ptr: *mut core::ffi::c_void,
 }
@@ -67,28 +67,24 @@ impl CAbyRuntime {
     pub fn new(config: CAbyRuntimeConfig, runtime: Box<AbyRuntime>) -> Self {
         let status = CAbyRuntimeStatus::default();
         let ptr = Box::into_raw(runtime) as *mut core::ffi::c_void;
-        
+
         CAbyRuntime {
             config,
             status,
             ptr,
         }
     }
-    
+
     /// Provides a safe reference to the `AbyRuntime` if the pointer
     /// is not null, otherwise returns `None`.
     pub fn as_ref(&self) -> Option<&AbyRuntime> {
-        unsafe {
-            (self.ptr as *mut AbyRuntime).as_ref()
-        }
+        unsafe { (self.ptr as *mut AbyRuntime).as_ref() }
     }
-    
+
     /// Provides a safe mutable reference to the `AbyRuntime` if the
     /// pointer is not null.
     pub fn as_mut(&mut self) -> Option<&mut AbyRuntime> {
-        unsafe {
-            (self.ptr as *mut AbyRuntime).as_mut()
-        }
+        unsafe { (self.ptr as *mut AbyRuntime).as_mut() }
     }
 }
 
@@ -97,7 +93,7 @@ impl core::ops::Deref for CAbyRuntime {
     type Target = AbyRuntime;
 
     /// TODO
-    /// 
+    ///
     /// **Panics if the pointer is null!**
     fn deref(&self) -> &Self::Target {
         self.as_ref().expect("AbyRuntime pointer is null")
@@ -107,7 +103,7 @@ impl core::ops::Deref for CAbyRuntime {
 #[automatically_derived]
 impl core::ops::DerefMut for CAbyRuntime {
     /// TODO
-    /// 
+    ///
     /// **Panics if the pointer is null!**
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut().expect("AbyRuntime pointer is null")
@@ -120,7 +116,7 @@ impl cwrap::drop::DropExtern for CAbyRuntime {
     fn drop(self: Box<Self>) {
         #[cfg(feature = "debug")]
         tracing::debug!("Dropping AbyRuntime pointer.");
-        
+
         unsafe {
             let _ = Box::from_raw(self.ptr as *mut AbyRuntime);
         }
@@ -133,28 +129,28 @@ impl cwrap::drop::DropExtern for CAbyRuntime {
 pub struct CAbyRuntimeConfig {
     /// TODO
     pub root_dir: *const core::ffi::c_char,
-    
+
     /// TODO
     pub main_module_specifier: *const core::ffi::c_char,
-    
+
     /// TODO
     pub db_dir: *const core::ffi::c_char,
-    
+
     /// TODO
     pub log_dir: *const core::ffi::c_char,
-    
+
     /// TODO
     pub log_level: CJsRuntimeLogLevel,
-    
+
     /// TODO
     pub log_callback_fn: CLogCallback,
-    
+
     /// TODO
     pub inspector_name: *const core::ffi::c_char,
-    
+
     /// TODO
     pub inspector_addr: *const core::ffi::c_char,
-    
+
     /// TODO
     pub inspector_wait: bool,
 }
@@ -186,14 +182,16 @@ impl Default for CAbyRuntimeConfig {
 #[cfg(feature = "ffi")]
 impl TryFrom<crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
     type Error = AbyRuntimeError;
-    
+
     /// TODO
-    fn try_from(c_runtime_config: crate::runtime::ffi::CAbyRuntimeConfig) -> Result<Self, Self::Error> {
+    fn try_from(
+        c_runtime_config: crate::runtime::ffi::CAbyRuntimeConfig,
+    ) -> Result<Self, Self::Error> {
         use cwrap::string::try_unwrap_cstr;
-        
+
         let main_module_specifier = try_unwrap_cstr(c_runtime_config.main_module_specifier)?;
         let root_dir = try_unwrap_cstr(c_runtime_config.root_dir)?;
-        
+
         let config = AbyRuntimeConfig::new()
             .with_main_module_specifier(main_module_specifier)
             .with_root_dir(root_dir)
@@ -204,7 +202,8 @@ impl TryFrom<crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
             .with_inspector_wait(c_runtime_config.inspector_wait)
             .with_unstable_deno_features({
                 // TODO: Get this from `CAbyRuntimeConfig` ..
-                UNSTABLE_GRANULAR_FLAGS.iter()
+                UNSTABLE_GRANULAR_FLAGS
+                    .iter()
                     .map(|&feature| feature.2)
                     .collect::<Vec<i32>>()
             });
@@ -237,11 +236,8 @@ impl CConstructRuntimeResult {
         let runtime = maybe_runtime
             .map(|runtime| Box::into_raw(Box::new(runtime)))
             .unwrap_or(core::ptr::null_mut());
-        
-        CConstructRuntimeResult {
-            code,
-            runtime,
-        }
+
+        CConstructRuntimeResult { code, runtime }
     }
 }
 
@@ -257,22 +253,22 @@ impl From<AbyRuntimeError> for CConstructRuntimeResult {
 pub enum CConstructRuntimeResultCode {
     /// All operations completed successfully.
     Ok,
-    
+
     /// TODO
     InvalidDataDir,
-    
+
     /// TODO
     InvalidLogDir,
-    
+
     /// TODO
     InvalidMainModule,
-    
+
     /// TODO
     InvalidConfig,
-    
+
     /// TODO
     FailedSetup,
-    
+
     /// TODO
     FailedBroadcast,
 }
@@ -292,11 +288,15 @@ impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
         match error {
             AbyRuntimeError::Uninitialized => CConstructRuntimeResultCode::InvalidConfig,
             AbyRuntimeError::NulError(_) => CConstructRuntimeResultCode::InvalidConfig,
-            AbyRuntimeError::FailedModuleResolution(_) => CConstructRuntimeResultCode::InvalidConfig,
+            AbyRuntimeError::FailedModuleResolution(_) => {
+                CConstructRuntimeResultCode::InvalidConfig
+            }
             AbyRuntimeError::FailedBroadcastSend(_) => CConstructRuntimeResultCode::FailedBroadcast,
             AbyRuntimeError::InvalidConfig(_) => CConstructRuntimeResultCode::InvalidConfig,
             AbyRuntimeError::InvalidCBinding(_) => CConstructRuntimeResultCode::InvalidMainModule,
-            AbyRuntimeError::InvalidModuleSpecifier(_) => CConstructRuntimeResultCode::InvalidConfig,
+            AbyRuntimeError::InvalidModuleSpecifier(_) => {
+                CConstructRuntimeResultCode::InvalidConfig
+            }
             AbyRuntimeError::InvalidState(_) => CConstructRuntimeResultCode::InvalidConfig,
             AbyRuntimeError::LoggingSetupFailed(_) => CConstructRuntimeResultCode::InvalidLogDir,
             AbyRuntimeError::ResourceError(_, _) => CConstructRuntimeResultCode::InvalidConfig,
@@ -307,7 +307,7 @@ impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
 }
 
 /// Construct an instance of AbyRuntime from a c-like boundary.
-/// 
+///
 /// ### Example:
 /// ```rust
 /// let result = aby::runtime::ffi::c_construct_runtime({
@@ -315,13 +315,15 @@ impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
 ///         // TODO
 ///     }
 /// });
-/// 
+///
 /// let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions {
 ///     // TODO
 /// });
 /// ````
 #[export_name = "aby__c_construct_runtime"]
-pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CConstructRuntimeResult {
+pub extern "C" fn c_construct_runtime(
+    c_runtime_config: CAbyRuntimeConfig,
+) -> CConstructRuntimeResult {
     // Get a new copy of the target config for the new runtime instance.
     let runtime_config = match AbyRuntimeConfig::try_from(c_runtime_config.to_owned()) {
         Ok(runtime_config) => runtime_config,
@@ -333,9 +335,12 @@ pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CC
             return CConstructRuntimeResult::from(error);
         }
     };
-    
+
     // TODO: Create the async runtime in`aby_runtime.build()`.
-    let async_runtime = match TokioRuntimeBuilder::new_current_thread().enable_all().build() {
+    let async_runtime = match TokioRuntimeBuilder::new_current_thread()
+        .enable_all()
+        .build()
+    {
         Ok(async_runtime) => async_runtime,
         Err(error) => {
             // TODO: ..
@@ -344,28 +349,28 @@ pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CC
             return CConstructRuntimeResult::from(CConstructRuntimeResultCode::InvalidLogDir);
         }
     };
-    
+
     let aby_runtime = AbyRuntime::new(runtime_config)
         .with_broadcast_channel(InMemoryBroadcastChannel::default())
         .with_async_runtime(async_runtime)
         .build();
-    
+
     // let aby_runtime = match aby_runtime.do_work() {
     //     Ok(aby_runtime) => {
     //         // TODO
     //     }
-    // 
+    //
     //     Err(AbyRuntimeError::AnyError(error)) => {
     //         //..
     //         return CConstructRuntimeResult::from(CConstructRuntimeError::DataDirInvalidErr)
     //     }
-    // 
+    //
     //     Err(error) => {
     //         //..
     //         return CConstructRuntimeResult::from(CConstructRuntimeError::StdioErr)
     //     }
     // };
-    
+
     let c_aby_runtime = CAbyRuntime::new(c_runtime_config, Box::new(aby_runtime));
     CConstructRuntimeResult::new(CConstructRuntimeResultCode::Ok, Some(c_aby_runtime))
 }
@@ -375,20 +380,20 @@ impl CAbyRuntime {
         // TODO: Ensure Pointer is safe to use.
         Some(&mut *ptr)
     }
-    
+
     pub fn send_host_log<M: Into<String>>(&self, message: M) {
         if let Err(error) = self.try_send_host_log(message) {
             tracing::error!("Failed to send host message: {:}", error);
         }
     }
-    
+
     pub fn try_send_host_log<M: Into<String>>(&self, message: M) -> Result<bool, std::io::Error> {
         match CString::new(message.into()) {
             Ok(message) => {
                 (self.config.log_callback_fn)(CJsRuntimeLogLevel::Debug, message.as_ptr());
                 Ok(true) // <3
             }
-            Err(error) => Err(std::io::Error::other(format!("TODO: {:}", error)))
+            Err(error) => Err(std::io::Error::other(format!("TODO: {:}", error))),
         }
     }
 }
@@ -399,11 +404,11 @@ pub unsafe extern "C" fn c_send_broadcast(c_self: *mut CAbyRuntime, message: cor
     let Some(c_self) = CAbyRuntime::try_from_mut_ptr(c_self) else {
         return; // TODO: Return an error to caller.
     };
-    
+
     let Some(aby_runtime) = c_self.as_ref() else {
         return; // TODO: Return an error to caller.
     };
-    
+
     if let Err(error) = aby_runtime.send_broadcast_sync() {
         tracing::error!("Failed to send broadcast message: {:}", error);
     }
@@ -422,34 +427,34 @@ pub struct CExecModuleOptions {
 pub enum CExecModuleResult {
     /// All operations completed successfully.
     Ok,
-    
+
     /// Failed during binding.
     RuntimeNul,
-    
+
     /// TODO
     RuntimePanic,
-    
+
     /// TODO
     FailedCreateAsyncRuntime,
-    
+
     /// TODO
     FailedFetchingWorkDirErr,
-    
+
     /// TODO
     DataDirInvalidErr,
-    
+
     /// TODO
     LogDirInvalidErr,
-    
+
     /// TODO
     MainModuleInvalidErr,
-    
+
     /// TODO
     MainModuleUninitializedErr,
-    
+
     /// TODO
     FailedModuleExecErr,
-    
+
     /// TODO
     FailedEventLoopErr,
 }
@@ -459,16 +464,18 @@ use deno_runtime::deno_core::url::Url as ModuleUrl;
 /// TODO
 #[allow(unused_variables)]
 #[export_name = "aby__c_exec_module"]
-pub unsafe extern "C" fn c_exec_module(c_self: *mut CAbyRuntime, options: CExecModuleOptions) -> CExecModuleResult {
+pub unsafe extern "C" fn c_exec_module(
+    c_self: *mut CAbyRuntime,
+    options: CExecModuleOptions,
+) -> CExecModuleResult {
     let Some(c_self) = CAbyRuntime::try_from_mut_ptr(c_self) else {
         return CExecModuleResult::RuntimeNul;
     };
-    
+
     let Ok(exec_module_specifier) = cwrap::try_unwrap_cstr(options.module_specifier) else {
         return CExecModuleResult::MainModuleInvalidErr;
     };
-        
-        
+
     // match c_self.exec_sync(exec_module_specifier) {
     //     Ok(result) => {
     //         // TODO: Report the exec result to the host.
@@ -480,8 +487,7 @@ pub unsafe extern "C" fn c_exec_module(c_self: *mut CAbyRuntime, options: CExecM
     //         CExecModuleResult::FailedModuleExecErr
     //     }
     // }
-    
-    
+
     // TODO: Maybe we should be using a panic hook instead?
     // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
     match std::panic::catch_unwind(|| {
@@ -499,7 +505,7 @@ pub unsafe extern "C" fn c_exec_module(c_self: *mut CAbyRuntime, options: CExecM
                     tracing::error!("Failed to execute module: {:}", error);
                     CExecModuleResult::FailedModuleExecErr
                 }
-            }
+            },
         }
     }) {
         Ok(exit_status) => exit_status,
@@ -524,7 +530,7 @@ extern "C" fn default_log_callback(level: CJsRuntimeLogLevel, message: *const co
             CJsRuntimeLogLevel::Debug => tracing::debug!("{:}", message),
             CJsRuntimeLogLevel::Trace => tracing::trace!("{:}", message),
             CJsRuntimeLogLevel::None => tracing::debug!("{:}", message),
-        }
+        },
         Err(error) => {
             tracing::error!("Failed to unwrap incoming log message: {:}", error)
         }
@@ -539,25 +545,25 @@ pub enum CAbyRuntimeStatus {
     /// No state has been set, yet. Treat this as "uninitialized".
     #[default]
     None = 0,
-    
+
     /// Runtime has been bootstrapped but not yet "warm" (running).
     Cold,
-    
+
     /// The runtime is executing startup operations. Try again next frame.
     Startup,
-    
+
     /// The runtime is working and has had no problems (yet).
     /// Check later for failures, but all good so far!
     Warm,
-    
+
     /// The runtime failed in a predictable way. The host is free to
     /// attempt to recover. Otherwise, shut down gracefully.
     Failure,
-    
+
     /// The runtime encountered an unrecoverable error. The runtime should
     /// shutdown completely before trying again or bad things can happen.
     Panic,
-    
+
     /// The runtime has quit for some reason.
     Shutdown,
 }
@@ -565,7 +571,7 @@ pub enum CAbyRuntimeStatus {
 impl TryFrom<u32> for CAbyRuntimeStatus {
     /// TODO
     type Error = AbyRuntimeError;
-    
+
     /// TODO
     fn try_from(value: u32) -> Result<CAbyRuntimeStatus, Self::Error> {
         match value {
