@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Platformer.Gameplay;
@@ -149,6 +150,18 @@ namespace Platformer.Mechanics
                     stopJump = true;
                     Schedule<PlayerStopJump>().player = this;
                 }
+
+                // Movement and sprite direction
+                if (move.x > 0.01f)
+                {
+                    AttemptFlipSpriteServerRpc(false);
+                }
+                else if (move.x < -0.01f)
+                {
+                    AttemptFlipSpriteServerRpc(true);
+                }
+
+
             }
             else
             {
@@ -313,6 +326,18 @@ namespace Platformer.Mechanics
             targetVelocity = move * maxSpeed;
         }
 
+        [ServerRpc]
+        public void AttemptFlipSpriteServerRpc(bool flipX)
+        {
+            FlipSpriteClientRpc(flipX);
+            Debug.Log("Sprite flip RPC fired!");
+        }
+
+        [ClientRpc]
+        public void FlipSpriteClientRpc(bool flipX)
+        {
+            spriteRenderer.flipX = flipX;
+        }
 
         public enum JumpState
         {
