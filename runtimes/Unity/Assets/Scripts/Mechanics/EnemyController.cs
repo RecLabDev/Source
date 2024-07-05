@@ -254,13 +254,13 @@ namespace Platformer.Mechanics
         /// </summary>
         protected virtual void Update()
         {
-            Debug.LogFormat("player lock on: {0}", playerLockOn);
+            //Debug.LogFormat("player lock on: {0}", playerLockOn);
             if (!isDead && playerLockOn == null)
             {
                 var closestPlayers = Physics2D.OverlapCircleAll(transform.position, detectionRadius);
                 foreach (var closestPlayer in closestPlayers)
                 {
-                    Debug.LogFormat("Found Player: {0}", closestPlayer);
+                    //Debug.LogFormat("Found Player: {0}", closestPlayer);
                     var closestPlayerController = closestPlayer.GetComponent<PlayerController>();
                     if (!closestPlayerController.isDead)
                     {
@@ -271,7 +271,7 @@ namespace Platformer.Mechanics
 
             if (playerLockOn != null)
             {
-                Chase();
+                //Chase();
             }
             else if (path != null)
             {
