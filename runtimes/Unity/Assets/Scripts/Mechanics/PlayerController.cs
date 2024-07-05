@@ -114,6 +114,8 @@ namespace Platformer.Mechanics
 
         protected override void Update()
         {
+            if(!IsOwner) return;
+
             if (controlEnabled)
             {
                 // Check if the player is attacking using the Input Manager.
