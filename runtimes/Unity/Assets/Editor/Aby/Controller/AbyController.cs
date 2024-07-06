@@ -52,7 +52,7 @@ namespace Aby.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private AbyRuntimeConfig m_CurrentEnvironment;
+        private AbyServiceConfig m_CurrentEnvironment;
 
         /// <summary>
         /// TODO
@@ -100,7 +100,7 @@ namespace Aby.Unity.Editor.Aby
             else
             {
                 var envConfigPath = AssetDatabase.GUIDToAssetPath(envConfigs[0]);
-                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyRuntimeConfig>(envConfigPath);
+                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyServiceConfig>(envConfigPath);
             }
         }
 
@@ -128,6 +128,7 @@ namespace Aby.Unity.Editor.Aby
                 Debug.LogError("VisualTreeAsset is not assigned.");
             }
         }
+
         /// <summary>
         /// TODO
         /// </summary>

@@ -7,8 +7,15 @@
         <ui:VisualElement name="Inventory" style="flex-grow: 1; position: absolute; left: 0; bottom: 0; width: 80px; height: auto; background-color: rgb(167, 132, 87); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
             <ui:Label tabindex="-1" text="Inventory" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />
         </ui:VisualElement>
-        <ui:VisualElement name="Party" style="flex-grow: 1; white-space: nowrap; position: absolute; width: 80px; height: auto; background-color: rgb(133, 167, 87); left: auto; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; right: 0; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
-            <ui:Label tabindex="-1" text="Party" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" style="align-items: center;" />
+        <ui:VisualElement name="PartyDisplay" style="flex-grow: 1; white-space: nowrap; position: absolute; left: auto; top: 0; margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; right: 0; align-items: flex-end;">
+            <ui:VisualElement name="PartyLineup" style="flex-grow: 0; white-space: nowrap; width: 80px; height: auto; background-color: rgb(133, 167, 87); align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; flex-shrink: 0;">
+                <ui:Label tabindex="-1" text="Party" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" style="align-items: center;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="PartyDebug" style="flex-grow: 1; flex-direction: row; margin-top: 5px; margin-bottom: 5px;">
+                <ui:Button text="Host" parse-escape-sequences="true" display-tooltip-when-elided="true" name="HostButton" class="net-dbg-btn net-dbg-btn-text" style="margin-top: 0; margin-right: 1px; margin-bottom: 0; margin-left: 1px;" />
+                <ui:Button text="Client" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ClientButton" class="net-dbg-btn-text net-dbg-btn" style="margin-right: 1px; margin-left: 1px;" />
+                <ui:Button text="Server" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ServerButton" class="net-dbg-btn-text net-dbg-btn" style="margin-right: 1px; margin-left: 1px;" />
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="Objectives" style="flex-grow: 1; position: absolute; left: auto; bottom: 0; width: 80px; height: auto; background-color: rgb(106, 87, 167); margin-top: 20px; margin-right: 20px; margin-bottom: 20px; margin-left: 20px; right: 0; align-items: center; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">
             <ui:Label tabindex="-1" text="Objectives" parse-escape-sequences="true" display-tooltip-when-elided="true" class="dev-label" />

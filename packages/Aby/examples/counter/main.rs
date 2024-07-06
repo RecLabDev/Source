@@ -6,15 +6,15 @@ use std::ffi::CString;
 
 use core::ffi::CStr;
 
-use aby::runtime::ffi::CConstructRuntimeResultCode;
 use anyhow::Result;
 
 use cwrap::error::CStringError;
 
+use aby::runtime::AbyRuntimeError;
 use aby::tracing::ffi::CJsRuntimeLogLevel;
 use aby::runtime::ffi::CAbyRuntimeConfig;
+use aby::runtime::ffi::CConstructRuntimeResultCode;
 use aby::runtime::ffi::CExecModuleOptions;
-use aby::runtime::AbyRuntimeError;
 
 //---
 /// TODO: Remove `swc_ecma_codegen` when we've resolved the sourcemap error.
@@ -27,11 +27,13 @@ pub fn try_path_from_cstring(path: CString) -> Result<PathBuf, CStringError> {
 
 /// TODO
 pub fn try_cstring_from_path(path: PathBuf) -> Result<CString, CStringError> {
+    // TODO: Should probably bail here instead?
     let path_str = path.as_os_str().to_str().unwrap_or_default();
     
     CString::new(path_str).map_err(|error| {
+        #[cfg(feature = "verbose")]
         tracing::error!("Failed to create CString for path '{:}': {:}", path_str, error);
-        CStringError::NulError // TODO: Unpack the real error.
+        CStringError::NulError(error)
     })
 }
 

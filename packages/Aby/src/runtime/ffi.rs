@@ -337,10 +337,7 @@ pub extern "C" fn c_construct_runtime(
     };
 
     // TODO: Create the async runtime in`aby_runtime.build()`.
-    let async_runtime = match TokioRuntimeBuilder::new_current_thread()
-        .enable_all()
-        .build()
-    {
+    let async_runtime = match TokioRuntimeBuilder::new_current_thread().enable_all().build() {
         Ok(async_runtime) => async_runtime,
         Err(error) => {
             // TODO: ..
@@ -349,9 +346,11 @@ pub extern "C" fn c_construct_runtime(
             return CConstructRuntimeResult::from(CConstructRuntimeResultCode::InvalidLogDir);
         }
     };
+    
+    let in_memory_channel = InMemoryBroadcastChannel::default();
 
     let aby_runtime = AbyRuntime::new(runtime_config)
-        .with_broadcast_channel(InMemoryBroadcastChannel::default())
+        .with_broadcast_channel(in_memory_channel.clone())
         .with_async_runtime(async_runtime)
         .build();
 

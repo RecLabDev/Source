@@ -12,3 +12,28 @@ VisualElement {
     padding-left: 0;
     font-size: 8px;
 }
+
+.net-dbg-btn {
+    background-color: rgb(120, 146, 85);
+    justify-content: center;
+    padding-top: 3px;
+    padding-right: 3px;
+    padding-bottom: 3px;
+    padding-left: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+    border-right-color: rgba(0, 0, 0, 0);
+    border-top-color: rgba(0, 0, 0, 0);
+    border-bottom-color: rgba(0, 0, 0, 0);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+}
+
+.net-dbg-btn-text {
+    font-size: 6px;
+}

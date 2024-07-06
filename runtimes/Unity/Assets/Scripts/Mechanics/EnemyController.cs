@@ -262,7 +262,7 @@ namespace Platformer.Mechanics
                 {
                     //Debug.LogFormat("Found Player: {0}", closestPlayer);
                     var closestPlayerController = closestPlayer.GetComponent<PlayerController>();
-                    if (!closestPlayerController.isDead)
+                    if (closestPlayerController && !closestPlayerController.isDead)
                     {
                         playerLockOn = closestPlayer.gameObject;
                     }

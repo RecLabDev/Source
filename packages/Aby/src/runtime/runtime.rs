@@ -329,7 +329,7 @@ impl AbyRuntime {
     
     /// TODO
     pub async fn exec(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
-        #[cfg(features = "dev")]
+        #[cfg(feature = "dev")]
         tracing::debug!("Executing Module: {:}", exec_module_specifier);
         
         let exec_module_url = self.resolve_module_url(exec_module_specifier)?;
