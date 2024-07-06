@@ -271,7 +271,7 @@ namespace Platformer.Mechanics
 
             if (playerLockOn != null)
             {
-                Chase();
+                //Chase();
             }
             else if (path != null)
             {
