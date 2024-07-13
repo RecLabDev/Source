@@ -57,6 +57,8 @@ namespace Platformer.Gameplay
         {
             if (player != null)
             {
+                Debug.Log(player.health.currentHP);
+                //this.player.health.Die();
                 Schedule<PlayerDeath>();
             }
         }
@@ -96,7 +98,7 @@ namespace Platformer.Gameplay
         public override void Execute()
         {
             if (enemy.IsDead) return;
-
+            enemy.IsAttacking = true;
             var isPlayerFacingEnemy = Vector3.Dot(player.Direction, relativeDirection) < 0;
             var isEnemyFacingPlayer = Vector3.Dot(enemy.Direction, relativeDirection) > 0;
 

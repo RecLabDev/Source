@@ -113,6 +113,10 @@ namespace Platformer.Mechanics
 
         protected override void Update()
         {
+            if (health.IsAlive == false )
+            {
+                Schedule<PlayerDeath>();
+            }
             if (controlEnabled)
             {
                 // Check if the player is attacking using the Input Manager.

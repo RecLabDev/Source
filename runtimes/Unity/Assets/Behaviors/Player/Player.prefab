@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8509783501685719824}
   - component: {fileID: 6082575806313374961}
   - component: {fileID: 1824045667}
+  - component: {fileID: 6014752658227156462}
   m_Layer: 13
   m_Name: Player
   m_TagString: Player
@@ -53,16 +54,20 @@ MonoBehaviour:
   minGroundNormalY: 0.9
   gravityModifier: 1
   velocity: {x: 0, y: 0}
-  jumpAudio: {fileID: 8300000, guid: 8de9d3034aa986f4abfaf0d7876a6f1d, type: 3}
-  respawnAudio: {fileID: 8300000, guid: 29ad9f0f3ccb91746b4603935b0539a0, type: 3}
-  ouchAudio: {fileID: 8300000, guid: 6c05149e5a2fba64ba172e25a61074b7, type: 3}
-  maxSpeed: 3
-  jumpTakeOffSpeed: 7
-  jumpState: 0
-  collider2d: {fileID: 0}
-  audioSource: {fileID: 0}
   health: {fileID: 0}
+  isDead: 0
   controlEnabled: 1
+  maxSpeed: 3
+  jumpState: 0
+  jumpTakeOffSpeed: 7
+  doubleJumpForce: 0.65
+  audioSource: {fileID: 0}
+  respawnSound: {fileID: 0}
+  slashSound: {fileID: 0}
+  hurtSound: {fileID: 0}
+  jumpSound: {fileID: 0}
+  victorySound: {fileID: 0}
+  collider2d: {fileID: 0}
 --- !u!212 &212064061491315838
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -272,6 +277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHP: 1
+  currentHP: 0
 --- !u!61 &1824045667
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -317,3 +323,19 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.32, y: 0.54}
   m_EdgeRadius: 0
+--- !u!114 &6014752658227156462
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1208144871472054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5a1f3d3d9e1e4b208765d0c5d338d97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  name: 
+  color: {r: 0.10234957, g: 0.8679245, b: 0.76901495, a: 1}
+  mainUI: {fileID: 9197481963319205126, guid: 69fa2063269144b8facc4ee580ee7cdc, type: 3}
+  seasonalThemes: []
