@@ -56,7 +56,7 @@ namespace Platformer.Mechanics
         public float detectionRadius = 0.1f;
 
         // Flag to check if the enemy is currently chasing.
-        private bool isChasing = false;
+        //private bool isChasing = false;
 
         void Awake()
         {
@@ -225,29 +225,6 @@ namespace Platformer.Mechanics
             if (mover == null) mover = path.CreateMover(control.maxSpeed * 0.5f);
             control.move.x = Mathf.Clamp(mover.Position.x - transform.position.x, -1, 1);
         }
-
-        //added for flying enemies
-        protected virtual void Move()
-        {
-            if (isDead)
-            {
-                control.move.x = 0;
-            }
-            else if (path != null)
-            {
-                // If not chasing and a patrol path is set, continue patrolling.
-                Patrol();
-            }
-
-            if (isFlying)
-            {
-                // Negate gravity by subtracting it, multiplied by gravityModifier and deltaTime
-                control.velocity += Vector2.up * control.gravityModifier * Physics2D.gravity * Time.deltaTime;
-            }
-        }
-
-
-
 
         /// <summary>
         /// TODO

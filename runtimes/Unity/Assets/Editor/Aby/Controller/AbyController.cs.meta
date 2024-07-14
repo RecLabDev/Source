@@ -5,8 +5,9 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - m_ViewDataDictionary: {instanceID: 0}
-  - m_CurrentEnvironment: {instanceID: 0}
-  - m_VisualTreeAsset: {fileID: 9197481963319205126, guid: 89e26cd1c8fcbdd408a9aa2cd989f966,
+  - currentEnvironment: {fileID: 11400000, guid: ea3b8166fa78622428bc3f45bed868b8,
+      type: 2}
+  - visualTreeAsset: {fileID: 9197481963319205126, guid: 89e26cd1c8fcbdd408a9aa2cd989f966,
       type: 3}
   executionOrder: 0
   icon: {instanceID: 0}

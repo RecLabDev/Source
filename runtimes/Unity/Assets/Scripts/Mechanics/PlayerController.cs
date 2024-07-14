@@ -1,13 +1,21 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
+using Cinemachine;
+using Cinemachine.Editor;
+using Cinemachine.Utility;
+
 using Platformer.Gameplay;
 using static Platformer.Core.Simulation;
 using Platformer.Model;
 using Platformer.Core;
+
 using Aby;
+using Aby.Unity;
 
 namespace Platformer.Mechanics
 {
@@ -22,7 +30,11 @@ namespace Platformer.Mechanics
         /// </summary>
         public Health health;
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public bool isDead = false;
+
         /// <summary>
         /// TODO
         /// </summary>
@@ -43,6 +55,11 @@ namespace Platformer.Mechanics
         /// Max horizontal speed of the player.
         /// </summary>
         public float maxSpeed = 7.0f;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public Camera playerCamera;
 
         /// <summary>
         /// TODO
@@ -110,11 +127,12 @@ namespace Platformer.Mechanics
             collider2d = GetComponent<Collider2D>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
+            playerCamera = Camera.main;
         }
 
         protected override void Update()
         {
-            if(!IsOwner) return;
+            if (!IsOwner) return;
 
             if (controlEnabled)
             {
@@ -144,7 +162,6 @@ namespace Platformer.Mechanics
                     HandleSlashing();
                 }
 
-
                 if (jumpState == JumpState.Grounded && Input.GetButtonDown("Jump"))
                     jumpState = JumpState.PrepareToJump;
                 else if (Input.GetButtonUp("Jump"))
@@ -162,19 +179,18 @@ namespace Platformer.Mechanics
                 {
                     AttemptFlipSpriteServerRpc(true);
                 }
-
-
             }
             else
             {
                 move.x = 0;
             }
+
             UpdateJumpState();
             UpdateAttackState();
+            UpdateCameraPosition();
+
             base.Update();
         }
-
-
 
         public void PlayVictorySound()
         {
@@ -189,6 +205,17 @@ namespace Platformer.Mechanics
         public void OnAttack(InputAction.CallbackContext actionContext)
         {
             attack = controlEnabled && actionContext.performed;
+        }
+
+        private void UpdateCameraPosition()
+        {
+            Debug.LogFormat("Player Camera: {0}", playerCamera.name);
+
+            if (playerCamera != null)
+            {
+                playerCamera.transform.position = transform.position;
+                playerCamera.transform.rotation = transform.rotation;
+            }
         }
 
         void PlaySlashSound()
@@ -228,7 +255,8 @@ namespace Platformer.Mechanics
                         slashEvent.player = this;
                         slashEvent.enemy = enemy;
                     }
-                }else if (hit.CompareTag("Chest"))
+                }
+                else if (hit.CompareTag("Chest"))
                 {
                     var chest = hit.GetComponent<Chest>();
                     var slashChest = Schedule<PlayerSlashChest>();
@@ -246,7 +274,7 @@ namespace Platformer.Mechanics
             }
         }
 
-        
+
 
         private bool canDoubleJump = true;
 
@@ -332,7 +360,7 @@ namespace Platformer.Mechanics
         public void AttemptFlipSpriteServerRpc(bool flipX)
         {
             FlipSpriteClientRpc(flipX);
-            Debug.Log("Sprite flip RPC fired!");
+            // Debug.Log("Sprite flip RPC fired!");
         }
 
         [ClientRpc]

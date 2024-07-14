@@ -26,7 +26,7 @@ namespace Aby.Unity.Plugin
         [DllImport(__DllName, EntryPoint = "aby__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
-        /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ````</summary>
+        /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ```</summary>
         [DllImport(__DllName, EntryPoint = "aby__c_construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_runtime_config);
 
@@ -92,11 +92,13 @@ namespace Aby.Unity.Plugin
     public enum CConstructRuntimeResultCode : uint
     {
         Ok,
+        InvalidConfig,
         InvalidDataDir,
         InvalidLogDir,
         InvalidMainModule,
-        InvalidConfig,
+        InvalidBindings,
         FailedSetup,
+        FailedOperation,
         FailedBroadcast,
     }
 

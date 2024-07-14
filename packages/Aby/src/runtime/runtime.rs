@@ -1,18 +1,16 @@
-use std::error::Error;
-use std::fmt::Display;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::MutexGuard;
-use std::sync::PoisonError;
 
 use tokio::runtime::Runtime as TokioRuntime;
-use tokio::sync::Mutex as TokioMutex;
 
-use deno_runtime::deno_broadcast_channel::BroadcastChannel;
-use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+use deno_runtime::BootstrapOptions;
+use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+use deno_runtime::worker::MainWorker;
+use deno_runtime::worker::WorkerOptions;
+use deno_runtime::permissions::PermissionsContainer;
+use deno_runtime::inspector_server::InspectorServer;
 use deno_runtime::deno_core::error::AnyError;
 use deno_runtime::deno_core::resolve_url_or_path;
 use deno_runtime::deno_core::url::Url;
@@ -21,51 +19,36 @@ use deno_runtime::deno_core::FsModuleLoader;
 use deno_runtime::deno_core::ModuleResolutionError;
 use deno_runtime::deno_io::Stdio;
 use deno_runtime::deno_io::StdioPipe;
-use deno_runtime::inspector_server::InspectorServer;
-use deno_runtime::permissions::PermissionsContainer;
-use deno_runtime::worker::MainWorker;
-use deno_runtime::worker::WorkerOptions;
-use deno_runtime::BootstrapOptions;
-use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+use deno_runtime::deno_broadcast_channel::BroadcastChannel;
+use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 
-use crate::runtime::config::AbyRuntimeConfig;
-use crate::runtime::state::AbyRuntimeState;
 use crate::tracing::LoggingError;
-
-#[cfg(feature = "ffi")]
-use crate::tracing::ffi::CLogCallback;
+use crate::runtime::config::AbyRuntimeConfig;
+use crate::runtime::config::AbyRuntimeConfigError;
+use crate::runtime::state::AbyRuntimeState;
 
 //---
 /// TODO
-#[allow(unused)] // TODO: Remove this.
+// #[allow(unused)] // TODO: Remove this.
 pub struct AbyRuntime {
     /// TODO
     config: AbyRuntimeConfig,
-
+    
     /// TODO
     async_executor: Option<TokioRuntime>,
-
+    
     /// TODO
     broadcast_channel: Option<InMemoryBroadcastChannel>,
-
-    /// TODO: Remove this one.
-    log_callback: Option<Arc<Mutex<CLogCallback>>>,
-
-    /// TODO: Prefer this one.
-    log_callback_async: Option<Arc<TokioMutex<CLogCallback>>>,
 }
 
 impl AbyRuntime {
     /// Constructs a new instance of `AbyRuntime` bootstrapped with only a
     /// configuration file and an async runtime.
-    #[allow(unused_variables)] // TODO: Remove this.
     pub fn new(config: AbyRuntimeConfig) -> Self {
         AbyRuntime {
             config,
             async_executor: None,
             broadcast_channel: None,
-            log_callback: None,
-            log_callback_async: None,
         }
     }
 
@@ -206,9 +189,12 @@ impl AbyRuntime {
         // TODO: Get these from config input ..
         let main_module_url = self.resolve_main_module_url()?;
         
+        // In most Rust-only scenarios we can just use the usual stdio.
         #[cfg(feature = "stdio")]
         let stdio = self.create_stdio()?;
         
+        // In ffi and other extern scenarios, we often want to re-route stdio
+        // to some other logging facility (file, editor display, etc).
         #[cfg(not(feature = "stdio"))]
         let stdio = self.create_stdio(self.get_log_dir()?)?;
         
@@ -218,6 +204,7 @@ impl AbyRuntime {
         let feature_checker = self.create_feature_checker();
         
         let origin_storage_dir = self.get_storage_dir()?;
+        
         let maybe_inspector_server = self.create_inspector_server()?;
         let broadcast_channel = self.get_broadcast_channel()?;
         
@@ -267,7 +254,7 @@ impl AbyRuntime {
                 });
             },
         );
-
+        
         Ok(MainWorker::bootstrap_from_options(
             main_module_url,
             permissions_container,
@@ -302,29 +289,23 @@ impl AbyRuntime {
     pub async fn send_broadcast(&self) -> Result<bool, AbyRuntimeError> {
         let broadcast = self.get_broadcast_channel()?;
         let resource = broadcast.subscribe()?;
-
-        let name = format!("ABY_BIFROST");
+        
+        let name = format!("RECLAB_BROADCAST_TODO");
         let data = vec![]; // TODO
-
+        
         if let Err(error) = broadcast.send(&resource, name, data).await {
             return Err(AbyRuntimeError::FailedBroadcastSend(error));
         }
-
+        
         Ok(true)
     }
     
     /// TODO
-    pub fn send_broadcast_sync(&self) -> Result<bool, AbyRuntimeError> {
-        self.get_async_executor()?.block_on(async {
-            self.send_broadcast().await
-        })
-    }
-    
-    /// TODO
-    pub fn exec_sync(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
-        self.get_async_executor()?.block_on(async {
-            self.exec(exec_module_specifier).await
-        })
+    pub(crate) fn send_broadcast_sync(&self) -> Result<bool, AbyRuntimeError> {
+        self.get_async_executor()?
+            .block_on(async {
+                self.send_broadcast().await
+            })
     }
     
     /// TODO
@@ -343,13 +324,11 @@ impl AbyRuntime {
     }
     
     /// TODO
-    pub fn collect_error(error: impl Error + Display) {
-        // TODO: If we get to this point it means we're trying to use our
-        //  fallback and even that isn't working. We don't typically want to
-        //  kill the whole runtime at this point since something else up
-        //  the stream might want to try to recover. In this case, we should
-        //  set a "mount failed" switch/alert somewhere.
-        tracing::error!("{:}", error)
+    pub(crate) fn exec_sync(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
+        self.get_async_executor()?
+            .block_on(async {
+                self.exec(exec_module_specifier).await
+            })
     }
 }
 
@@ -360,134 +339,92 @@ pub enum AbyRuntimeError {
     /// AbyRuntime wasn't initialized yet (and/or properly).
     #[msg("aby runtime not yet initialized")]
     Uninitialized,
-
-    /// TODO
-    #[msg("resource '{0:}' error; {1:}")]
-    ResourceError(&'static str, std::io::Error),
-
+    
     /// TODO
     #[msg("logging setup failed: {0:}")]
     LoggingSetupFailed(LoggingError),
-
+    
+    //--
     /// TODO
     #[msg("invalid runtime config: {0:}")]
     InvalidConfig(AbyRuntimeConfigError),
-
+    
     /// The runtime detected a current or future invalid atomic state.
     #[msg("invalid state '{0:}'")]
     InvalidState(u32),
-
+    
     /// TODO
     #[msg("invalid module specifier '{0:}'")]
     InvalidModuleSpecifier(ModuleResolutionError),
-
+    
+    //--
     /// TODO
     #[msg("failed module resolution: {0:}")]
     FailedModuleResolution(ModuleResolutionError),
-
+    
     /// TODO
     #[msg("failed to send broadcast: {0:}")]
     FailedBroadcastSend(AnyError),
-
+    
+    /// TODO
+    #[msg("io error; {0:}")]
+    IoError(std::io::Error),
+    
+    /// TODO: Move this one to CAbyRuntimeError.
+    #[msg("invalid main module '{0:}'")]
+    InvalidCBinding(cwrap::error::CBindingError),
+    
+    //--
     /// TODO
     #[msg("unbeknownst error: {0:}")]
     AnyError(AnyError),
-
-    // /// An unknown error occurred.
-    // #[msg("unknown error: {0:}")]
-    // Unknown(&'static str),
-
-    //---
-    /// TODO: Move this one to CAbyRuntimeError.
-    #[msg("marshal failed: {0:}")]
-    NulError(std::ffi::NulError),
-
-    /// TODO: Move this one to CAbyRuntimeError.
-    #[msg("invalid main module '{0:}'")]
-    InvalidCBinding(cwrap::error::CStringError),
 }
 
-#[derive(oops::Error)]
-pub enum AbyRuntimeConfigError {
-    /// Indicates the root dir couldn't be resolved from any registered source.
-    ///
-    /// In the case of a runtime which provides a sensible default (like the
-    /// current working directory on Windows/macOS/*nix/etc.), this usually
-    /// means we both didn't find a project root specified in configs or args,
-    /// but we also failed to look up a sensible default.
-    #[msg("missing root dir")]
-    MissingRootDir,
-
+impl From<AbyRuntimeConfigError> for AbyRuntimeError {
     /// TODO
-    #[msg("missing main module specifier")]
-    MissingMainModuleSpecifier,
+    fn from(error: AbyRuntimeConfigError) -> Self {
+        AbyRuntimeError::InvalidConfig(error)
+    }
+}
 
+impl From<cwrap::error::CBindingError> for AbyRuntimeError {
     /// TODO
-    #[msg("missing log dir")]
-    MissingLogDir,
-
-    /// TODO
-    #[msg("missing data dir")]
-    MissingDataDir,
-
-    /// TODO
-    #[msg("missing inspector name")]
-    MissingInspectorName,
-
-    /// TODO
-    #[msg("missing inspector addr")]
-    MissingInspectorAddr,
-
-    /// TODO
-    #[msg("invalid inspector addr '{0:}'")]
-    InvalidInspectorAddr(std::net::AddrParseError),
+    fn from(error: cwrap::error::CBindingError) -> Self {
+        AbyRuntimeError::InvalidCBinding(error)
+    }
 }
 
 impl From<cwrap::error::CStringError> for AbyRuntimeError {
     /// TODO
-    fn from(error: cwrap::error::CStringError) -> AbyRuntimeError {
-        AbyRuntimeError::InvalidCBinding(error)
+    fn from(error: cwrap::error::CStringError) -> Self {
+        AbyRuntimeError::from(cwrap::error::CBindingError::CStringError(error))
+    }
+}
+
+impl From<std::ffi::NulError> for AbyRuntimeError {
+    /// TODO
+    fn from(error: std::ffi::NulError) -> Self {
+        AbyRuntimeError::InvalidCBinding(cwrap::error::CBindingError::from(error))
     }
 }
 
 impl From<ModuleResolutionError> for AbyRuntimeError {
     /// TODO
-    fn from(error: ModuleResolutionError) -> AbyRuntimeError {
+    fn from(error: ModuleResolutionError) -> Self {
         AbyRuntimeError::FailedModuleResolution(error)
     }
 }
 
 impl From<std::io::Error> for AbyRuntimeError {
     /// TODO
-    fn from(error: std::io::Error) -> AbyRuntimeError {
-        AbyRuntimeError::ResourceError("io", error)
-    }
-}
-
-impl From<std::ffi::NulError> for AbyRuntimeError {
-    /// TODO
-    fn from(error: std::ffi::NulError) -> AbyRuntimeError {
-        AbyRuntimeError::NulError(error)
+    fn from(error: std::io::Error) -> Self {
+        AbyRuntimeError::IoError(error)
     }
 }
 
 impl From<AnyError> for AbyRuntimeError {
     /// TODO
-    fn from(error: AnyError) -> AbyRuntimeError {
+    fn from(error: AnyError) -> Self {
         AbyRuntimeError::AnyError(error)
-    }
-}
-
-impl From<AbyRuntimeConfigError> for AbyRuntimeError {
-    /// TODO
-    fn from(error: AbyRuntimeConfigError) -> AbyRuntimeError {
-        AbyRuntimeError::InvalidConfig(error)
-    }
-}
-
-impl From<PoisonError<MutexGuard<'_, CLogCallback>>> for AbyRuntimeError {
-    /// TODO: Use the actual error!
-    fn from(_: PoisonError<MutexGuard<'_, CLogCallback>>) -> AbyRuntimeError {
-        AbyRuntimeError::LoggingSetupFailed(LoggingError::LogCallbackPoisoned)
     }
 }

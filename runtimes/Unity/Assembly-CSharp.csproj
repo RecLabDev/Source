@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Gameplay\PlayerSpawn.cs" />
+    <Compile Include="Assets\Scripts\Mechanics\PlayerCameraController.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PlayAudioClip.cs" />
     <Compile Include="Assets\Scripts\Core\Simulation.InstanceRegister.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerEnteredVictoryZone.cs" />
@@ -68,7 +69,7 @@
     <Compile Include="Assets\Scripts\Core\Simulation.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PatrolPath.cs" />
     <Compile Include="Assets\ChestEffect.cs" />
-    <Compile Include="Assets\Scripts\UI\MainUIController.cs" />
+    <Compile Include="Assets\Scripts\Mechanics\AfkOverlayController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerEnteredDeathZone.cs" />
     <Compile Include="Assets\Scripts\Gameplay\HealthIsZero.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PatrolPath.Mover.cs" />
@@ -105,9 +106,11 @@
     <Compile Include="Assets\Scripts\Mechanics\SpawnPoint.cs" />
     <Compile Include="Assets\Scripts\Mechanics\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\EnemyDeath.cs" />
+    <Compile Include="Assets\Scripts\UI\LobbyDisplayController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerStopJump.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\UI Panels\Afk\AfkStyles.uss" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro.cginc" />
     <None Include="Assets\Environments\Oak Woods\README.TXT" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Overlay.shader" />
@@ -128,6 +131,7 @@
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile.shader" />
+    <None Include="Assets\UI Panels\Afk\AfkResting.uxml" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>

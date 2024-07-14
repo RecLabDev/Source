@@ -147,3 +147,39 @@ impl AbyRuntimeConfig {
         self.unstable_deno_features.as_ref()
     }
 }
+
+#[derive(oops::Error)]
+pub enum AbyRuntimeConfigError {
+    /// Indicates the root dir couldn't be resolved from any registered source.
+    ///
+    /// In the case of a runtime which provides a sensible default (like the
+    /// current working directory on Windows/macOS/*nix/etc.), this usually
+    /// means we both didn't find a project root specified in configs or args,
+    /// but we also failed to look up a sensible default.
+    #[msg("missing root dir")]
+    MissingRootDir,
+
+    /// TODO
+    #[msg("missing main module specifier")]
+    MissingMainModuleSpecifier,
+
+    /// TODO
+    #[msg("missing log dir")]
+    MissingLogDir,
+
+    /// TODO
+    #[msg("missing data dir")]
+    MissingDataDir,
+
+    /// TODO
+    #[msg("missing inspector name")]
+    MissingInspectorName,
+
+    /// TODO
+    #[msg("missing inspector addr")]
+    MissingInspectorAddr,
+
+    /// TODO
+    #[msg("invalid inspector addr '{0:}'")]
+    InvalidInspectorAddr(std::net::AddrParseError),
+}

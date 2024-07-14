@@ -5,71 +5,57 @@ using System.Net.Http;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 using UnityEngine;
 using static UnityEngine.CullingGroup;
 
 using UnityEditor;
 using static UnityEngine.Application;
-using System.Threading.Tasks;
-using Aby.Unity.Plugin;
+
+using Aby.SDK;
+using Aby.CStuff;
 
 namespace Aby.Unity.Plugin
 {
     /// <summary>
     /// TODO
     /// </summary>
-    [InitializeOnLoad]
     public partial class AbyRuntime
     {
         /// <summary>
         /// TODO
         /// </summary>
-        public static Thread ServiceThread { get; private set; }
+        internal CAbyRuntime c_abyRuntime;
 
         /// <summary>
         /// TODO
         /// </summary>
-        public static CAbyRuntimeStatus State => CAbyRuntimeStatus.None; // TODO: Get this value from the actual runtime instance.
+        public Thread ServiceThread { get; private set; }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public static bool IsRunning
+        public bool IsAlive
         {
             get => ServiceThread?.ThreadState == ThreadState.Running;
         }
 
-        //---
         /// <summary>
-        /// TOODO
+        /// TODO
         /// </summary>
-        static AbyRuntime()
-        {
-            try
-            {
-                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-                EditorApplication.quitting += OnEditorQuitting;
-
-                AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-                AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-            }
-            catch (Exception exception)
-            {
-                Debug.LogErrorFormat("Failed to bootstrap `AbyRuntime`: {0}", exception);
-            }
-        }
+        public CAbyRuntimeStatus State => CAbyRuntimeStatus.None; // TODO: Get this value from the actual runtime instance.
 
         /// <summary>
         /// TODO
         /// </summary>
-        public static string MainModuleSpecifier = "./Examples/Counter/main.js";
+        private LogCallbackDelegate logCallback;
 
         //--
         /// <summary>
         /// TODO
         /// </summary>
-        public static void StartServiceThread()
+        public void StartServiceThread()
         {
             ServiceThread = new Thread(new ThreadStart(StartServiceThreadBody));
             ServiceThread.Start();
@@ -80,29 +66,29 @@ namespace Aby.Unity.Plugin
         /// <summary>
         /// TODO
         /// </summary>
-        public static void StartServiceThreadBody()
+        public void StartServiceThreadBody()
         {
-            AbyRuntime.ExecuteModule(MainModuleSpecifier);
+            //AbyRuntime.ExecuteModule(MainModuleSpecifier);
         }
 
         /// <summary>
         /// TODO: This should be an FFI call into the AbyRuntime itself.
         /// </summary>
-        public static void StopServiceThread()
+        public void StopServiceThread()
         {
             try
             {
                 // TODO: Safely shutdown AbyRuntime ..
-                //var httpClient = new HttpClient();
-                //httpClient.BaseAddress = new Uri("http://localhost:11000");
+                // var httpClient = new HttpClient();
+                // httpClient.BaseAddress = new Uri("http://localhost:11000");
 
-                //var quitResponse = httpClient.GetStringAsync("/quit");
-                //quitResponse.Wait(); // TODO: Ugh.
+                // var quitResponse = httpClient.GetStringAsync("/quit");
+                // quitResponse.Wait(); // TODO: Ugh.
 
-                //if (quitResponse.Result == null)
-                //{
-                //    Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
-                //}
+                // if (quitResponse.Result == null)
+                // {
+                //     Debug.LogWarningFormat("Called quit endpoint: {0}", quitResponse);
+                // }
             }
             catch (Exception exc)
             {
@@ -124,43 +110,123 @@ namespace Aby.Unity.Plugin
         /// <summary>
         /// TODO
         /// </summary>
-        private static bool receiveMessages = false;
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public static void StartListening()
+        /// <param name="message"></param>
+        private static void OnAbyLogMessage(string message)
         {
-            Task.Run(ConsumeMessages);
+            Debug.LogFormat("[Aby]: {0}", message);
         }
 
         /// <summary>
         /// TODO
         /// </summary>
-        /// <returns></returns>
-        private async static Task ConsumeMessages()
+        public void Dispose()
         {
-            receiveMessages = true;
-            while (receiveMessages)
+            // NativeMethods.c_free_runtime(abyRuntime.Instance);
+        }
+
+        //---
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="moduleSpecifier"></param>
+        public void ExecuteModule(string moduleSpecifier)
+        {
+            CExecuteModule(moduleSpecifier);
+        }
+
+        /// <summary>
+        /// TODO: Can/should we merge this into the `ExecuteModule` method above?
+        /// </summary>
+        /// <returns>Enumerator for co-routine.</returns>
+        private unsafe void CExecuteModule(string moduleSpecifier)
+        {
+            Debug.LogFormat("Executing Module '{0}'", moduleSpecifier);
+
+            try
             {
-                Debug.Log("Checking for channel changes...");
+                if (logCallback == null)
+                {
+                    logCallback = OnAbyLogMessage;
+                    // verify_log_callback(m_LogCallback as verify_log_callback__cb_delegate);
+                    // GCHandle.Alloc(logCallback);
+                }
 
-                // Check for changes in the channel here
-                // For example, check a queue, a condition, or listen for an event
+                fixed (byte* execSpecifier = CGoodies.GetBytes(moduleSpecifier))
+                {
+                    var execOptions = new CExecModuleOptions
+                    {
+                        module_specifier = execSpecifier,
+                    };
 
-                // Process any changes found
+                    // TODO: Use u16 for the port.
+                    //var startResult = runtime.ExecModule(execOptions);
+                    //if (startResult != CExecModuleResult.Ok)
+                    //{
+                    //    throw new Exception($"AbyRuntime exited with error: {startResult}");
+                    //}
+                    //else
+                    //{
+                    //    Debug.LogFormat("AbyRuntime exited safely with code OK ({0}) ..", startResult);
+                    //}
+                }
+            }
+            catch (Exception exc)
+            {
+                Debug.LogErrorFormat("Failed to start AbyRuntime: {0}", exc);
+            }
+        }
+    }
 
-                // Simulate waiting for a change in the channel. Replace this with your actual change detection logic.
-                await Task.Delay(1000); // Waits asynchronously for 1 second
+    [InitializeOnLoad]
+    public partial class AbyEditorExtras
+    {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static bool receiveMessages = false;
+
+        /// <summary>
+        /// TOODO
+        /// </summary>
+        static AbyEditorExtras()
+        {
+            try
+            {
+                EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+                EditorApplication.quitting += OnEditorQuitting;
+
+                AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+                AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogErrorFormat("Failed to bootstrap `AbyRuntime`: {0}", exception);
             }
         }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public static void StopListening()
+        private static void OnBeforeAssemblyReload()
         {
-            receiveMessages = false;
+            //if (IsRunning)
+            //{
+            //    //StopServiceThread();
+            //    Debug.LogFormat("Stopped service before assembly reload ..");
+            //}
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private static void OnAfterAssemblyReload()
+        {
+            //if (!IsRunning)
+            //{
+            //    // TODO: Re-start the server, but only if it was running before assembly reload.
+            //    // StartServiceThread();
+            //    // Debug.LogFormat("Re-started servicec after assembly reload ..");
+            //}
         }
 
         //---
@@ -177,31 +243,6 @@ namespace Aby.Unity.Plugin
             catch (Exception exception)
             {
                 Debug.LogErrorFormat("Failed to init on load: {0}", exception);
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private static void OnBeforeAssemblyReload()
-        {
-            if (IsRunning)
-            {
-                StopServiceThread();
-                Debug.LogFormat("Stopped service before assembly reload ..");
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private static void OnAfterAssemblyReload()
-        {
-            if (!IsRunning)
-            {
-                // TODO: Re-start the server, but only if it was running before assembly reload.
-                // StartServiceThread();
-                // Debug.LogFormat("Re-started servicec after assembly reload ..");
             }
         }
 
@@ -244,11 +285,102 @@ namespace Aby.Unity.Plugin
         /// </summary>
         private static void OnEditorQuitting()
         {
-            if (IsRunning)
+            // if (IsRunning)
+            // {
+            //     Debug.LogFormat("Quitting AbyRuntime service!");
+            //     StopServiceThread();
+            // }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void StartListening()
+        {
+            Task.Run(ConsumeMessages);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <returns></returns>
+        private async Task ConsumeMessages()
+        {
+            receiveMessages = true;
+            while (receiveMessages)
             {
-                Debug.LogFormat("Quitting AbyRuntime service!");
-                StopServiceThread();
+                Debug.Log("Checking for channel changes...");
+
+                // Check for changes in the channel here
+                // For example, check a queue, a condition, or listen for an event
+
+                // Process any changes found
+
+                // Simulate waiting for a change in the channel. Replace this with your actual change detection logic.
+                await Task.Delay(1000); // Waits asynchronously for 1 second
             }
         }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public static void StopListening()
+        {
+            receiveMessages = false;
+        }
     }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    public struct AbyRuntimeConfig
+    {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public string RootDirectory;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public string DataDirectory;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public string LogDirectory;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public string MainModuleSpecifier;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public string InspectorAddress;
+    }
+
+    public unsafe partial struct CAbyRuntimeConfig
+    {
+        //..
+        public string InspectorAddress => CGoodies.PtrToStringUtf8(inspector_addr);
+    }
+
+    public static unsafe partial class NativeMethods
+    {
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="message"></param>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void c_verify_log_callback__cb_delegate(string message);
+    }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="message"></param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void LogCallbackDelegate(string message);
 }

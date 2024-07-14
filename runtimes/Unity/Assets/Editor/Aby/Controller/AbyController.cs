@@ -14,7 +14,7 @@ namespace Aby.Unity.Editor.Aby
 {
     /// <summary>
     /// TODO
-    /// </summary>\
+    /// </summary>
     [InitializeOnLoad]
     public class AbyControllerEditorWindow : EditorWindow
     {
@@ -46,19 +46,19 @@ namespace Aby.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private State m_State = new State();
+        private State state = new State();
 
         /// <summary>
         /// TODO
         /// </summary>
         [SerializeField]
-        private AbyServiceConfig m_CurrentEnvironment;
+        private AbyExecutor m_ServiceConfig;
 
         /// <summary>
         /// TODO
         /// </summary>
         [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
+        private VisualTreeAsset visualTreeAsset = default;
 
         /// <summary>
         /// TODO
@@ -100,7 +100,7 @@ namespace Aby.Unity.Editor.Aby
             else
             {
                 var envConfigPath = AssetDatabase.GUIDToAssetPath(envConfigs[0]);
-                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyServiceConfig>(envConfigPath);
+                m_ServiceConfig = AssetDatabase.LoadAssetAtPath<AbyExecutor>(envConfigPath);
             }
         }
 
@@ -118,9 +118,9 @@ namespace Aby.Unity.Editor.Aby
         /// </summary>
         public void CreateGUI()
         {
-            if (m_VisualTreeAsset != null)
+            if (visualTreeAsset != null)
             {
-                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
+                rootVisualElement.Add(visualTreeAsset.Instantiate());
                 DrawRuntimeControlToolbar();
             }
             else
@@ -141,7 +141,8 @@ namespace Aby.Unity.Editor.Aby
             }
             else
             {
-                stateLabel.text = $"Runtime State: {AbyRuntime.State}";
+                // TODO: Get the current state from the selected runtime instance.
+                stateLabel.text = $"Runtime State: TODO";
             }
 
             var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
@@ -174,7 +175,8 @@ namespace Aby.Unity.Editor.Aby
             var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
             if (toggleButton != null)
             {
-                toggleButton.text = AbyRuntime.IsRunning == false ? "Start" : "Stop";
+                // TODO: Something like `selectedRuntime.IsAlive == false ? "Start" : "Stop"`
+                toggleButton.text = "Toggle";
             }
         }
 
@@ -187,18 +189,19 @@ namespace Aby.Unity.Editor.Aby
         }
 
         /// <summary>
-        /// TODO: Setup an observer for status display.
+        /// TODO
         /// </summary>
         private void OnToggleButtonClicked()
         {
-            if (!AbyRuntime.IsRunning)
-            {
-                AbyRuntime.StartServiceThread();
-            }
-            else
-            {
-                AbyRuntime.StopServiceThread();
-            }
+            // TODO: Start or stop the runtime, depending on its state ..
+            // if (!abyRuntime.IsAlive)
+            // {
+            //     abyRuntime.StartServiceThread();
+            // }
+            // else
+            // {
+            //     abyRuntime.StopServiceThread();
+            // }
         }
 
         /// <summary>
@@ -208,12 +211,12 @@ namespace Aby.Unity.Editor.Aby
         {
             Debug.Log("Attempting to reload plugin.");
 
-            // We need to exit play mode first so we can (optionally) save
-            // and safely run shutdown operations.
+            // We need to exit play mode first so we can save and safely
+            // run shutdown operations on Aby's managed threads.
             EditorApplication.ExitPlaymode();
 
-            // `ExitPlaymore` doesn't complete until "later", so we defer
-            // the rest of the operation until then.
+            // The call to `ExitPlaymode` above doesn't complete until "later",
+            // so we defer the rest of the operation until then.
             EditorApplication.delayCall += DelayedOnReloadButtonClicked;
         }
 

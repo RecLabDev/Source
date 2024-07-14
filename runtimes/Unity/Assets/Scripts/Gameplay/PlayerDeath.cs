@@ -17,7 +17,7 @@ namespace Platformer.Gameplay
         public override void Execute()
         {
             var player = model.player;
-            if (player.health.IsAlive)
+            if (player.health != null && player.health.IsAlive)
             {
                 player.health.Die();
                 model.virtualCamera.m_Follow = null;

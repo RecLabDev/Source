@@ -1,4 +1,7 @@
-VisualElement {
+:root {
+  --party-btn-color: rgb(120, 146, 85);
+  --party-btn-color-hover: rgb(133, 167, 87);
+  --party-btn-color-active: rgb(103, 122, 80);
 }
 
 .dev-label {
@@ -14,7 +17,7 @@ VisualElement {
 }
 
 .net-dbg-btn {
-    background-color: rgb(120, 146, 85);
+    background-color: var(--party-btn-color);
     justify-content: center;
     padding-top: 3px;
     padding-right: 3px;
@@ -32,6 +35,12 @@ VisualElement {
     margin-right: 0;
     margin-bottom: 0;
     margin-left: 0;
+}
+.net-dbg-btn:hover {
+    background-color: var(--party-btn-color-hover);
+}
+.net-dbg-btn:active {
+    background-color: var(--party-btn-color-active);
 }
 
 .net-dbg-btn-text {

@@ -21,15 +21,16 @@ namespace Aby.Unity.Editor.Actions
         /// </summary>
         public static void Server()
         {
-            if (AbyRuntime.IsRunning)
-            {
-                Debug.LogWarning("AbyRuntime already running ({0}). Can't run any further!");
-            }
-            else
-            {
-                AbyRuntime.StartServiceThread();
-                Debug.LogFormat("Running AbyRuntime for Server ({0})", AbyRuntime.State);
-            }
+            // TODO: Start the server whenever necessary.
+            // if (AbyRuntime.IsAlive)
+            // {
+            //     Debug.LogWarning("AbyRuntime already running ({0}). Can't run any further!");
+            // }
+            // else
+            // {
+            //     AbyRuntime.StartServiceThread();
+            //     Debug.LogFormat("Running AbyRuntime for Server ({0})", AbyRuntime.State);
+            // }
         }
     }
 }

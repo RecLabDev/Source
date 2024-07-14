@@ -20,18 +20,7 @@ namespace Aby.Unity
         /// TODO
         /// </summary>
         [SerializeField]
-        public string Entrypoint = "./Assets/Scripts/Main.js";
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        [SerializeField]
-        public AbyServiceConfig Config { get; private set; }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private AbyRuntime abyRuntime;
+        public AbyExecutor Executor { get; private set; }
 
         /// <summary>
         /// TODO

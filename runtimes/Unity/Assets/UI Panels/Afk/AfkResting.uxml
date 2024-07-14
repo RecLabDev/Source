@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/UI%20Panels/Afk/AfkStyles.uss?fileID=7433441132597879392&amp;guid=304a166a0a7f79943862e2bbc99c6ea0&amp;type=3#AfkStyles" />
+    <ui:VisualElement name="Overlay" class="afk-container" style="flex-grow: 1;" />
+</ui:UXML>

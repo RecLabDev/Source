@@ -17,8 +17,12 @@ use tokio::sync::broadcast;
 
 use cwrap::error::CStringError;
 
-use deno_runtime::deno_broadcast_channel::BroadcastChannel;
-use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
+use deno_runtime::BootstrapOptions;
+use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+use deno_runtime::worker::MainWorker;
+use deno_runtime::worker::WorkerOptions;
+use deno_runtime::permissions::PermissionsContainer;
+use deno_runtime::inspector_server::InspectorServer;
 use deno_runtime::deno_core::resolve_url_or_path;
 use deno_runtime::deno_core::FeatureChecker;
 use deno_runtime::deno_core::FsModuleLoader;
@@ -26,12 +30,8 @@ use deno_runtime::deno_core::ModuleResolutionError;
 use deno_runtime::deno_core::ModuleSpecifier;
 use deno_runtime::deno_io::Stdio;
 use deno_runtime::deno_io::StdioPipe;
-use deno_runtime::inspector_server::InspectorServer;
-use deno_runtime::permissions::PermissionsContainer;
-use deno_runtime::worker::MainWorker;
-use deno_runtime::worker::WorkerOptions;
-use deno_runtime::BootstrapOptions;
-use deno_runtime::UNSTABLE_GRANULAR_FLAGS;
+use deno_runtime::deno_broadcast_channel::BroadcastChannel;
+use deno_runtime::deno_broadcast_channel::InMemoryBroadcastChannel;
 
 use crate::runtime::config::AbyRuntimeConfig;
 use crate::runtime::state::AbyRuntimeState;
@@ -226,12 +226,16 @@ impl TryFrom<crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
 #[repr(C)]
 #[derive(Debug)]
 pub struct CConstructRuntimeResult {
+    /// TODO
     pub code: CConstructRuntimeResultCode,
+    
+    /// TODO
     pub runtime: *mut CAbyRuntime,
 }
 
 #[automatically_derived]
 impl CConstructRuntimeResult {
+    /// TODO
     pub fn new(code: CConstructRuntimeResultCode, maybe_runtime: Option<CAbyRuntime>) -> Self {
         let runtime = maybe_runtime
             .map(|runtime| Box::into_raw(Box::new(runtime)))
@@ -242,6 +246,7 @@ impl CConstructRuntimeResult {
 }
 
 impl From<AbyRuntimeError> for CConstructRuntimeResult {
+    /// TODO
     fn from(error: AbyRuntimeError) -> Self {
         CConstructRuntimeResult::new(CConstructRuntimeResultCode::from(error), None)
     }
@@ -253,22 +258,28 @@ impl From<AbyRuntimeError> for CConstructRuntimeResult {
 pub enum CConstructRuntimeResultCode {
     /// All operations completed successfully.
     Ok,
-
-    /// TODO
-    InvalidDataDir,
-
-    /// TODO
-    InvalidLogDir,
-
-    /// TODO
-    InvalidMainModule,
-
+    
     /// TODO
     InvalidConfig,
-
+    
+    /// TODO
+    InvalidDataDir,
+    
+    /// TODO
+    InvalidLogDir,
+    
+    /// TODO
+    InvalidMainModule,
+    
+    /// TODO
+    InvalidBindings,
+    
     /// TODO
     FailedSetup,
-
+    
+    /// TODO
+    FailedOperation,
+    
     /// TODO
     FailedBroadcast,
 }
@@ -284,27 +295,24 @@ impl From<CConstructRuntimeResultCode> for CConstructRuntimeResult {
 }
 
 impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
+    /// TODO
     fn from(error: AbyRuntimeError) -> Self {
         match error {
-            AbyRuntimeError::Uninitialized => CConstructRuntimeResultCode::InvalidConfig,
-            AbyRuntimeError::NulError(_) => CConstructRuntimeResultCode::InvalidConfig,
-            AbyRuntimeError::FailedModuleResolution(_) => {
-                CConstructRuntimeResultCode::InvalidConfig
-            }
+            AbyRuntimeError::Uninitialized => CConstructRuntimeResultCode::FailedSetup,
+            AbyRuntimeError::FailedModuleResolution(_) => CConstructRuntimeResultCode::InvalidMainModule,
             AbyRuntimeError::FailedBroadcastSend(_) => CConstructRuntimeResultCode::FailedBroadcast,
             AbyRuntimeError::InvalidConfig(_) => CConstructRuntimeResultCode::InvalidConfig,
-            AbyRuntimeError::InvalidCBinding(_) => CConstructRuntimeResultCode::InvalidMainModule,
-            AbyRuntimeError::InvalidModuleSpecifier(_) => {
-                CConstructRuntimeResultCode::InvalidConfig
-            }
+            AbyRuntimeError::InvalidModuleSpecifier(_) => CConstructRuntimeResultCode::InvalidConfig,
             AbyRuntimeError::InvalidState(_) => CConstructRuntimeResultCode::InvalidConfig,
-            AbyRuntimeError::LoggingSetupFailed(_) => CConstructRuntimeResultCode::InvalidLogDir,
-            AbyRuntimeError::ResourceError(_, _) => CConstructRuntimeResultCode::InvalidConfig,
+            AbyRuntimeError::InvalidCBinding(_) => CConstructRuntimeResultCode::InvalidBindings,
+            AbyRuntimeError::LoggingSetupFailed(_) => CConstructRuntimeResultCode::FailedSetup,
+            AbyRuntimeError::IoError(_) => CConstructRuntimeResultCode::FailedOperation,
             AbyRuntimeError::AnyError(_) => CConstructRuntimeResultCode::InvalidConfig,
-            // AbyRuntimeError::Unknown(_) => CConstructRuntimeResultCode::InvalidConfig,
         }
     }
 }
+
+type CErrorReportFn = extern "C" fn(message: *const std::ffi::c_char);
 
 /// Construct an instance of AbyRuntime from a c-like boundary.
 ///
@@ -319,11 +327,9 @@ impl From<AbyRuntimeError> for CConstructRuntimeResultCode {
 /// let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions {
 ///     // TODO
 /// });
-/// ````
+/// ```
 #[export_name = "aby__c_construct_runtime"]
-pub extern "C" fn c_construct_runtime(
-    c_runtime_config: CAbyRuntimeConfig,
-) -> CConstructRuntimeResult {
+pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CConstructRuntimeResult {
     // Get a new copy of the target config for the new runtime instance.
     let runtime_config = match AbyRuntimeConfig::try_from(c_runtime_config.to_owned()) {
         Ok(runtime_config) => runtime_config,

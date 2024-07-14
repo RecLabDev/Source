@@ -7,12 +7,12 @@ namespace Platformer.UI
     /// <summary>
     /// A simple controller for switching between UI panels.
     /// </summary>
-    public class MainUIController : MonoBehaviour
+    public class LobbyDisplayController : MonoBehaviour
     {
         /// <summary>
         /// TODO
         /// </summary>
-        public GameObject[] panels;
+        public GameObject[] Panels;
 
         /// <summary>
         /// TODO
@@ -28,10 +28,10 @@ namespace Platformer.UI
         /// <param name="index"></param>
         public void SetActivePanel(int index)
         {
-            for (var i = 0; i < panels.Length; i++)
+            for (var i = 0; i < Panels.Length; i++)
             {
                 var active = i == index;
-                var g = panels[i];
+                var g = Panels[i];
                 if (g.activeSelf != active) g.SetActive(active);
             }
         }

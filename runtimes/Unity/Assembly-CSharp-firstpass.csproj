@@ -63,9 +63,9 @@
     <Compile Include="Assets\Plugins\Aby\AbyUnitySettings.cs" />
     <Compile Include="Assets\Plugins\Aby\AbyRuntime.cs" />
     <Compile Include="Assets\Plugins\Aby\AbyModule.cs" />
-    <Compile Include="Assets\Plugins\Aby\AbyRuntime.d.cs" />
+    <Compile Include="Assets\Plugins\Aby\AbyExecutor.cs" />
     <Compile Include="Assets\Plugins\Aby\AbyRuntime.g.cs" />
-    <Compile Include="Assets\Plugins\Aby\AbyRuntimeConfig.cs" />
+    <Compile Include="Assets\Plugins\Aby\AbyCStuff.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Plugins\Aby\AbyRuntime.dll" />
