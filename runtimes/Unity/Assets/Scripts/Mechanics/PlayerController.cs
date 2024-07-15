@@ -16,6 +16,7 @@ using Platformer.Core;
 
 using Aby;
 using Aby.Unity;
+using UnityEngine.SocialPlatforms.Impl;
 
 namespace Platformer.Mechanics
 {
@@ -43,6 +44,11 @@ namespace Platformer.Mechanics
         /// <summary>
         /// TODO
         /// </summary>
+        public Vector3 startingPosition = Vector3.zero;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         public Bounds Bounds => collider2d.bounds;
 
         /// <summary>
@@ -59,7 +65,7 @@ namespace Platformer.Mechanics
         /// <summary>
         /// TODO
         /// </summary>
-        public Camera playerCamera;
+        public CinemachineVirtualCamera playerCamera;
 
         /// <summary>
         /// TODO
@@ -96,9 +102,6 @@ namespace Platformer.Mechanics
         /// </summary>
         private bool attack;
 
-        /*internal new*/
-        public AudioSource audioSource;
-
         /// <summary>
         /// TODO
         /// </summary>
@@ -108,26 +111,41 @@ namespace Platformer.Mechanics
         public AudioClip jumpSound;
         public AudioClip victorySound;
 
-
-        /*internal new*/
-        public Collider2D collider2d;
-
-        Vector2 move;
         SpriteRenderer spriteRenderer;
         internal Animator animator;
+        public AudioSource audioSource;
+        public Collider2D collider2d;
+
         readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+
+        Vector2 move;
 
         /// <summary>
         /// TODO
         /// </summary>
         void Awake()
         {
-            health = GetComponent<Health>();
-            audioSource = GetComponent<AudioSource>();
-            collider2d = GetComponent<Collider2D>();
+            playerCamera = FindObjectOfType<CinemachineVirtualCamera>();
+
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
-            playerCamera = Camera.main;
+            audioSource = GetComponent<AudioSource>();
+            collider2d = GetComponent<Collider2D>();
+
+            health = GetComponent<Health>();
+        }
+
+        protected new void OnEnable()
+        {
+            base.OnEnable();
+
+            // TODO: Set the spawn position to our chosen spawn location ..
+            transform.position = startingPosition;
+
+            if (playerCamera == null)
+            {
+                Debug.LogWarningFormat("Couldn't get camera for player ..");
+            }
         }
 
         protected override void Update()
@@ -209,12 +227,10 @@ namespace Platformer.Mechanics
 
         private void UpdateCameraPosition()
         {
-            Debug.LogFormat("Player Camera: {0}", playerCamera.name);
-
-            if (playerCamera != null)
+            if (IsLocalPlayer && playerCamera?.Follow != transform)
             {
-                playerCamera.transform.position = transform.position;
-                playerCamera.transform.rotation = transform.rotation;
+                Debug.LogFormat("Camera {0} now follows {1} ..", playerCamera.name, transform);
+                playerCamera.Follow = transform;
             }
         }
 
@@ -283,11 +299,15 @@ namespace Platformer.Mechanics
             switch (jumpState)
             {
                 case JumpState.PrepareToJump:
+                    PlayJumpSound();
                     jumpState = JumpState.Jumping;
-                    isJumping = true;
                     stopJump = false;
-                    PlayJumpSound(); // Trigger the jump sound.
-                    canDoubleJump = true; // Reset double-jump flag for each initial jump.
+
+                    // TODO: Can we do away with `isJumping` in favor of the `jumpState`?
+                    isJumping = true;
+
+                    // Reset double-jump flag for each initial jump.
+                    canDoubleJump = true;
                     break;
                 case JumpState.Jumping:
                     if (!IsGrounded)
@@ -296,27 +316,27 @@ namespace Platformer.Mechanics
                     }
                     break;
                 case JumpState.InFlight:
+                    // User is in-flight. From this position they can either jump again,
                     if (Input.GetButtonDown("Jump") && !stopJump && canDoubleJump)
                     {
-                        jumpState = JumpState.DoubleJump;
-                        isJumping = true; // This is critical to trigger the double jump in ComputeVelocity.
-                        canDoubleJump = false; // Ensure double-jump can't be used again until the player lands.
                         PlayJumpSound();
+                        //jumpState = JumpState.Jumping;
+
+                        // TODO: Can we do away with `isJumping` in favor of the `jumpState`?
+                        isJumping = true;
+
+                        // Can't double jump again until 
+                        canDoubleJump = false;
                     }
+                    // or land on the ground.
                     else if (IsGrounded)
                     {
                         jumpState = JumpState.Landed;
                     }
-                    break;
-                case JumpState.DoubleJump:
-                    // The logic for double-jumping is handled in the InFlight case. 
-                    // This state primarily serves as a marker that a double-jump has occurred.
-                    if (IsGrounded)
-                    {
-                        jumpState = JumpState.Landed;
-                    }
+
                     break;
                 case JumpState.Landed:
+                    // .. or they can land.
                     jumpState = JumpState.Grounded;
                     break;
             }
@@ -327,9 +347,9 @@ namespace Platformer.Mechanics
             if (isJumping)
             {
                 // Apply jump velocity for a double jump or a normal jump if grounded
-                if (jumpState == JumpState.DoubleJump || IsGrounded)
+                if (jumpState == JumpState.InFlight || IsGrounded)
                 {
-                    var jumpVelocity = jumpState == JumpState.DoubleJump ? jumpTakeOffSpeed * doubleJumpForce : jumpTakeOffSpeed;
+                    var jumpVelocity = jumpState == JumpState.InFlight ? jumpTakeOffSpeed * doubleJumpForce : jumpTakeOffSpeed;
                     velocity.y = jumpVelocity * model.jumpModifier;
                 }
                 isJumping = false;

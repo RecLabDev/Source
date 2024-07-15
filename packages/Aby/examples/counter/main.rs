@@ -39,8 +39,8 @@ fn main() -> Result<ExitCode> {
         //  editor/asset database and passed to the `AbyPlugin` when we 
         //  setup a new mount context.
         //  
-        //  Note: In the future, some of these values will likely probably be 
-        //  pulled directly from Deno (+other) configs.
+        //  Note: In the future, some of these values will likely probably
+        //  be pulled directly from Deno (+other) configs.
         let work_dir = PathBuf::from(std::env!("CARGO_MANIFEST_DIR"));
         let root_dir = cwrap::try_cstring_from_path(work_dir.as_path())?;
         let main_module_path = CString::new("./examples/counter/main.js")?;
