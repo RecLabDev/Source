@@ -373,6 +373,9 @@ namespace Platformer.Mechanics
         internal Animator animator;
         readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
 
+        private bool canDoubleJump = true;
+        private bool jumpInput;
+
         void Awake()
         {
             health = GetComponent<Health>();
@@ -384,7 +387,7 @@ namespace Platformer.Mechanics
 
         protected override void Update()
         {
-            if (health.IsAlive == false)
+            if (!health.IsAlive)
             {
                 Schedule<PlayerDeath>();
             }
@@ -426,16 +429,15 @@ namespace Platformer.Mechanics
 
         public void OnJump(InputAction.CallbackContext context)
         {
-            Debug.LogFormat("OnJump: Control Enabled: {0}; Performed: {1}", controlEnabled, context.performed);
+            Debug.LogFormat("OnJump: Control Enabled: {0}; Phase: {1}", controlEnabled, context.phase);
             if (controlEnabled && context.performed)
             {
                 Debug.Log("controlEnabled && context.performed");
-                // Start jump
                 jumpInput = true;
                 isJumping = true;
+                Debug.LogFormat("jumpState == {0}", jumpState);
                 if (jumpState == JumpState.Grounded)
                 {
-                    Debug.Log("jumpState == JumpState.Grounded");
                     jumpState = JumpState.PrepareToJump;
                     canDoubleJump = true;
                 }
@@ -449,7 +451,6 @@ namespace Platformer.Mechanics
             else if (context.canceled)
             {
                 Debug.Log("context.canceled");
-                // Stop jump
                 jumpInput = false;
                 isJumping = false;
                 stopJump = true;
@@ -516,12 +517,8 @@ namespace Platformer.Mechanics
             }
         }
 
-        private bool canDoubleJump = true;
-        private bool jumpInput;
-
         void UpdateJumpState()
         {
-            //Debug.Log("I'm in: " + jumpState);
             switch (jumpState)
             {
                 case JumpState.PrepareToJump:
@@ -533,6 +530,7 @@ namespace Platformer.Mechanics
                 case JumpState.Jumping:
                     if (!IsGrounded)
                     {
+                        Debug.LogFormat("JumpState: {0}", jumpState);
                         jumpState = JumpState.InFlight;
                     }
                     break;
