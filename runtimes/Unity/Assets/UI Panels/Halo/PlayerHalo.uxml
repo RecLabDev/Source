@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="HaloContainer" style="flex-grow: 1; background-color: rgba(255, 255, 255, 0); height: 47px; width: 242px; -unity-font: url(&quot;project://database/Assets/UI%20Panels/UnityDefaultRuntimeTheme.tss?fileID=2230732570650464555&amp;guid=1e0a8d3ef3669f24583a619aa4a8eb5c&amp;type=3#NotInter-Regular&quot;);">
-        <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="NameDisplay" style="height: 93px; width: 236px;" />
+    <ui:VisualElement name="HaloContainer" style="flex-grow: 1; background-color: rgb(249, 245, 245); height: 47px; width: 242px; -unity-font: url(&quot;project://database/Assets/UI%20Panels/UnityDefaultRuntimeTheme.tss?fileID=2230732570650464555&amp;guid=1e0a8d3ef3669f24583a619aa4a8eb5c&amp;type=3#NotInter-Regular&quot;); opacity: 1; -unity-background-image-tint-color: rgba(219, 221, 241, 0);">
+        <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="NameDisplay" style="height: 93px; width: 236px; color: rgb(56, 56, 56); -unity-background-image-tint-color: rgb(136, 200, 137);" />
     </ui:VisualElement>
 </ui:UXML>

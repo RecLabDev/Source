@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿/*using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -78,7 +78,6 @@ namespace Platformer.Mechanics
         /// </summary>
         private bool attack;
 
-        /*internal new*/
         public AudioSource audioSource;
 
         /// <summary>
@@ -91,7 +90,6 @@ namespace Platformer.Mechanics
         public AudioClip victorySound;
 
 
-        /*internal new*/
         public Collider2D collider2d;
 
         Vector2 move;
@@ -113,7 +111,7 @@ namespace Platformer.Mechanics
 
         protected override void Update()
         {
-            if (health.IsAlive == false )
+            if (health.IsAlive == false)
             {
                 Schedule<PlayerDeath>();
             }
@@ -121,6 +119,8 @@ namespace Platformer.Mechanics
             {
                 // Check if the player is attacking using the Input Manager.
                 // It could be an "f" key press or a controller button press.
+
+                //original and working
                 if (Input.GetButtonDown("Attack"))
                 {
                     attack = true;
@@ -217,7 +217,8 @@ namespace Platformer.Mechanics
                         slashEvent.player = this;
                         slashEvent.enemy = enemy;
                     }
-                }else if (hit.CompareTag("Chest"))
+                }
+                else if (hit.CompareTag("Chest"))
                 {
                     var chest = hit.GetComponent<Chest>();
                     var slashChest = Schedule<PlayerSlashChest>();
@@ -235,7 +236,7 @@ namespace Platformer.Mechanics
             }
         }
 
-        
+
 
         private bool canDoubleJump = true;
 
@@ -317,6 +318,282 @@ namespace Platformer.Mechanics
             targetVelocity = move * maxSpeed;
         }
 
+
+        public enum JumpState
+        {
+            Grounded,
+            PrepareToJump,
+            Jumping,
+            DoubleJump,
+            InFlight,
+            Landed
+        }
+    }
+}*/
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using Platformer.Gameplay;
+using static Platformer.Core.Simulation;
+using Platformer.Model;
+using Platformer.Core;
+using Theta;
+
+namespace Platformer.Mechanics
+{
+    public class PlayerController : KinematicObject
+    {
+        public Health health;
+        public bool isDead = false;
+        public bool controlEnabled = true;
+        public Bounds Bounds => collider2d.bounds;
+        public Vector3 Direction => spriteRenderer.flipX ? Vector3.right : Vector3.left;
+
+        public float maxSpeed = 7.0f;
+        public JumpState jumpState = JumpState.Grounded;
+        public float jumpTakeOffSpeed = 7.0f;
+        public float doubleJumpForce = 0.65f;
+        private bool isJumping;
+        private bool stopJump;
+        public bool IsAttacking => attack;
+        private bool attack;
+
+        public AudioSource audioSource;
+        public AudioClip respawnSound;
+        public AudioClip slashSound;
+        public AudioClip hurtSound;
+        public AudioClip jumpSound;
+        public AudioClip victorySound;
+
+        public Collider2D collider2d;
+
+        Vector2 move;
+        SpriteRenderer spriteRenderer;
+        internal Animator animator;
+        readonly PlatformerModel model = Simulation.GetModel<PlatformerModel>();
+
+        void Awake()
+        {
+            health = GetComponent<Health>();
+            audioSource = GetComponent<AudioSource>();
+            collider2d = GetComponent<Collider2D>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            animator = GetComponent<Animator>();
+        }
+
+        protected override void Update()
+        {
+            if (health.IsAlive == false)
+            {
+                Schedule<PlayerDeath>();
+            }
+
+            if (controlEnabled)
+            {
+                if (attack && animator.GetCurrentAnimatorStateInfo(0).IsName("PlayerSlash"))
+                {
+                    HandleSlashing();
+                }
+            }
+            else
+            {
+                move.x = 0;
+            }
+
+            UpdateJumpState();
+            UpdateAttackState();
+            base.Update();
+        }
+
+        public void PlayVictorySound()
+        {
+            audioSource.PlayOneShot(victorySound);
+        }
+
+        void UpdateAttackState()
+        {
+            animator.SetBool("Attacking", attack);
+        }
+
+        public void OnMove(InputAction.CallbackContext context)
+        {
+            if (controlEnabled)
+            {
+                move = context.ReadValue<Vector2>();
+            }
+        }
+
+        public void OnJump(InputAction.CallbackContext context)
+        {
+            Debug.LogFormat("OnJump: Control Enabled: {0}; Performed: {1}", controlEnabled, context.performed);
+            if (controlEnabled && context.performed)
+            {
+                Debug.Log("controlEnabled && context.performed");
+                // Start jump
+                jumpInput = true;
+                isJumping = true;
+                if (jumpState == JumpState.Grounded)
+                {
+                    Debug.Log("jumpState == JumpState.Grounded");
+                    jumpState = JumpState.PrepareToJump;
+                    canDoubleJump = true;
+                }
+                else if (jumpState == JumpState.InFlight && canDoubleJump)
+                {
+                    Debug.Log("jumpState == JumpState.InFlight && canDoubleJump");
+                    jumpState = JumpState.DoubleJump;
+                    canDoubleJump = false;
+                }
+            }
+            else if (context.canceled)
+            {
+                Debug.Log("context.canceled");
+                // Stop jump
+                jumpInput = false;
+                isJumping = false;
+                stopJump = true;
+            }
+        }
+
+        public void OnSlash(InputAction.CallbackContext context)
+        {
+            if (controlEnabled && context.performed)
+            {
+                attack = true;
+                PlaySlashSound();
+                Debug.Log("Slash Input");
+            }
+            else if (context.canceled)
+            {
+                attack = false;
+            }
+        }
+
+        void PlaySlashSound()
+        {
+            if (audioSource != null && slashSound != null)
+            {
+                audioSource.PlayOneShot(slashSound);
+            }
+        }
+
+        void HandleSlashing()
+        {
+            float direction = spriteRenderer.flipX ? -1f : 1f; // -1 for left, 1 for right
+            var attackPoint = transform.position + new Vector3(direction * 0.5f, 0, 0);
+            var attackRange = new Vector2(0.1f, 1f); // This creates a wide hitbox.
+
+            var hitObjects = Physics2D.OverlapBoxAll(attackPoint, attackRange, 0);
+            foreach (var hit in hitObjects)
+            {
+                if (hit.CompareTag("Enemy"))
+                {
+                    var enemy = hit.GetComponent<EnemyController>();
+                    float enemyDirection = Mathf.Sign(enemy.transform.position.x - transform.position.x);
+                    if (enemyDirection == direction)
+                    {
+                        var slashEvent = Schedule<PlayerSlashEnemy>();
+                        slashEvent.player = this;
+                        slashEvent.enemy = enemy;
+                    }
+                }
+                else if (hit.CompareTag("Chest"))
+                {
+                    var chest = hit.GetComponent<Chest>();
+                    var slashChest = Schedule<PlayerSlashChest>();
+                    slashChest.player = this;
+                    slashChest.chest = chest;
+                }
+            }
+        }
+
+        void PlayJumpSound()
+        {
+            if (audioSource != null && jumpSound != null)
+            {
+                audioSource.PlayOneShot(jumpSound);
+            }
+        }
+
+        private bool canDoubleJump = true;
+        private bool jumpInput;
+
+        void UpdateJumpState()
+        {
+            //Debug.Log("I'm in: " + jumpState);
+            switch (jumpState)
+            {
+                case JumpState.PrepareToJump:
+                    jumpState = JumpState.Jumping;
+                    PlayJumpSound(); // Trigger the jump sound.
+                    canDoubleJump = true; // Reset double-jump flag for each initial jump.
+                    break;
+
+                case JumpState.Jumping:
+                    if (!IsGrounded)
+                    {
+                        jumpState = JumpState.InFlight;
+                    }
+                    break;
+
+                case JumpState.InFlight:
+                    if (jumpInput && !stopJump && canDoubleJump)
+                    {
+                        jumpState = JumpState.DoubleJump;
+                        isJumping = true; // This is critical to trigger the double jump in ComputeVelocity.
+                        canDoubleJump = false; // Ensure double-jump can't be used again until the player lands.
+                        PlayJumpSound();
+                    }
+                    else if (IsGrounded)
+                    {
+                        jumpState = JumpState.Landed;
+                    }
+                    break;
+
+                case JumpState.DoubleJump:
+                    if (IsGrounded)
+                    {
+                        jumpState = JumpState.Landed;
+                    }
+                    break;
+
+                case JumpState.Landed:
+                    jumpState = JumpState.Grounded;
+                    break;
+            }
+        }
+
+        protected override void ComputeVelocity()
+        {
+            if (isJumping)
+            {
+                if (jumpState == JumpState.DoubleJump || IsGrounded)
+                {
+                    var jumpVelocity = jumpState == JumpState.DoubleJump ? jumpTakeOffSpeed * doubleJumpForce : jumpTakeOffSpeed;
+                    velocity.y = jumpVelocity * model.jumpModifier;
+                }
+                isJumping = false;
+            }
+            else if (stopJump)
+            {
+                stopJump = false;
+                if (velocity.y > 0)
+                {
+                    velocity.y = velocity.y * model.jumpDeceleration;
+                }
+            }
+
+            if (move.x > 0.01f)
+                spriteRenderer.flipX = false;
+            else if (move.x < -0.01f)
+                spriteRenderer.flipX = true;
+
+            animator.SetBool("grounded", IsGrounded);
+            animator.SetFloat("velocityX", Mathf.Abs(velocity.x) / maxSpeed);
+
+            targetVelocity = move * maxSpeed;
+        }
 
         public enum JumpState
         {

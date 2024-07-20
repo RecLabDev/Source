@@ -58,7 +58,10 @@ namespace Platformer.Gameplay
             if (player != null)
             {
                 Debug.Log(player.health.currentHP);
-                //this.player.health.Die();
+                //this doesnt work
+                //this.player.health.currentHP = 0;
+
+                //but this does
                 Schedule<PlayerDeath>();
             }
         }

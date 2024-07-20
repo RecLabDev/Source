@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-firstpass", "Assembly-CSharp-firstpass.csproj", "{2662B409-6332-1E56-D797-C9025C53BDD6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.InputSystem.RebindingUI", "Unity.InputSystem.RebindingUI.csproj", "{601B0D70-FF3B-AE58-716C-6B60D3F3698D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{601B0D70-FF3B-AE58-716C-6B60D3F3698D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{601B0D70-FF3B-AE58-716C-6B60D3F3698D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{601B0D70-FF3B-AE58-716C-6B60D3F3698D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{601B0D70-FF3B-AE58-716C-6B60D3F3698D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
