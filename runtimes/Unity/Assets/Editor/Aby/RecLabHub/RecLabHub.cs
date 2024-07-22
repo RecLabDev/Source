@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 namespace Aby.Unity
 {
-    public class RecLabHubEditorWindow : EditorWindow
+    public class RecLabHub : EditorWindow
     {      
         [SerializeField] private VisualTreeAsset visualTreeAsset;
         [SerializeField] private StyleSheet styleSheet;
@@ -20,7 +20,7 @@ namespace Aby.Unity
         [MenuItem("Aby/RecLab Hub")]
         public static void OpenWindow()
         {
-            RecLabHubEditorWindow wnd = GetWindow<RecLabHubEditorWindow>();
+            RecLabHub wnd = GetWindow<RecLabHub>();
             wnd.titleContent = new GUIContent(WINDOW_TITLE);
 
             // Lock the size of the window, uncomment if needed
