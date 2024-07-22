@@ -22,18 +22,37 @@ namespace Aby.Unity.Plugin
 
 
 
-        /// <summary>TODO</summary>
+        /// <summary>
+        ///  TODO
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "aby__verify_log_callback", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_verify_log_callback(c_verify_log_callback__cb_delegate _cb);
 
-        /// <summary>Construct an instance of AbyRuntime from a c-like boundary.  ### Example: ```rust let result = aby::runtime::ffi::c_construct_runtime({ CAbyRuntimeConfig { // TODO } });  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions { // TODO }); ```</summary>
+        /// <summary>
+        ///  Construct an instance of AbyRuntime from a c-like boundary.
+        ///
+        ///  ### Example:
+        ///  ```rust
+        ///  let result = aby::runtime::ffi::c_construct_runtime({
+        ///      CAbyRuntimeConfig {
+        ///          // TODO
+        ///      }
+        ///  });
+        ///
+        ///  let status = aby::runtime::ffi::c_exec_module(result.runtime, CExecModuleOptions {
+        ///      // TODO
+        ///  });
+        ///  ```
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "aby__c_construct_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_runtime_config);
 
         [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void c_send_broadcast(CAbyRuntime* c_self, uint message);
 
-        /// <summary>TODO</summary>
+        /// <summary>
+        ///  TODO
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "aby__c_exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CExecModuleResult c_exec_module(CAbyRuntime* c_self, CExecModuleOptions options);
 
@@ -79,7 +98,7 @@ namespace Aby.Unity.Plugin
     }
 
 
-    public enum CJsRuntimeLogLevel : uint
+    public enum CJsRuntimeLogLevel : C
     {
         None = 0,
         Error = 1,
@@ -89,7 +108,7 @@ namespace Aby.Unity.Plugin
         Trace = 5,
     }
 
-    public enum CConstructRuntimeResultCode : uint
+    public enum CConstructRuntimeResultCode : C
     {
         Ok,
         InvalidConfig,
@@ -102,7 +121,7 @@ namespace Aby.Unity.Plugin
         FailedBroadcast,
     }
 
-    public enum CExecModuleResult : uint
+    public enum CExecModuleResult : C
     {
         Ok,
         RuntimeNul,
@@ -117,7 +136,7 @@ namespace Aby.Unity.Plugin
         FailedEventLoopErr,
     }
 
-    public enum CAbyRuntimeStatus : uint
+    public enum CAbyRuntimeStatus : C
     {
         None = 0,
         Cold,
