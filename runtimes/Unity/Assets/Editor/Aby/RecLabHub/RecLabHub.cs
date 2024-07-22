@@ -12,6 +12,7 @@ namespace Aby.Unity
         [SerializeField] private StyleSheet styleSheet;
         
         private RecLabServerID newServerID;
+        private const string SERVER_ID_PREF_KEY = "RecLabHub_ServerID";
 
         private const string WINDOW_TITLE = "RecLab Hub";
         private const string TEXT_FIELD_NAME = "TextField";
@@ -23,7 +24,7 @@ namespace Aby.Unity
             RecLabHub wnd = GetWindow<RecLabHub>();
             wnd.titleContent = new GUIContent(WINDOW_TITLE);
 
-            // Lock the size of the window, uncomment if needed
+            //Lock the size of the window, uncomment if needed
             //wnd.minSize = new Vector2(500, 300);
             //wnd.maxSize = new Vector2(500, 300);
         }
@@ -32,6 +33,7 @@ namespace Aby.Unity
         {   
             // Initialize server ID
             newServerID = new RecLabServerID();
+            newServerID.serverID = EditorPrefs.GetString(SERVER_ID_PREF_KEY, string.Empty); // Load saved server ID, if available
 
             // Create root VisualElement
             VisualElement root = rootVisualElement;
@@ -63,11 +65,12 @@ namespace Aby.Unity
             {
                 textField.value = newServerID.serverID;
 
-                // Register a callback to handle text changes
+                // Register a callback to handle server changes
                 textField.RegisterValueChangedCallback(evt =>
                 {
                     newServerID.serverID = evt.newValue;
-                    // Optionally save changes
+                    EditorPrefs.SetString(SERVER_ID_PREF_KEY, newServerID.serverID);
+                    
                     EditorUtility.SetDirty(this);
                     Debug.Log($"Server ID updated to '{newServerID.serverID}'!");
                 });
@@ -91,6 +94,7 @@ namespace Aby.Unity
                 Debug.LogError($"Button with name '{CONNECT_BUTTON_NAME}' not found in UXML.");
             }
         }
+        
         private void OnClickedConnectButton(string serverID)
         {
             //Placeholder for actual connection logic

@@ -59,4 +59,5 @@ TextField > TextInput {
     -unity-slice-top: 1;
     -unity-slice-right: 1;
     -unity-slice-bottom: 1;
+    background-color: rgb(48, 214, 45);
 }
