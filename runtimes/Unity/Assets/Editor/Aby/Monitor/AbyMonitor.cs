@@ -20,12 +20,6 @@ namespace Aby.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        [SerializeField]
         private static string m_LogDir = "./Logs";
 
         /// <summary>
@@ -39,6 +33,17 @@ namespace Aby.Unity.Editor.Aby
         /// </summary>
         private static FileSystemWatcher m_LogWatcher;
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [SerializeField]
+        private VisualTreeAsset m_VisualTreeAsset = default;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private VisualElement rootContainer;
+
         //--
         /// <summary>
         /// TODO
@@ -51,20 +56,68 @@ namespace Aby.Unity.Editor.Aby
         }
 
         //--
-        /// <summary>
-        /// TODO
-        /// </summary>
         public void Awake()
         {
             Debug.LogFormat("Monitoring log files at '{0}' ..", Path.GetFullPath(m_LogFilter));
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
         public void OnEnable()
         {
             StartLogWatcher();
+            SyncWindowSize();
+        }
+
+        //--
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void CreateGUI()
+        {
+            if (m_VisualTreeAsset != null)
+            {
+                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
+                CreateEnvironmentMenu();
+                CreateMasthead();
+                SyncWindowSize();
+            }
+            else
+            {
+                Debug.LogError("VisualTreeAsset is not assigned.");
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void OnGUI()
+        {
+            SyncWindowSize();
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void OnDestroy()
+        {
+            StopLogWatcher();
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private void SyncWindowSize()
+        {
+            if (rootContainer == null)
+            {
+                // TODO: Get the outer-most VisualElement so we can move this
+                //  to `RecLab.Unity.Editor.EditorWindow` ..
+                rootContainer = rootVisualElement.Q<VisualElement>("RootContainer");
+            }
+
+            if (rootContainer != null && rootContainer.style.height != rootVisualElement.contentRect.height)
+            {
+                rootContainer.style.height = rootVisualElement.contentRect.height;
+            }
         }
 
         /// <summary>
@@ -90,38 +143,12 @@ namespace Aby.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        private void OnDestroy()
-        {
-            StopLogWatcher();
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
         private void StopLogWatcher()
         {
             if (m_LogWatcher != null)
             {
                 m_LogWatcher.EnableRaisingEvents = false;
                 m_LogWatcher.Dispose();
-            }
-        }
-
-        //--
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public void CreateGUI()
-        {
-            if (m_VisualTreeAsset != null)
-            {
-                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
-                CreateEnvironmentMenu();
-                CreateMasthead();
-            }
-            else
-            {
-                Debug.LogError("VisualTreeAsset is not assigned.");
             }
         }
 

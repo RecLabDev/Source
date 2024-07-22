@@ -1,5 +1,10 @@
 import { CounterService } from "./service.js";
 
+const channel = new BroadcastChannel("RECLAB_MESSAGES");
+channel.onmessage = (event) => {
+    console.log("Found message:", event);
+};
+
 console.log("Hello, from main.js!");
 try
 {
@@ -14,5 +19,5 @@ try
 }
 catch (exc)
 {
-    console.log("Caught exception:", exc);
+    console.error("Caught exception:", exc);
 }

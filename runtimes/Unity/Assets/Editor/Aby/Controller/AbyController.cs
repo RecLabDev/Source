@@ -63,6 +63,11 @@ namespace Aby.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
+        private Label runtimeStateLabel;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         // private readonly State m_BindingContext = new State();
 
         /// <summary>
@@ -92,13 +97,14 @@ namespace Aby.Unity.Editor.Aby
         {
             // Mount environment assets and pick one to use with the editor window.
             // TODO: Move this to a static value on AbyEnvConfig itself.
-            var envConfigs = AssetDatabase.FindAssets("t:AbyEnv");
+            var envConfigs = AssetDatabase.FindAssets("t:AbyEnvironment");
             if (envConfigs.Length == 0)
             {
                 Debug.LogWarning("Couldn't find Aby Environment configs.");
             }
             else
             {
+                Debug.LogFormat("Found {0} AbyEnvironment assets ..", envConfigs.Length);
                 var envConfigPath = AssetDatabase.GUIDToAssetPath(envConfigs[0]);
                 m_ServiceConfig = AssetDatabase.LoadAssetAtPath<AbyExecutor>(envConfigPath);
             }
@@ -114,6 +120,27 @@ namespace Aby.Unity.Editor.Aby
 
         //--
         /// <summary>
+        /// TODO: Hoist this out to parent.
+        /// </summary>
+        /// <typeparam name="E"></typeparam>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        private E QueryElement<E>(string query) where E : VisualElement
+        {
+            var foundElement = rootVisualElement.Q<E>(query);
+            if (foundElement == null)
+            {
+                Debug.LogWarningFormat("Could not find element with query '{0}'.", query);
+                return null;
+            }
+            else
+            {
+                return foundElement;
+            }
+        }
+
+        //--
+        /// <summary>
         /// Mounts the root `VisualElement` and inits the start/reload buttons.
         /// </summary>
         public void CreateGUI()
@@ -121,7 +148,26 @@ namespace Aby.Unity.Editor.Aby
             if (visualTreeAsset != null)
             {
                 rootVisualElement.Add(visualTreeAsset.Instantiate());
-                DrawRuntimeControlToolbar();
+
+                var stateLabel = QueryElement<Label>("RuntimeState");
+                if (stateLabel != null)
+                {
+                    // TODO: Get the current state from the selected runtime instance.
+                    stateLabel.text = $"Runtime State: TODO";
+                }
+
+                var toggleButton = QueryElement<Button>("ToggleButton");
+                if (toggleButton != null)
+                {
+                    toggleButton.clicked += OnToggleButtonClicked;
+                }
+
+
+                var reloadButton = QueryElement<Button>("ReloadButton");
+                if (reloadButton != null)
+                {
+                    reloadButton.clicked += OnReloadButtonClicked;
+                }
             }
             else
             {
@@ -132,47 +178,9 @@ namespace Aby.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        private void DrawRuntimeControlToolbar()
-        {
-            var stateLabel = rootVisualElement.Q<Label>("RuntimeState");
-            if (stateLabel == null)
-            {
-                Debug.LogWarning("RuntimeState element not found ..");
-            }
-            else
-            {
-                // TODO: Get the current state from the selected runtime instance.
-                stateLabel.text = $"Runtime State: TODO";
-            }
-
-            var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
-            if (toggleButton == null)
-            {
-                Debug.LogError("ToggleButton element not found!");
-            }
-            else
-            {
-                toggleButton.clicked += OnToggleButtonClicked;
-            }
-
-
-            var reloadButton = rootVisualElement.Q<Button>("ReloadButton");
-            if (reloadButton == null)
-            {
-                Debug.LogError("ReloadButton element not found!");
-            }
-            else
-            {
-                reloadButton.clicked += OnReloadButtonClicked;
-            }
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
         public void OnGUI()
         {
-            var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
+            var toggleButton = QueryElement<Button>("ToggleButton");
             if (toggleButton != null)
             {
                 // TODO: Something like `selectedRuntime.IsAlive == false ? "Start" : "Stop"`
@@ -180,6 +188,7 @@ namespace Aby.Unity.Editor.Aby
             }
         }
 
+        //---
         /// <summary>
         /// TODO
         /// </summary>
@@ -188,6 +197,7 @@ namespace Aby.Unity.Editor.Aby
             // Debug.LogFormat("Found GUI item: {0}", instanceID);
         }
 
+        //---
         /// <summary>
         /// TODO
         /// </summary>

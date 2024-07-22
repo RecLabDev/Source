@@ -180,12 +180,12 @@ impl Default for CAbyRuntimeConfig {
 
 // TODO: Move this to the ffi mod.
 #[cfg(feature = "ffi")]
-impl TryFrom<crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
+impl TryFrom<&crate::runtime::ffi::CAbyRuntimeConfig> for AbyRuntimeConfig {
     type Error = AbyRuntimeError;
 
     /// TODO
     fn try_from(
-        c_runtime_config: crate::runtime::ffi::CAbyRuntimeConfig,
+        c_runtime_config: &crate::runtime::ffi::CAbyRuntimeConfig,
     ) -> Result<Self, Self::Error> {
         use cwrap::string::try_unwrap_cstr;
 
@@ -331,7 +331,7 @@ type CErrorReportFn = extern "C" fn(message: *const std::ffi::c_char);
 #[export_name = "aby__c_construct_runtime"]
 pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CConstructRuntimeResult {
     // Get a new copy of the target config for the new runtime instance.
-    let runtime_config = match AbyRuntimeConfig::try_from(c_runtime_config.to_owned()) {
+    let runtime_config = match AbyRuntimeConfig::try_from(&c_runtime_config) {
         Ok(runtime_config) => runtime_config,
         Err(error) => {
             // TODO: Send trace messages back to Rust via log fn.
@@ -341,24 +341,17 @@ pub extern "C" fn c_construct_runtime(c_runtime_config: CAbyRuntimeConfig) -> CC
             return CConstructRuntimeResult::from(error);
         }
     };
-
-    // TODO: Create the async runtime in`aby_runtime.build()`.
-    let async_runtime = match TokioRuntimeBuilder::new_current_thread().enable_all().build() {
-        Ok(async_runtime) => async_runtime,
+    
+    let aby_runtime = match AbyRuntime::new(runtime_config) {
+        Ok(aby_runtime) => aby_runtime,
         Err(error) => {
-            // TODO: ..
-            // return CConstructRuntimeResult::from(AbyRuntimeError::AsyncRuntimeFailed(error));
-            tracing::error!("Failed to construct async runtime: {:}", error);
-            return CConstructRuntimeResult::from(CConstructRuntimeResultCode::InvalidLogDir);
+            // TODO: Send trace messages back to Rust via log fn.
+            // let c_message = CString::new(format!("Error: {:}", error)).expect("TODO");
+            // (c_runtime_config.log_callback_fn)(CJsRuntimeLogLevel::Error, c_message.as_ptr());
+            tracing::error!("Failed to get `AbyRuntimeConfig`: {:}", error);
+            return CConstructRuntimeResult::from(error);
         }
     };
-    
-    let in_memory_channel = InMemoryBroadcastChannel::default();
-
-    let aby_runtime = AbyRuntime::new(runtime_config)
-        .with_broadcast_channel(in_memory_channel.clone())
-        .with_async_runtime(async_runtime)
-        .build();
 
     // let aby_runtime = match aby_runtime.do_work() {
     //     Ok(aby_runtime) => {
@@ -386,6 +379,11 @@ impl CAbyRuntime {
         Some(&mut *ptr)
     }
 
+    unsafe fn try_from_ptr<'out>(ptr: *const CAbyRuntime) -> Option<&'out CAbyRuntime> {
+        // TODO: Ensure Pointer is safe to use.
+        Some(&*ptr)
+    }
+
     pub fn send_host_log<M: Into<String>>(&self, message: M) {
         if let Err(error) = self.try_send_host_log(message) {
             tracing::error!("Failed to send host message: {:}", error);
@@ -403,19 +401,74 @@ impl CAbyRuntime {
     }
 }
 
+pub fn cwrap_unpack_byte_slice<'out, T>(data: *const u8, length: usize) -> Option<&'out [u8]> {
+    if data.is_null() || length == 0 {
+        return None;
+    }
+    
+    let data = unsafe {
+        core::slice::from_raw_parts(data, length)
+    };
+    
+    Some(data)
+}
+
+pub fn cwrap_unpack_byte_vec<T>(data: *const u8, length: usize) -> Option<Vec<u8>> {
+    if data.is_null() || length == 0 {
+        return None;
+    }
+    
+    let data = unsafe {
+        core::slice::from_raw_parts(data, length)
+    };
+    
+    Some(Vec::from(data))
+}
+
+pub fn cwrap_trace_error_with_prefix<E: core::error::Error>(prefix: &'static str) -> impl FnOnce(E) -> E {
+    move |error| {
+        tracing::error!("{:}: {:}", prefix, error);
+        error
+    }
+}
+
+// TODO: Move this to a shared ffi module ..
+pub(crate) fn c_trace_error<E: core::error::Error>(error: E) -> E {
+    tracing::error!("Oh Cwrap: {:}", error);
+    error
+}
+
+//---
+#[repr(C)]
+#[derive(Debug)]
+pub struct CSendBroadcastOptions {
+    pub name: *const i8,
+    pub data: *const u8,
+    pub length: usize,
+}
+
 #[allow(unused, unreachable_code)]
 #[export_name = "aby__c_send_broadcast"]
-pub unsafe extern "C" fn c_send_broadcast(c_self: *mut CAbyRuntime, message: core::ffi::c_uint) {
-    let Some(c_self) = CAbyRuntime::try_from_mut_ptr(c_self) else {
-        return; // TODO: Return an error to caller.
+pub unsafe extern "C" fn c_send_broadcast(c_aby_runtime_ptr: *const CAbyRuntime, options: CSendBroadcastOptions) {
+    let Some(c_aby_runtime) = CAbyRuntime::try_from_ptr(c_aby_runtime_ptr) else {
+        return; // CSendBroadcastResult::RuntimeNul
     };
 
-    let Some(aby_runtime) = c_self.as_ref() else {
-        return; // TODO: Return an error to caller.
+    let Some(aby_runtime) = c_aby_runtime.as_ref() else {
+        return; // TODO: CSendBroadcastResult::MissingRuntime
     };
 
-    if let Err(error) = aby_runtime.send_broadcast_sync() {
+    let Ok(name) = cwrap::try_unwrap_cstr(options.name).map_err(c_trace_error) else {
+        return; // TODO: CSendBroadcastResult::InvalidName
+    };
+    
+    let Some(data) = cwrap_unpack_byte_slice::<u8>(options.data, options.length) else {
+        return; // TODO: CSendBroadcastResult::InvalidData
+    };
+
+    if let Err(error) = aby_runtime.send_broadcast(name, data) {
         tracing::error!("Failed to send broadcast message: {:}", error);
+        // TODO: return CSendBroadcastResult::FailedSend;
     }
 }
 
@@ -469,19 +522,16 @@ use deno_runtime::deno_core::url::Url as ModuleUrl;
 /// TODO
 #[allow(unused_variables)]
 #[export_name = "aby__c_exec_module"]
-pub unsafe extern "C" fn c_exec_module(
-    c_self: *mut CAbyRuntime,
-    options: CExecModuleOptions,
-) -> CExecModuleResult {
-    let Some(c_self) = CAbyRuntime::try_from_mut_ptr(c_self) else {
+pub unsafe extern "C" fn c_exec_module(c_aby_runtime_ptr: *mut CAbyRuntime, options: CExecModuleOptions) -> CExecModuleResult {
+    let Some(c_aby_runtime) = CAbyRuntime::try_from_mut_ptr(c_aby_runtime_ptr) else {
         return CExecModuleResult::RuntimeNul;
     };
-
+    
     let Ok(exec_module_specifier) = cwrap::try_unwrap_cstr(options.module_specifier) else {
         return CExecModuleResult::MainModuleInvalidErr;
     };
-
-    // match c_self.exec_sync(exec_module_specifier) {
+    
+    // match c_aby_runtime_ptr.exec_sync(exec_module_specifier) {
     //     Ok(result) => {
     //         // TODO: Report the exec result to the host.
     //         tracing::debug!("Executed module '{:}' with result ({:}) ..", exec_module_specifier, result);
@@ -492,11 +542,11 @@ pub unsafe extern "C" fn c_exec_module(
     //         CExecModuleResult::FailedModuleExecErr
     //     }
     // }
-
+    
     // TODO: Maybe we should be using a panic hook instead?
     // Ref: https://doc.rust-lang.org/std/panic/fn.set_hook.html
     match std::panic::catch_unwind(|| {
-        match c_self.exec_sync(exec_module_specifier) {
+        match c_aby_runtime.exec_sync(exec_module_specifier) {
             Ok(exit_status) => {
                 tracing::debug!("Exited with status {:}", exit_status);
                 CExecModuleResult::Ok // <3
@@ -522,8 +572,8 @@ pub unsafe extern "C" fn c_exec_module(
 }
 
 #[export_name = "aby__c_free_runtime"]
-pub unsafe extern "C" fn c_free_runtime(c_aby_runtime: *mut CAbyRuntime) {
-    let _ = Box::from_raw(c_aby_runtime);
+pub unsafe extern "C" fn c_free_runtime(c_aby_runtime_ptr: *mut CAbyRuntime) {
+    let _ = Box::from_raw(c_aby_runtime_ptr);
 }
 
 extern "C" fn default_log_callback(level: CJsRuntimeLogLevel, message: *const core::ffi::c_char) {

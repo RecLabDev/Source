@@ -3,6 +3,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use tokio::runtime::Builder as TokioRuntimeBuilder;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use deno_runtime::BootstrapOptions;
@@ -35,40 +36,46 @@ pub struct AbyRuntime {
     config: AbyRuntimeConfig,
     
     /// TODO
-    async_executor: Option<TokioRuntime>,
+    async_executor: TokioRuntime,
     
     /// TODO
-    broadcast_channel: Option<InMemoryBroadcastChannel>,
+    broadcast_channel: InMemoryBroadcastChannel,
+    
+    /// TODO
+    feature_checker: Arc<FeatureChecker>,
 }
 
 impl AbyRuntime {
     /// Constructs a new instance of `AbyRuntime` bootstrapped with only a
     /// configuration file and an async runtime.
-    pub fn new(config: AbyRuntimeConfig) -> Self {
-        AbyRuntime {
-            config,
-            async_executor: None,
-            broadcast_channel: None,
+    pub fn new(config: AbyRuntimeConfig) -> Result<Self, AbyRuntimeError> {
+        // TODO: Create the async runtime in`aby_runtime.build()`.
+        let async_executor = {
+            TokioRuntimeBuilder::new_current_thread()
+                .enable_all()
+                .build()?
+        };
+
+        #[cfg(feature = "verbose")]
+        tracing::debug!("Creating feature checker:\n{:#?}", feature_checker);
+        
+        let mut feature_checker = FeatureChecker::default();
+        for feature in UNSTABLE_GRANULAR_FLAGS.iter() {
+            feature_checker.enable_feature(feature.0);
         }
-    }
+        
+        let runtime = AbyRuntime {
+            config,
+            async_executor,
+            broadcast_channel: InMemoryBroadcastChannel::default(),
+            feature_checker: Arc::new(feature_checker),
+        };
 
-    /// TODO
-    pub fn with_async_runtime(mut self, async_runtime: TokioRuntime) -> Self {
-        self.async_executor = Some(async_runtime);
-        self // etc..
-    }
+        // TODO: Print state of whole runtime ..
+        #[cfg(feature = "verbose")]
+        tracing::debug!("Created feature checker:\n{:#?}", runtime.feature_checker);
 
-    /// TODO
-    pub fn with_broadcast_channel(mut self, broadcast_channel: InMemoryBroadcastChannel) -> Self {
-        self.broadcast_channel = Some(broadcast_channel);
-        self // etc..
-    }
-
-    /// TODO
-    pub fn build(mut self) -> Self {
-        self.broadcast_channel
-            .get_or_insert_with(|| InMemoryBroadcastChannel::default());
-        self // etc..
+        Ok(runtime)
     }
 }
 
@@ -98,28 +105,35 @@ impl AbyRuntime {
     }
     
     /// TODO
-    fn _get_inspector_name(&self) -> Result<&str, AbyRuntimeConfigError> {
+    pub fn get_inspector_name(&self) -> Result<&str, AbyRuntimeConfigError> {
         self.config.inspector_name()
             .ok_or_else(|| AbyRuntimeConfigError::MissingInspectorName)
     }
     
     /// TODO
-    fn get_async_executor(&self) -> Result<&TokioRuntime, AbyRuntimeError> {
-        self.async_executor.as_ref()
-            .ok_or_else(|| AbyRuntimeError::Uninitialized)
-    }
-    
-    /// TODO
-    fn get_inspector_addr(&self) -> Result<SocketAddr, AbyRuntimeConfigError> {
+    pub fn get_inspector_addr(&self) -> Result<SocketAddr, AbyRuntimeConfigError> {
         SocketAddr::parse_ascii(self.config.inspector_addr().as_bytes())
             .map_err(|error| AbyRuntimeConfigError::InvalidInspectorAddr(error))
     }
     
     /// TODO
-    fn get_broadcast_channel(&self) -> Result<InMemoryBroadcastChannel, AbyRuntimeError> {
-        self.broadcast_channel.as_ref()
-            .map(|broadcast| broadcast.clone())
-            .ok_or(AbyRuntimeError::Uninitialized)
+    pub fn get_broadcast_channel(&self) -> InMemoryBroadcastChannel {
+        self.broadcast_channel.clone()
+    }
+    
+    /// User has enabled the `stdio` feature, so we just grab Deno's
+    /// preferred handles for stdio.
+    #[cfg(feature = "stdio")]
+    fn create_stdio(&self) -> Result<Stdio, std::io::Error> {
+        let stdin = deno_runtime::deno_io::STDIN_HANDLE.try_clone()?;
+        let stdout = deno_runtime::deno_io::STDOUT_HANDLE.try_clone()?;
+        let stderr = deno_runtime::deno_io::STDERR_HANDLE.try_clone()?;
+
+        Ok(Stdio {
+            stdin: StdioPipe::File(stdin),
+            stdout: StdioPipe::File(stdout),
+            stderr: StdioPipe::File(stderr),
+        })
     }
     
     /// TODO
@@ -138,22 +152,7 @@ impl AbyRuntime {
         })
     }
     
-    /// User has enabled the `stdio` feature, so we just grab Deno's
-    /// preferred handles for stdio.
-    #[cfg(feature = "stdio")]
-    fn create_stdio(&self) -> Result<Stdio, std::io::Error> {
-        let stdin = deno_runtime::deno_io::STDIN_HANDLE.try_clone()?;
-        let stdout = deno_runtime::deno_io::STDOUT_HANDLE.try_clone()?;
-        let stderr = deno_runtime::deno_io::STDERR_HANDLE.try_clone()?;
-
-        Ok(Stdio {
-            stdin: StdioPipe::File(stdin),
-            stdout: StdioPipe::File(stdout),
-            stderr: StdioPipe::File(stderr),
-        })
-    }
-    
-    /// TODO: Move this to regular AbyRuntime.
+    /// TODO
     fn create_bootsrap_options(&self) -> BootstrapOptions {
         BootstrapOptions {
             unstable_features: Vec::from(self.config.unstable_deno_features()),
@@ -161,31 +160,17 @@ impl AbyRuntime {
         }
     }
     
-    /// TODO: Move this to regular `AbyRuntime``.
-    fn create_feature_checker(&self) -> Arc<FeatureChecker> {
-        let mut feature_checker = FeatureChecker::default();
-
-        for feature in UNSTABLE_GRANULAR_FLAGS.iter() {
-            feature_checker.enable_feature(feature.0);
-        }
-
-        #[cfg(feature = "verbose")]
-        tracing::debug!("Creating feature checker:\n{:#?}", feature_checker);
-
-        Arc::new(feature_checker)
-    }
-    
     /// TODO
     fn create_inspector_server(&self) -> Result<InspectorServer, AbyRuntimeError> {
-        // TODO: let inspector_name = format!("{:}", self.get_inspector_name()?);
-        Ok(InspectorServer::new(
-            self.get_inspector_addr()?,
-            "Aby Runtime Inspector",
-        ))
+        Ok(InspectorServer::new(self.get_inspector_addr()?, "Aby Runtime Inspector"))
     }
     
     /// TODO
     fn create_worker(&self) -> Result<MainWorker, AbyRuntimeError> {
+        use std::time::Instant;
+        
+        let start = Instant::now();
+        
         // TODO: Get these from config input ..
         let main_module_url = self.resolve_main_module_url()?;
         
@@ -200,24 +185,22 @@ impl AbyRuntime {
         
         let bootstrap = self.create_bootsrap_options();
         
+        // TODO: Hold the permissions container in Self ..
         let permissions_container = PermissionsContainer::allow_all();
-        let feature_checker = self.create_feature_checker();
+        let feature_checker = self.feature_checker.clone();
         
         let origin_storage_dir = self.get_storage_dir()?;
         
         let maybe_inspector_server = self.create_inspector_server()?;
-        let broadcast_channel = self.get_broadcast_channel()?;
+        let broadcast_channel = self.broadcast_channel.clone();
         
+        // TODO: Evaluate whether or not we can do this in a JIT-less context.
         // let aby_init_script = ModuleCodeString::Static(r#"
         //     import * as prelude from "ext:aby_sdk/src/00_prelude.js";
         // "#);
-        
-        // tracing::trace!("Aby Init Script:\n{:?}", aby_init_script);
-        
-        // /// TODO
-        // if let Err(_) = worker.execute_script("<aby>", aby_init_script) {
-        //     return CExecModuleResult::Err;
-        // }
+        // 
+        // #[cfg(feature = "debug")]
+        // tracing::debug!("Aby Init Script:\n{:?}", aby_init_script);
         
         // TODO
         deno_runtime::deno_core::extension!(
@@ -255,12 +238,13 @@ impl AbyRuntime {
             },
         );
         
-        Ok(MainWorker::bootstrap_from_options(
+        let worker = MainWorker::bootstrap_from_options(
             main_module_url,
             permissions_container,
             WorkerOptions {
                 stdio,
                 bootstrap,
+                // startup_snapshot: TODO,
                 feature_checker,
                 skip_op_registration: false,
                 broadcast_channel,
@@ -271,7 +255,12 @@ impl AbyRuntime {
                 extensions: vec![aby_sdk::init_ops_and_esm(Some(true), None)],
                 ..Default::default()
             },
-        ))
+        );
+        
+        let duration = start.elapsed();
+        tracing::debug!("Created new Deno `MainWorker` in {:?}", duration);
+        
+        Ok(worker)
     }
     
     /// TODO
@@ -286,30 +275,25 @@ impl AbyRuntime {
     }
     
     /// TODO
-    pub async fn send_broadcast(&self) -> Result<bool, AbyRuntimeError> {
-        let broadcast = self.get_broadcast_channel()?;
-        let resource = broadcast.subscribe()?;
+    pub fn send_broadcast(&self, name: &str, data: &[u8]) -> Result<bool, AbyRuntimeError> {
+        let resource = self.broadcast_channel.subscribe()?;
         
-        let name = format!("RECLAB_BROADCAST_TODO");
-        let data = vec![]; // TODO
-        
-        if let Err(error) = broadcast.send(&resource, name, data).await {
-            return Err(AbyRuntimeError::FailedBroadcastSend(error));
-        }
-        
-        Ok(true)
+        self.async_executor.block_on(async {
+            let name = name.to_owned();
+            let data = Vec::from(data);
+            
+            if let Err(error) = self.broadcast_channel.send(&resource, name, data).await {
+                return Err(AbyRuntimeError::FailedBroadcastSend(error));
+            }
+            
+            Ok(true)
+        })
     }
     
-    /// TODO
-    pub(crate) fn send_broadcast_sync(&self) -> Result<bool, AbyRuntimeError> {
-        self.get_async_executor()?
-            .block_on(async {
-                self.send_broadcast().await
-            })
-    }
-    
-    /// TODO
-    pub async fn exec(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
+    /// Executes a given module by specifier.
+    /// 
+    /// Fails when the specified module can't be resolved.
+    async fn exec(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
         #[cfg(feature = "dev")]
         tracing::debug!("Executing Module: {:}", exec_module_specifier);
         
@@ -325,10 +309,7 @@ impl AbyRuntime {
     
     /// TODO
     pub(crate) fn exec_sync(&self, exec_module_specifier: &str) -> Result<bool, AbyRuntimeError> {
-        self.get_async_executor()?
-            .block_on(async {
-                self.exec(exec_module_specifier).await
-            })
+        self.async_executor.block_on(self.exec(exec_module_specifier))
     }
 }
 
