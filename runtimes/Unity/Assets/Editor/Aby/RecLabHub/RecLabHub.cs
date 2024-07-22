@@ -17,6 +17,10 @@ namespace Aby.Unity
         private const string WINDOW_TITLE = "RecLab Hub";
         private const string TEXT_FIELD_NAME = "TextField";
         private const string CONNECT_BUTTON_NAME = "ConnectButton";
+        private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
+
+        //Track connection status
+        private bool isConnected = false;
 
         [MenuItem("Aby/RecLab Hub")]
         public static void OpenWindow()
@@ -93,6 +97,25 @@ namespace Aby.Unity
             {
                 Debug.LogError($"Button with name '{CONNECT_BUTTON_NAME}' not found in UXML.");
             }
+
+            // Get the Disconnect Button and assign click event
+            Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
+            if (disconnectButton != null)
+            {
+                disconnectButton.clicked += () =>
+                {
+                    OnClickedDisconnectButton();
+                };
+                disconnectButton.style.display = DisplayStyle.None; // Hide by default
+            }
+            else
+            {
+                Debug.LogError($"Button with name '{DISCONNECT_BUTTON_NAME}' not found in UXML.");
+            }
+
+            // Update Disconnect button visibility based on connection status
+            // Update button visibility based on connection status
+            UpdateButtonVisibility();
         }
         
         private void OnClickedConnectButton(string serverID)
@@ -100,6 +123,34 @@ namespace Aby.Unity
             //Placeholder for actual connection logic
             Debug.Log($"Attempting to connect to server with ID: {serverID}");
             //Implement connection logic here
+            isConnected = true;
+            UpdateButtonVisibility();
+        }
+
+        private void OnClickedDisconnectButton()
+        {
+            // Placeholder for actual disconnection logic
+            Debug.Log($"Disconnecting from server with ID: {newServerID.serverID}");
+            // Implement disconnection logic here
+            isConnected = false; // Assume disconnection is successful for now
+            UpdateButtonVisibility();
+        }
+
+        private void UpdateButtonVisibility()
+        {
+            VisualElement root = rootVisualElement;
+            Button connectButton = root.Q<Button>(CONNECT_BUTTON_NAME);
+            Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
+
+            if (connectButton != null)
+            {
+                connectButton.style.display = isConnected ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
+            if (disconnectButton != null)
+            {
+                disconnectButton.style.display = isConnected ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
     }
 
