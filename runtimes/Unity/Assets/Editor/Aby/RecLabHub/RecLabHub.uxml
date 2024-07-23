@@ -5,6 +5,7 @@
         <ui:VisualElement name="ServerEntry" style="flex-grow: 1; flex-direction: row; justify-content: center; align-items: center; margin-top: 30px; margin-bottom: 30px; padding-right: 30px; padding-left: 30px; height: 42px;">
             <ui:TextField picking-mode="Ignore" name="TextField" max-length="9" />
             <ui:Button text="Connect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConnectButton" class="button-style" />
+            <ui:Button text="Disconnect" parse-escape-sequences="false" display-tooltip-when-elided="true" name="DisconnectButton" class="button-style disconnect-button" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
