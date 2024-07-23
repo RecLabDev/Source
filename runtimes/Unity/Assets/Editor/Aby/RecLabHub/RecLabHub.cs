@@ -69,6 +69,9 @@ namespace Aby.Unity
                 {
                     OnClickedConnectButton(newServerID.serverID);
                 };
+
+                // Initial validation
+                ValidateServerID(connectButton, newServerID.serverID);
             }
             else
             {
@@ -114,6 +117,9 @@ namespace Aby.Unity
 
                 // Initial validation
                 ValidateServerID(connectButton, newServerID.serverID);
+
+                // Set initial editable state
+                textField.SetEnabled(!isConnected);
             }
             else
             {
@@ -144,6 +150,7 @@ namespace Aby.Unity
             VisualElement root = rootVisualElement;
             Button connectButton = root.Q<Button>(CONNECT_BUTTON_NAME);
             Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
+            TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
 
             if (connectButton != null)
             {
@@ -153,6 +160,11 @@ namespace Aby.Unity
             if (disconnectButton != null)
             {
                 disconnectButton.style.display = isConnected ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (textField != null)
+            {
+                textField.SetEnabled(!isConnected);
             }
         }
 
