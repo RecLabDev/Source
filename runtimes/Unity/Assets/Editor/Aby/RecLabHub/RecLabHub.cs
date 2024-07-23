@@ -9,6 +9,8 @@ namespace Aby.Unity
         [SerializeField] private VisualTreeAsset visualTreeAsset;
         [SerializeField] private StyleSheet styleSheet;
         
+        //Server ID
+        private int serverIDLength = 36;
         private RecLabServerID newServerID;
         private const string SERVER_ID_PREF_KEY = "RecLabHub_ServerID";
 
@@ -196,7 +198,7 @@ namespace Aby.Unity
 
         private void ValidateServerID(Button connectButton, string serverID)
         {
-            if (serverID.Length == 9)
+            if (serverID.Length == serverIDLength)
             {
                 connectButton.SetEnabled(true);
             }

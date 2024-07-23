@@ -2,10 +2,12 @@
     <Style src="project://database/Assets/Editor/Aby/RecLabHub/RecLabHub.uss?fileID=7433441132597879392&amp;guid=1e4c617ebd8df4b75aacd2b7b0a44d24&amp;type=3#RecLabHub" />
     <ui:VisualElement name="Container" class="background" style="flex-grow: 1;">
         <ui:Label tabindex="-1" text="Enter server ID &#10;below to connect" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header" style="height: 72px;" />
-        <ui:VisualElement name="ServerEntry" style="flex-grow: 1; flex-direction: row; justify-content: center; align-items: center; margin-top: 30px; margin-bottom: 30px; padding-right: 30px; padding-left: 30px; height: 42px;">
-            <ui:TextField picking-mode="Ignore" name="TextField" max-length="9" />
-            <ui:Button text="Connect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConnectButton" class="button-style connect-button" />
-            <ui:Button text="Disconnect" parse-escape-sequences="false" display-tooltip-when-elided="true" name="DisconnectButton" class="button-style disconnect-button" />
+        <ui:VisualElement name="ServerEntry" style="flex-grow: 1; flex-direction: column; justify-content: center; align-items: center; margin-top: 0; margin-bottom: 30px; padding-right: 30px; padding-left: 30px; height: 42px;">
+            <ui:TextField picking-mode="Ignore" name="TextField" max-length="36" />
+            <ui:VisualElement name="ButtonContainer" style="flex-grow: 1; flex-direction: row; margin-top: 10px;">
+                <ui:Button text="Connect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConnectButton" class="button-style connect-button" />
+                <ui:Button text="Disconnect" parse-escape-sequences="false" display-tooltip-when-elided="true" name="DisconnectButton" class="button-style disconnect-button" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
