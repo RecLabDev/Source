@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,13 +15,26 @@ namespace Aby.Unity
         private RecLabServerID newServerID;
         private const string SERVER_ID_PREF_KEY = "RecLabHub_ServerID";
 
+        //UI element references
+        private Button connectButton;
+        private Button disconnectButton;
+        private TextField textField;
+        private Label statusLabel;
+
+        //UI element names
         private const string WINDOW_TITLE = "RecLab Hub";
         private const string TEXT_FIELD_NAME = "TextField";
         private const string CONNECT_BUTTON_NAME = "ConnectButton";
         private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
+        private const string STATUS_LABEL_NAME = "ConnectionStatus";
 
         //Track connection status
         private bool isConnected = false;
+
+        // Connection state management
+        private enum ConnectionState { Idle, Connecting, Connected, Disconnecting }
+        private ConnectionState currentState = ConnectionState.Idle;
+        private float stateStartTime;
 
         [MenuItem("Aby/RecLab Hub")]
         public static void OpenWindow()
@@ -47,9 +61,13 @@ namespace Aby.Unity
             SetupConnectButton(root);
             SetupDisconnectButton(root);
             SetupTextField(root);
+            SetupStatusLabel(root);
 
             // Update button visibility based on connection status
             UpdateButtonVisibility();
+
+            // Start updating the editor window
+            EditorApplication.update += OnEditorUpdate;
         }
         
         private void InitializeServerID()
@@ -87,7 +105,7 @@ namespace Aby.Unity
 
         private void SetupConnectButton(VisualElement root)
         {
-            Button connectButton = root.Q<Button>(CONNECT_BUTTON_NAME);
+            connectButton = root.Q<Button>(CONNECT_BUTTON_NAME);
             if (connectButton != null)
             {
                 connectButton.clicked += () =>
@@ -106,7 +124,7 @@ namespace Aby.Unity
 
         private void SetupDisconnectButton(VisualElement root)
         {
-            Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
+            disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
             if (disconnectButton != null)
             {
                 disconnectButton.clicked += () =>
@@ -125,7 +143,7 @@ namespace Aby.Unity
 
         private void SetupTextField(VisualElement root)
         {
-            TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
+            textField = root.Q<TextField>(TEXT_FIELD_NAME);
             if (textField != null)
             {
                 textField.value = newServerID.serverID;
@@ -155,22 +173,41 @@ namespace Aby.Unity
             }
         }
 
+        private void SetupStatusLabel(VisualElement root)
+        {
+            statusLabel = root.Q<Label>(STATUS_LABEL_NAME);
+            if (statusLabel != null)
+            {
+                statusLabel.style.display = DisplayStyle.None; // Hide by default
+            }
+            else
+            {
+                Debug.LogError($"Label with name '{STATUS_LABEL_NAME}' not found in UXML.");
+            }
+        }
+
         private void OnClickedConnectButton(string serverID)
         {
-            //Placeholder for actual connection logic
-            Debug.Log($"Attempting to connect to server with ID: {serverID}");
-            //Implement connection logic here
-            isConnected = true;
-            UpdateButtonVisibility();
+            // Start the connection process
+            currentState = ConnectionState.Connecting;
+            stateStartTime = (float)EditorApplication.timeSinceStartup;
+
+            // Update UI for connecting state
+            connectButton.style.display = DisplayStyle.None;
+            statusLabel.text = "Connecting...";
+            statusLabel.style.display = DisplayStyle.Flex;
         }
 
         private void OnClickedDisconnectButton()
         {
-            // Placeholder for actual disconnection logic
-            Debug.Log($"Disconnecting from server with ID: {newServerID.serverID}");
-            // Implement disconnection logic here
-            isConnected = false; // Assume disconnection is successful for now
-            UpdateButtonVisibility();
+            // Start the disconnection process
+            currentState = ConnectionState.Disconnecting;
+            stateStartTime = (float)EditorApplication.timeSinceStartup;
+
+            // Update UI for disconnecting state
+            disconnectButton.style.display = DisplayStyle.None;
+            statusLabel.text = "Disconnecting...";
+            statusLabel.style.display = DisplayStyle.Flex;
         }
 
         private void UpdateButtonVisibility()
@@ -194,6 +231,11 @@ namespace Aby.Unity
             {
                 textField.SetEnabled(!isConnected);
             }
+
+            if (statusLabel != null)
+            {
+                statusLabel.style.display = (currentState == ConnectionState.Connecting || currentState == ConnectionState.Disconnecting) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
 
         private void ValidateServerID(Button connectButton, string serverID)
@@ -206,6 +248,50 @@ namespace Aby.Unity
             {
                 connectButton.SetEnabled(false);
             }
+        }
+
+        private void OnEditorUpdate()
+        {
+            float elapsedTime = (float)EditorApplication.timeSinceStartup - stateStartTime;
+
+            switch (currentState)
+            {
+                case ConnectionState.Connecting:
+                    if (elapsedTime > 1.5f)
+                    {
+                        // Transition to connected state
+                        statusLabel.text = "Connected!";
+                        stateStartTime = (float)EditorApplication.timeSinceStartup; // Reset timer
+                        currentState = ConnectionState.Connected;
+                    }
+                    break;
+                case ConnectionState.Connected:
+                    if (elapsedTime > 1.5f)
+                    {
+                        // Finalize connection process
+                        isConnected = true;
+                        UpdateButtonVisibility();
+                        statusLabel.style.display = DisplayStyle.None;
+                        currentState = ConnectionState.Idle;
+                    }
+                    break;
+                case ConnectionState.Disconnecting:
+                    if (elapsedTime > 1.5f)
+                    {
+                        // Transition to idle state
+                        isConnected = false;
+                        UpdateButtonVisibility();
+                        statusLabel.style.display = DisplayStyle.None;
+                        currentState = ConnectionState.Idle;
+                    }
+                    break;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Ensure to remove the update method when the window is destroyed
+            EditorApplication.update -= OnEditorUpdate;
         }
     }
 
