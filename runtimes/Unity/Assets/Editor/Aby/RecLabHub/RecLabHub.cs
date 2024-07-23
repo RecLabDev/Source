@@ -33,14 +33,33 @@ namespace Aby.Unity
 
         public void CreateGUI()
         {   
-            // Initialize server ID
-            newServerID = new RecLabServerID();
-            newServerID.serverID = EditorPrefs.GetString(SERVER_ID_PREF_KEY, string.Empty); // Load saved server ID, if available
-
-            // Create root VisualElement
+            //Create empty server ID reference, or load one from a previous session
+            InitializeServerID();
             VisualElement root = rootVisualElement;
 
-            // Add the style sheet
+            //Add USS and UXML to the editor window
+            AddStyleSheet(root);
+            AddUXML(root);
+
+            //Setup UI elements
+            SetupConnectButton(root);
+            SetupDisconnectButton(root);
+            SetupTextField(root);
+
+            // Update button visibility based on connection status
+            UpdateButtonVisibility();
+        }
+        
+        private void InitializeServerID()
+        {
+            newServerID = new RecLabServerID();
+
+            //Load saved server ID, if available
+            newServerID.serverID = EditorPrefs.GetString(SERVER_ID_PREF_KEY, string.Empty);
+        }
+
+        private void AddStyleSheet(VisualElement root)
+        {
             if (styleSheet != null)
             {
                 root.styleSheets.Add(styleSheet);
@@ -49,8 +68,10 @@ namespace Aby.Unity
             {
                 Debug.LogError("USS not assigned in the inspector.");
             }
+        }
 
-            // Add the UXML
+        private void AddUXML(VisualElement root)
+        {
             if (visualTreeAsset != null)
             {
                 VisualElement uxml = visualTreeAsset.CloneTree();
@@ -60,8 +81,10 @@ namespace Aby.Unity
             {
                 Debug.LogError("UXML not assigned in the inspector.");
             }
+        }
 
-            // Get the Connect Button and assign click event
+        private void SetupConnectButton(VisualElement root)
+        {
             Button connectButton = root.Q<Button>(CONNECT_BUTTON_NAME);
             if (connectButton != null)
             {
@@ -70,15 +93,17 @@ namespace Aby.Unity
                     OnClickedConnectButton(newServerID.serverID);
                 };
 
-                // Initial validation
+                //Initial validation check if length of the server ID is 9 char
                 ValidateServerID(connectButton, newServerID.serverID);
             }
             else
             {
                 Debug.LogError($"Button with name '{CONNECT_BUTTON_NAME}' not found in UXML.");
             }
+        }
 
-            // Get the Disconnect Button and assign click event
+        private void SetupDisconnectButton(VisualElement root)
+        {
             Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
             if (disconnectButton != null)
             {
@@ -86,18 +111,19 @@ namespace Aby.Unity
                 {
                     OnClickedDisconnectButton();
                 };
-                disconnectButton.style.display = DisplayStyle.None; // Hide by default
+
+                //Hide disconnect button by default
+                disconnectButton.style.display = DisplayStyle.None;
             }
             else
             {
                 Debug.LogError($"Button with name '{DISCONNECT_BUTTON_NAME}' not found in UXML.");
             }
+        }
 
-            // Update button visibility based on connection status
-            UpdateButtonVisibility();
-
-            // Get the TextField and assign current value of serverID.text
-            TextField textField = root.Q<TextField>("TextField");
+        private void SetupTextField(VisualElement root)
+        {
+            TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
             if (textField != null)
             {
                 textField.value = newServerID.serverID;
@@ -107,18 +133,18 @@ namespace Aby.Unity
                 {
                     newServerID.serverID = evt.newValue;
                     EditorPrefs.SetString(SERVER_ID_PREF_KEY, newServerID.serverID);
-                    
+
                     EditorUtility.SetDirty(this);
                     Debug.Log($"Server ID updated to '{newServerID.serverID}'!");
 
-                    // Validate the length of the server ID
-                    ValidateServerID(connectButton, newServerID.serverID);
+                    //Check if length of the server ID is 9 char
+                    ValidateServerID(root.Q<Button>(CONNECT_BUTTON_NAME), newServerID.serverID);
                 });
 
-                // Initial validation
-                ValidateServerID(connectButton, newServerID.serverID);
+                //Initial validation check if length of the server ID is 9 char
+                ValidateServerID(root.Q<Button>(CONNECT_BUTTON_NAME), newServerID.serverID);
 
-                // Set initial editable state
+                //Set initial editable state
                 textField.SetEnabled(!isConnected);
             }
             else
@@ -126,7 +152,7 @@ namespace Aby.Unity
                 Debug.LogError($"TextField with name '{TEXT_FIELD_NAME}' not found in UXML.");
             }
         }
-        
+
         private void OnClickedConnectButton(string serverID)
         {
             //Placeholder for actual connection logic

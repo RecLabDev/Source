@@ -74,7 +74,7 @@ TextField > TextInput {
     -unity-slice-top: 1;
     -unity-slice-right: 1;
     -unity-slice-bottom: 1;
-    background-color: rgb(9, 204, 116);
+    background-color: rgba(9, 204, 116, 0);
 }
 
 .disconnect-button {
