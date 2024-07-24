@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
+using Codice.Client.Common.GameUI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -24,6 +26,7 @@ namespace Aby.Unity
         //UI element names
         private const string WINDOW_TITLE = "RecLab Hub";
         private const string TEXT_FIELD_NAME = "TextField";
+        private const string BACKGROUND_CONTAINER = "Container";
         private const string CONNECT_BUTTON_NAME = "ConnectButton";
         private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
         private const string STATUS_LABEL_NAME = "ConnectionStatus";
@@ -57,6 +60,9 @@ namespace Aby.Unity
             AddStyleSheet(root);
             AddUXML(root);
 
+            //Make the background image stretch with window
+            SyncWindowSize();
+
             //Setup UI elements
             SetupConnectButton(root);
             SetupDisconnectButton(root);
@@ -68,6 +74,11 @@ namespace Aby.Unity
 
             // Start updating the editor window
             EditorApplication.update += OnEditorUpdate;
+        }
+
+        public void OnGUI()
+        {
+            SyncWindowSize();
         }
         
         private void InitializeServerID()
@@ -178,7 +189,8 @@ namespace Aby.Unity
             statusLabel = root.Q<Label>(STATUS_LABEL_NAME);
             if (statusLabel != null)
             {
-                statusLabel.style.display = DisplayStyle.None; // Hide by default
+                //Hide the status label by default
+                statusLabel.style.display = DisplayStyle.None;
             }
             else
             {
@@ -288,9 +300,18 @@ namespace Aby.Unity
             }
         }
 
+        private void SyncWindowSize()
+        {
+            var rootContainer = rootVisualElement.Q<VisualElement>(BACKGROUND_CONTAINER);
+            if (rootContainer != null)
+            {
+                rootContainer.style.height = rootVisualElement.contentRect.height;
+            }
+        }
+
         private void OnDestroy()
         {
-            // Ensure to remove the update method when the window is destroyed
+            //Ensure to remove the update method when the window is destroyed
             EditorApplication.update -= OnEditorUpdate;
         }
     }
