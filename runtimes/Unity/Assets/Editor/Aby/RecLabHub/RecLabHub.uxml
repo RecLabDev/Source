@@ -1,13 +1,21 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/Editor/Aby/RecLabHub/RecLabHub.uss?fileID=7433441132597879392&amp;guid=1e4c617ebd8df4b75aacd2b7b0a44d24&amp;type=3#RecLabHub" />
-    <ui:VisualElement name="Container" class="background" style="flex-grow: 1; justify-content: flex-start;">
-        <ui:Label tabindex="-1" text="Enter server ID &#10;below to connect" parse-escape-sequences="true" display-tooltip-when-elided="true" class="header" style="height: 72px;" />
-        <ui:VisualElement name="ServerEntry" style="flex-grow: 1; flex-direction: column; justify-content: center; align-items: center; margin-top: 0; margin-bottom: 30px; padding-right: 30px; padding-left: 30px; height: 42px;">
-            <ui:TextField picking-mode="Ignore" name="TextField" max-length="36" />
-            <ui:VisualElement name="ButtonContainer" style="flex-grow: 1; flex-direction: row; margin-top: 10px;">
-                <ui:Button text="Connect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConnectButton" class="button-style connect-button" />
-                <ui:Label tabindex="-1" text="ConnectionStatus" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConnectionStatus" class="status-text" />
-                <ui:Button text="Disconnect" parse-escape-sequences="false" display-tooltip-when-elided="true" name="DisconnectButton" class="button-style disconnect-button" />
+    <ui:VisualElement name="background" class="background" style="flex-direction: column; align-items: center; padding: 20px;">
+        <ui:VisualElement class="server-container" style="width: 400px; height: 80px; margin-bottom: 20px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
+            <ui:Label text="Local Docker Cluster" style="flex-grow: 1; font-size: 18px; font-weight: bold;" />
+            <ui:VisualElement style="flex-direction: column; align-items: flex-end;">
+                <ui:Label text="Status: Stopped" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
+                <ui:Button text="Build" class="connect-button" style="color: white; width: 100px; height: 30px; align-items: stretch;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="server-container" style="width: 400px; height: 120px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
+            <ui:VisualElement style="flex-grow: 1; flex-direction: column;">
+                <ui:Label text="Remote Docker Cluster" style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" />
+                <ui:TextField max-length="14" style="margin-top: 5px;" />
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: column; align-items: flex-end; margin-left: 10px;">
+                <ui:Label text="Status: Stopped" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
+                <ui:Button text="Start" style="background-color: black; color: white; width: 60px; height: 30px;" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
