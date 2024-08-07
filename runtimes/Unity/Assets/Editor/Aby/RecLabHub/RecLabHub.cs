@@ -8,14 +8,18 @@ namespace Aby.Unity
 {
     public class RecLabHub : EditorWindow
     {
+        //UXML and USS
         [SerializeField] private VisualTreeAsset visualTreeAsset;
         [SerializeField] private StyleSheet styleSheet;
 
+
+        //UI Elements
         private const string WINDOW_TITLE = "RecLab Hub";
         private const string TEXT_FIELD_NAME = "TextField";
-        private const string BACKGROUND_CONTAINER = "Container";
-        private const string CONNECT_BUTTON_NAME = "ConnectButton";
-        private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
+        private const string BACKGROUND_CONTAINER = "Background";
+        //private const string CONNECT_BUTTON_NAME = "ConnectButton";
+        //private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
+        //private const string STATUS_LABEL_NAME = "ConnectionStatus";
 
         [MenuItem("Aby/RecLab Hub")]
         public static void ShowWindow()

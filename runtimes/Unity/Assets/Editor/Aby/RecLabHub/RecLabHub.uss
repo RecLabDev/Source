@@ -21,8 +21,8 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 320px;
-    height: 45px;
+    width: 100px;
+    height: 30px;
 }
 
 .connect-button:hover {
@@ -35,8 +35,8 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 320px;
-    height: 45px;
+    width: 100px;
+    height: 30px;
 }
 
 .connect-button:disabled {
@@ -48,8 +48,8 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 320px;
-    height: 45px;
+    width: 100px;
+    height: 30px;
 }
 
 TextField > TextInput {
@@ -62,8 +62,8 @@ TextField > TextInput {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 15px;
+    padding-right: 15px;
     margin-bottom: 0;
 }
 
@@ -112,5 +112,5 @@ TextField > TextInput {
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
-    background-color: rgb(226, 225, 225);
+    background-color: rgb(226, 226, 226);
 }
