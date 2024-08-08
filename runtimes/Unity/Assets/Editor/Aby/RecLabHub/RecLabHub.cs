@@ -39,6 +39,9 @@ namespace Aby.Unity
         private const string STATUS_LABEL_NAME = "StatusText";
         private const string REMOTE_DOCKER_CLUSTER_NAME = "RemoteDockerCluster";
 
+        // Docker build status
+        private bool isBuilt = false;
+        
         // Docker build state management
         private enum DockerState { Idle, Building, Built, Live, Stopping }
         private DockerState dockerState = DockerState.Idle;
@@ -263,13 +266,13 @@ namespace Aby.Unity
             TransitionConnectionState(ConnectionState.Disconnecting, "Disconnecting...");
         }
 
-        private void TransitionDockerState(DockerState newState, string statusText)
+        private void TransitionDockerState(DockerState newState, string dockerStatus)
         {
             dockerState = newState;
             dockerStateStartTime = (float)EditorApplication.timeSinceStartup;
-            dockerLabel.text = $"Status: {statusText}";
+            dockerLabel.text = $"Status: {dockerStatus}";
             statusLabel.style.display = DisplayStyle.Flex;
-            Debug.Log($"TransitionDockerState: Transitioned to {newState} with status {statusText}");
+            Debug.Log($"TransitionDockerState: Transitioned to {newState} with status {dockerStatus}");
             UpdateButtonVisibility();
         }
 
@@ -285,9 +288,23 @@ namespace Aby.Unity
         {
             VisualElement root = rootVisualElement;
 
+            Button buildButton = root.Q<Button>(BUILD_BUTTON_NAME);
+            Button stopButton = root.Q<Button>(STOP_BUTTON_NAME);
             Button startButton = root.Q<Button>(START_BUTTON_NAME);
             Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
             TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
+
+            if (buildButton != null)
+            {
+                buildButton.style.display = isBuilt ? DisplayStyle.None : DisplayStyle.Flex;
+                Debug.Log($"buildButton visibility: {buildButton.style.display}");
+            }
+
+            if (stopButton != null)
+            {
+                stopButton.style.display = isBuilt ? DisplayStyle.Flex : DisplayStyle.None;
+                Debug.Log($"stopButton visibility: {stopButton.style.display}");
+            }
 
             if (startButton != null)
             {
@@ -346,6 +363,7 @@ namespace Aby.Unity
                     if (elapsedTime > StateTransitionDuration)
                     {
                         TransitionDockerState(DockerState.Built, "Built!");
+                        isBuilt = true;
                     }
                     break;
                 case DockerState.Built:
@@ -358,6 +376,7 @@ namespace Aby.Unity
                 case DockerState.Stopping:
                     if (elapsedTime > StateTransitionDuration)
                     {
+                        isBuilt = false;
                         TransitionDockerState(DockerState.Idle, "Not Built");
                         UpdateButtonVisibility();
                     }
