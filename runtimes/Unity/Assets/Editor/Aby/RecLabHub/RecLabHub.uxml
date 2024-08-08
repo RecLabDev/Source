@@ -1,21 +1,23 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/Editor/Aby/RecLabHub/RecLabHub.uss?fileID=7433441132597879392&amp;guid=1e4c617ebd8df4b75aacd2b7b0a44d24&amp;type=3#RecLabHub" />
     <ui:VisualElement name="Background" class="background" style="flex-direction: column; align-items: center; padding: 20px;">
-        <ui:VisualElement class="server-container" style="width: 430px; height: 80px; margin-bottom: 20px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
+        <ui:VisualElement class="server-container" style="width: 450px; height: 80px; margin-bottom: 20px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
             <ui:Label text="Local Docker Cluster" style="flex-grow: 1; font-size: 18px; font-weight: bold;" />
             <ui:VisualElement style="flex-direction: column; align-items: flex-end;">
-                <ui:Label text="Status: Stopped" name="StatusText" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
-                <ui:Button text="Build" class="connect-button" style="color: white; align-items: stretch;" />
+                <ui:Label text="Status: Stopped" name="DockerStatus" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
+                <ui:Button text="Build" name="BuildButton" class="connect-button" style="color: white; align-items: stretch;" />
+                <ui:Button text="Stop" name="StopButton" parse-escape-sequences="false" class="disconnect-button" style="color: white; align-items: stretch;" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement class="server-container" style="width: 430px; height: 120px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
+        <ui:VisualElement name="RemoteDockerCluster" class="server-container" style="width: 450px; height: 120px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
             <ui:VisualElement style="flex-grow: 1; flex-direction: column;">
                 <ui:Label text="Remote Docker Cluster" style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" />
-                <ui:TextField max-length="36" style="margin-top: 5px;" />
+                <ui:TextField max-length="36" name="ServerEntry" style="margin-top: 5px; width: 100%;" />
             </ui:VisualElement>
             <ui:VisualElement style="flex-direction: column; align-items: flex-end; margin-left: 10px;">
                 <ui:Label text="Status: Stopped" name="StatusText" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
-                <ui:Button text="Start" class="connect-button" style="background-color: black; color: white;" />
+                <ui:Button text="Start" name="StartButton" class="connect-button" />
+                <ui:Button text="Disconnect" name="DisconnectButton" class="disconnect-button" style="color: white;" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
