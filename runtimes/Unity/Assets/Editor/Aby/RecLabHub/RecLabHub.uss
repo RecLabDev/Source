@@ -12,7 +12,7 @@
     text-shadow: 10px 10px 0 rgba(0, 0, 0, 0.62);
 }
 
-.connect-button {
+.cta-button {
     background-color: rgb(24, 24, 24);
     color: rgb(255, 255, 255);
     -unity-font: url('project://database/Assets/Fonts/Oxygen-Bold.ttf?fileID=12800000&guid=2d7e34abb9aaa4993af3571968bd574f&type=3#Oxygen-Bold');
@@ -25,7 +25,7 @@
     height: 30px;
 }
 
-.connect-button:hover {
+.cta-button:hover {
     transition-property: all;
     transition-duration: 0s;
     transition-timing-function: ease;
@@ -39,7 +39,7 @@
     height: 30px;
 }
 
-.connect-button:disabled {
+.cta-button:disabled {
     background-color: rgb(29, 29, 29);
     color: rgb(255, 255, 255);
     -unity-font: url('bold');
@@ -113,4 +113,44 @@ TextField > TextInput {
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
     background-color: rgb(226, 226, 226);
+}
+
+.regular-button {
+    background-color: rgb(24, 24, 24);
+    color: rgb(255, 255, 255);
+    -unity-font: url('bold');
+    -unity-font-style: bold;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    width: 100px;
+    height: 30px;
+}
+
+.regular-button:hover {
+    transition-property: all;
+    transition-duration: 0s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
+    background-color: rgb(0, 0, 0);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    width: 100px;
+    height: 30px;
+}
+
+.regular-button:disabled {
+    background-color: rgb(29, 29, 29);
+    color: rgb(255, 255, 255);
+    -unity-font: url('bold');
+    -unity-font-style: bold;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    width: 100px;
+    height: 30px;
 }

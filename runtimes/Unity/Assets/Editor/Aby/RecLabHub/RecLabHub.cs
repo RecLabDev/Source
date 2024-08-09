@@ -18,10 +18,6 @@ namespace Aby.Unity
         private const string SERVER_ID_PREF_KEY = "RecLabHub_ServerID";
 
         // UI element references
-        private Button buildButton;
-        private Button stopButton;
-        private Button startButton;
-        private Button disconnectButton;
         private TextField textField;
         private Label dockerLabel;
         private Label statusLabel;
@@ -32,6 +28,8 @@ namespace Aby.Unity
         private const string TEXT_FIELD_NAME = "ServerEntry";
         private const string BACKGROUND_CONTAINER = "Background";
         private const string BUILD_BUTTON_NAME = "BuildButton";
+        private const string CANCEL_DOCKER_BUTTON_NAME = "CancelDocker";
+        private const string CANCEL_SERVER_BUTTON_NAME = "CancelServer";
         private const string STOP_BUTTON_NAME = "StopButton";
         private const string START_BUTTON_NAME = "StartButton";
         private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
@@ -144,6 +142,8 @@ namespace Aby.Unity
         private void SetupUIElements(VisualElement root)
         {
             SetupButton<Button>(root, BUILD_BUTTON_NAME, OnClickedBuildButton);
+            SetupButton<Button>(root, CANCEL_DOCKER_BUTTON_NAME, OnClickedCancelDockerButton);
+            SetupButton<Button>(root, CANCEL_SERVER_BUTTON_NAME, OnClickedCancelServerButton);
             SetupButton<Button>(root, STOP_BUTTON_NAME, OnClickedStopButton, false); // Ensure stopButton is set up here
             SetupButton<Button>(root, START_BUTTON_NAME, () => OnClickedStartButton(newServerID.serverID));
             SetupButton<Button>(root, DISCONNECT_BUTTON_NAME, OnClickedDisconnectButton, false);
@@ -246,6 +246,12 @@ namespace Aby.Unity
             remoteDockerCluster.SetEnabled(false);
         }
 
+        private void OnClickedCancelDockerButton()
+        {
+            TransitionDockerState(DockerState.Stopping, "Canceling...");
+            remoteDockerCluster.SetEnabled(false);
+        }
+
         private void OnClickedStopButton()
         {
             TransitionDockerState(DockerState.Stopping, "Stopping...");
@@ -259,6 +265,10 @@ namespace Aby.Unity
         private void OnClickedStartButton(string serverID)
         {
             TransitionConnectionState(ConnectionState.Connecting, "Connecting...");
+        }
+        private void OnClickedCancelServerButton()
+        {
+            TransitionConnectionState(ConnectionState.Disconnecting, "Canceling...");
         }
 
         private void OnClickedDisconnectButton()
@@ -289,8 +299,10 @@ namespace Aby.Unity
             VisualElement root = rootVisualElement;
 
             Button buildButton = root.Q<Button>(BUILD_BUTTON_NAME);
+            Button cancelDockerButton = root.Q<Button>(CANCEL_DOCKER_BUTTON_NAME);
             Button stopButton = root.Q<Button>(STOP_BUTTON_NAME);
             Button startButton = root.Q<Button>(START_BUTTON_NAME);
+            Button cancelServerButton = root.Q<Button>(CANCEL_SERVER_BUTTON_NAME);
             Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
             TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
 
@@ -298,6 +310,17 @@ namespace Aby.Unity
             {
                 buildButton.style.display = isBuilt ? DisplayStyle.None : DisplayStyle.Flex;
                 Debug.Log($"buildButton visibility: {buildButton.style.display}");
+            }
+
+            if (cancelDockerButton != null)
+            {
+                // Show the cancel button during both the "Building" and "Built" states for the local Docker cluster
+                cancelDockerButton.style.display = (dockerState == DockerState.Building || dockerState == DockerState.Built) ? DisplayStyle.Flex : DisplayStyle.None;
+                if(dockerState == DockerState.Built)
+                {
+                    cancelDockerButton.SetEnabled(false);
+                }
+                Debug.Log($"cancelDockerButton visibility: {cancelDockerButton.style.display}");
             }
 
             if (stopButton != null)
@@ -312,9 +335,24 @@ namespace Aby.Unity
                 Debug.Log($"startButton visibility: {startButton.style.display}");
             }
 
+            if(cancelServerButton != null)
+            {
+                // Show the cancel button only during the "Connecting" state for the remote Docker cluster
+                cancelServerButton.style.display = currentState == ConnectionState.Connecting ? DisplayStyle.Flex : DisplayStyle.None;
+                if(currentState == ConnectionState.Connected)
+                {
+                    cancelServerButton.SetEnabled(false);
+                }
+                Debug.Log($"cancelServerButton visibility: {cancelServerButton.style.display}");
+            }
+
             if (disconnectButton != null)
             {
-                disconnectButton.style.display = isConnected ? DisplayStyle.Flex : DisplayStyle.None;
+                disconnectButton.style.display = (isConnected == true || currentState == ConnectionState.Disconnecting) ? DisplayStyle.Flex : DisplayStyle.None;
+                if(currentState == ConnectionState.Disconnecting)
+                {
+                    disconnectButton.SetEnabled(false);
+                }
                 Debug.Log($"disconnectButton visibility: {disconnectButton.style.display}");
             }
 
