@@ -6,10 +6,10 @@ using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.UIElements;
 
-using Theta.Unity.Runtime;
+using Aby.Unity.Plugin;
 using System;
 
-namespace Theta.Unity.Editor.Aby
+namespace Aby.Unity.Editor.Aby
 {
     /// <summary>
     /// TODO
@@ -20,23 +20,35 @@ namespace Theta.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
+        private static string m_LogDir = "./Logs";
 
         /// <summary>
         /// TODO
         /// </summary>
-        private static string m_LogFilePath = "examples/logs/stdout.log";
+        [SerializeField]
+        private static string m_LogFilter = "./Logs/AbyRuntime.*.log";
 
         /// <summary>
         /// TODO
         /// </summary>
         private static FileSystemWatcher m_LogWatcher;
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        [SerializeField]
+        private VisualTreeAsset m_VisualTreeAsset = default;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private VisualElement rootContainer;
+
         //--
         /// <summary>
         /// TODO
         /// </summary>
-        [MenuItem("Theta/Aby Runtime Monitor")]
+        [MenuItem("Aby/Aby Runtime Monitor")]
         public static void ShowWindow()
         {
             var abyMonitorWindow = GetWindow<AbyRuntimeMonitorEditorWindow>();
@@ -44,40 +56,42 @@ namespace Theta.Unity.Editor.Aby
         }
 
         //--
-        /// <summary>
-        /// TODO
-        /// </summary>
         public void Awake()
         {
-            Debug.LogFormat("Monitoring log files at '{0}' ..", Path.GetFullPath(m_LogFilePath));
+            Debug.LogFormat("Monitoring log files at '{0}' ..", Path.GetFullPath(m_LogFilter));
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
         public void OnEnable()
         {
             StartLogWatcher();
+            SyncWindowSize();
+        }
+
+        //--
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void CreateGUI()
+        {
+            if (m_VisualTreeAsset != null)
+            {
+                rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
+                CreateEnvironmentMenu();
+                CreateMasthead();
+                SyncWindowSize();
+            }
+            else
+            {
+                Debug.LogError("VisualTreeAsset is not assigned.");
+            }
         }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public void StartLogWatcher()
+        public void OnGUI()
         {
-            if (m_LogWatcher == null)
-            {
-                m_LogWatcher = new FileSystemWatcher()
-                {
-                    Path = Path.GetDirectoryName(m_LogFilePath),
-                    Filter = Path.GetFileName(m_LogFilePath),
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
-                    EnableRaisingEvents = true,
-                };
-
-                // TODO: Need to set this only once. Why can't we use `Awake`?
-                m_LogWatcher.Changed += OnLogFileChanged;
-            }
+            SyncWindowSize();
         }
 
         /// <summary>
@@ -91,6 +105,44 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
+        private void SyncWindowSize()
+        {
+            if (rootContainer == null)
+            {
+                // TODO: Get the outer-most VisualElement so we can move this
+                //  to `RecLab.Unity.Editor.EditorWindow` ..
+                rootContainer = rootVisualElement.Q<VisualElement>("RootContainer");
+            }
+
+            if (rootContainer != null && rootContainer.style.height != rootVisualElement.contentRect.height)
+            {
+                rootContainer.style.height = rootVisualElement.contentRect.height;
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public void StartLogWatcher()
+        {
+            if (m_LogWatcher == null)
+            {
+                m_LogWatcher = new FileSystemWatcher()
+                {
+                    Path = Path.GetFullPath(m_LogDir),
+                    Filter = Path.GetFileName(m_LogFilter),
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    EnableRaisingEvents = true,
+                };
+
+                // TODO: Need to set this only once. Why can't we use `Awake`?
+                m_LogWatcher.Changed += OnLogFileChanged;
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
         private void StopLogWatcher()
         {
             if (m_LogWatcher != null)
@@ -98,18 +150,6 @@ namespace Theta.Unity.Editor.Aby
                 m_LogWatcher.EnableRaisingEvents = false;
                 m_LogWatcher.Dispose();
             }
-        }
-
-        //--
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public void CreateGUI()
-        {
-            rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
-
-            CreateEnvironmentMenu();
-            CreateMasthead();
         }
 
         /// <summary>

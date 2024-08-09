@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Platformer.Mechanics
@@ -7,7 +8,7 @@ namespace Platformer.Mechanics
     /// <summary>
     /// Implements game physics for some in game entity.
     /// </summary>
-    public class KinematicObject : MonoBehaviour
+    public class KinematicObject : NetworkBehaviour
     {
         /// <summary>
         /// The minimum normal (dot product) considered suitable for the entity sit on.
@@ -84,12 +85,13 @@ namespace Platformer.Mechanics
         protected virtual void Start()
         {
             contactFilter.useTriggers = false;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(gameObject.layer));
+            
             contactFilter.useLayerMask = true;
         }
 
         protected virtual void Update()
         {
+            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(gameObject.layer));
             targetVelocity = Vector2.zero;
             ComputeVelocity();
         }

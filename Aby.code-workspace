@@ -17,23 +17,23 @@
 		},
 		{
 			// TODO
-			"name": "Dashboard",
-			"path": "./services/Dashboard"
+			"name": "Aby",
+			"path": "./packages/Aby"
 		},
 		{
 			// TODO
-			"name": "Theta SDK",
-			"path": "./packages/ThetaSDK"
-		},
-		{
-			// TODO
-			"name": "JavaScript Runtime",
-			"path": "./packages/JsRuntime"
+			"name": "DotNet SDK",
+			"path": "./sdk/DotNet"
 		},
 		{
 			// TODO
 			"name": "Unity Runtime",
 			"path": "./runtimes/Unity"
+		},
+		{
+			// TODO
+			"name": "Dashboard",
+			"path": "./services/Dashboard"
 		},
 	],
 	"settings": {
@@ -42,7 +42,7 @@
 		//--
 		// Deno
 		"deno.enable": false,
-		"deno.config": "./deno.jsonc",
+		"deno.config": "./deno.json",
 		// TypeScript
 		"typescript.validate.enable": false,
 		"typescript.format.enable": false,

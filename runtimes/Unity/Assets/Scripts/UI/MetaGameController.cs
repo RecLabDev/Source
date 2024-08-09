@@ -1,6 +1,8 @@
+using Aby.Unity;
 using Platformer.Mechanics;
 using Platformer.UI;
 using UnityEngine;
+using UnityEngine.InputSystem.LowLevel;
 
 namespace Platformer.UI
 {
@@ -11,63 +13,56 @@ namespace Platformer.UI
     public class MetaGameController : MonoBehaviour
     {
         /// <summary>
-        /// The main UI object which used for the menu.
-        /// </summary>
-        public MainUIController mainMenu;
-
-        /// <summary>
-        /// A list of canvas objects which are used during gameplay (when the main ui is turned off)
-        /// </summary>
-        public Canvas[] gamePlayCanvasii;
-
-        /// <summary>
         /// The game controller.
         /// </summary>
         public GameController gameController;
 
-        bool showMainCanvas = false;
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public AfkOverlayController afkOverlay;
 
+        /// <summary>
+        /// A list of canvas objects which are used during gameplay (when the main ui is turned off)
+        /// </summary>
+        public Canvas[] gamePlayCanvases;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        bool shouldEnable = false;
+
+        /// <summary>
+        /// Mount to the Main Menu and enable target tracking.
+        /// </summary>
         void OnEnable()
         {
-            _ToggleMainMenu(showMainCanvas);
+            ToggleAfkOverlay(shouldEnable);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        void Update()
+        {
+            // ..
+            if (Input.GetButtonDown("Menu"))
+            {
+                ToggleAfkOverlay(!shouldEnable);
+            }
         }
 
         /// <summary>
         /// Turn the main menu on or off.
         /// </summary>
         /// <param name="show"></param>
-        public void ToggleMainMenu(bool show)
+        public void ToggleAfkOverlay(bool targetState)
         {
-            if (this.showMainCanvas != show)
+            if (shouldEnable != targetState)
             {
-                _ToggleMainMenu(show);
+                afkOverlay.gameObject.SetActive(targetState);
+                shouldEnable = targetState;
             }
         }
-
-        void _ToggleMainMenu(bool show)
-        {
-            if (show)
-            {
-                Time.timeScale = 0;
-                mainMenu.gameObject.SetActive(true);
-                foreach (var i in gamePlayCanvasii) i.gameObject.SetActive(false);
-            }
-            else
-            {
-                Time.timeScale = 1;
-                mainMenu.gameObject.SetActive(false);
-                foreach (var i in gamePlayCanvasii) i.gameObject.SetActive(true);
-            }
-            this.showMainCanvas = show;
-        }
-
-        void Update()
-        {
-            if (Input.GetButtonDown("Menu"))
-            {
-                ToggleMainMenu(show: !showMainCanvas);
-            }
-        }
-
     }
 }

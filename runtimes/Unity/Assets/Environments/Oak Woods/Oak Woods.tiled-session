@@ -1,0 +1,51 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "Oak Woods.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        ":/automap-tiles.tsx": {
+            "scaleInDock": 3
+        },
+        "Oak Woods Tiles.tsx": {
+            "scaleInDock": 1.5,
+            "scaleInEditor": 4
+        },
+        "Oak Woods.tmx": {
+            "scale": 4,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 115.375,
+                "y": 7.625
+            }
+        },
+        "OakWoodsTiles.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 5.5
+        }
+    },
+    "last.imagePath": "C:/Theta/Aby/runtimes/Unity/Assets/Environments/Oak Woods",
+    "map.fixedSize": false,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 24,
+    "map.tileWidth": 24,
+    "openFiles": [
+        "Oak Woods Tiles.tsx",
+        "Oak Woods.tmx"
+    ],
+    "project": "Oak Woods.tiled-project",
+    "recentFiles": [
+        "Oak Woods Tiles.tsx",
+        "Oak Woods.tmx",
+        "OakWoodsTiles.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 24,
+        "width": 24
+    }
+}

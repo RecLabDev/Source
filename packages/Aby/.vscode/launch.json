@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch Counter Example",
+            "env": {
+                "PATH": "${env:RUSTUP_HOME}/toolchains/nightly-x86_64-pc-windows-msvc/bin;${workspaceFolder}/.target/debug/deps;${env:PATH}",
+            },
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=aby-counter",
+                    "--package=aby",
+                    "--features=stdio,debug"
+                ],
+                "filter": {
+                    "name": "aby-counter",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Attach to Node Service",
+            "type": "node",
+            "request": "attach",
+            "address": "127.0.0.1",
+            "port": 9229
+        }
+    ]
+}

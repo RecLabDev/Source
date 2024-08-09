@@ -1,0 +1,93 @@
+[package]
+name = "aby"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["ffi", "stdio"]
+dev = []
+debug = []
+verbose = []
+ffi = []
+stdio = []
+lite = []
+unity = []
+
+#--
+[lib]
+name = "aby"
+crate-type=["rlib", "cdylib"]
+
+[[example]]
+name = "aby-basic"
+path = "./examples/basic/main.rs"
+
+[[example]]
+name = "aby-counter"
+path = "./examples/counter/main.rs"
+required-features = ["ffi"]
+
+#--
+[dependencies]
+tempfile = { version = "3.10.1", features = ["nightly"] }
+
+[dependencies.oops]
+git = "https://github.com/open-dx/oops-rs"
+
+[dependencies.cwrap]
+git = "https://github.com/open-dx/cwrap-rs"
+
+[dependencies.deno_core]
+# TODO: Remove this when deno_runtime::deno_core::extension! works without it.
+version = "0.262.0"
+# features = ["include_js_files_for_snapshotting"]
+
+[dependencies.deno_runtime]
+version = "0.146.0"
+features = ["include_js_files_for_snapshotting"]
+
+[dependencies.slab]
+version = "0.4.9"
+
+[dependencies.tracing]
+version = "0.1"
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+default-features = false
+features = [
+    "ansi", "env-filter", "fmt", "json", "local-time",
+    "matchers", "regex", "serde", "smallvec", "thread_local", "time",
+]
+
+[dependencies.tokio]
+version = "1.36.0"
+features = [
+    "rt", "bytes", "fs", "macros", "net", "rt-multi-thread", "signal",
+    "socket2", "sync", "time", "tokio-macros", "tracing", "process",
+]
+
+[dependencies.futures]
+version = "0.3.30"
+
+[dev-dependencies]
+anyhow = "1.0.79"
+
+[build-dependencies]
+anyhow = "1.0.79"
+csbindgen = { version = "1.9.1" }
+
+#--
+# [profile.dev]
+# opt-level = 1
+# split-debuginfo = "unpacked"
+
+# [profile.dev.build-override]
+# opt-level = 3
+# split-debuginfo = "unpacked"
+
+# [profile.dev.package."*"]
+# opt-level = 3
+
+# [profile.release]
+# opt-level = "s"

@@ -5,13 +5,18 @@ TagManager:
   serializedVersion: 2
   tags:
   - TutorialRequirement
+  - Enemy
+  - Chest
+  - Trap
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
+  - Players
+  - Enemies
   - 
   - 
   - 
@@ -35,9 +40,7 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
+  - Ghosts
   m_SortingLayers:
   - name: Default
     uniqueID: 0

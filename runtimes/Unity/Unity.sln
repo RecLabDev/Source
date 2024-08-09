@@ -1,11 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperTiled2UnityEditor", "SuperTiled2UnityEditor.csproj", "{FBDA3211-B91C-BEFA-58E0-982B1411B84F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperTiled2Unity", "SuperTiled2Unity.csproj", "{12D63FDC-743C-5C4E-0BB0-822F93738AB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParrelSync", "ParrelSync.csproj", "{A2668E6E-E30B-95E4-3A31-56632EA60505}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{6311E6C6-0A20-383B-320B-694068DE37A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{CD8C9303-404B-FB8D-6B9B-21988D5CAC0A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-firstpass", "Assembly-CSharp-firstpass.csproj", "{2662B409-6332-1E56-D797-C9025C53BDD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.WebRTC.Samples.Editror", "Unity.WebRTC.Samples.Editror.csproj", "{19F45747-ECC4-402C-CCA2-8D84EDB16999}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.WebRTC.Samples", "Unity.WebRTC.Samples.csproj", "{DAA97252-8CC7-9017-80B3-CA6EC9A2C879}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +23,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBDA3211-B91C-BEFA-58E0-982B1411B84F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12D63FDC-743C-5C4E-0BB0-822F93738AB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2668E6E-E30B-95E4-3A31-56632EA60505}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2668E6E-E30B-95E4-3A31-56632EA60505}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2668E6E-E30B-95E4-3A31-56632EA60505}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2668E6E-E30B-95E4-3A31-56632EA60505}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6311E6C6-0A20-383B-320B-694068DE37A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -25,6 +47,14 @@ Global
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2662B409-6332-1E56-D797-C9025C53BDD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19F45747-ECC4-402C-CCA2-8D84EDB16999}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19F45747-ECC4-402C-CCA2-8D84EDB16999}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19F45747-ECC4-402C-CCA2-8D84EDB16999}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19F45747-ECC4-402C-CCA2-8D84EDB16999}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAA97252-8CC7-9017-80B3-CA6EC9A2C879}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAA97252-8CC7-9017-80B3-CA6EC9A2C879}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAA97252-8CC7-9017-80B3-CA6EC9A2C879}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAA97252-8CC7-9017-80B3-CA6EC9A2C879}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

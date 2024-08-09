@@ -8,13 +8,13 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.SceneManagement;
 
-using Theta.Unity.Runtime;
+using Aby.Unity.Plugin;
 
-namespace Theta.Unity.Editor.Aby
+namespace Aby.Unity.Editor.Aby
 {
     /// <summary>
     /// TODO
-    /// </summary>\
+    /// </summary>
     [InitializeOnLoad]
     public class AbyControllerEditorWindow : EditorWindow
     {
@@ -46,19 +46,24 @@ namespace Theta.Unity.Editor.Aby
         /// TODO
         /// </summary>
         [SerializeField]
-        private State m_State = new State();
+        private State state = new State();
 
         /// <summary>
         /// TODO
         /// </summary>
         [SerializeField]
-        private AbyEnv m_CurrentEnvironment;
+        private AbyExecutor m_ServiceConfig;
 
         /// <summary>
         /// TODO
         /// </summary>
         [SerializeField]
-        private VisualTreeAsset m_VisualTreeAsset = default;
+        private VisualTreeAsset visualTreeAsset = default;
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        private Label runtimeStateLabel;
 
         /// <summary>
         /// TODO
@@ -77,7 +82,7 @@ namespace Theta.Unity.Editor.Aby
         /// <summary>
         /// TODO
         /// </summary>
-        [MenuItem("Theta/Aby Controller")]
+        [MenuItem("Aby/Aby Runtime Controller")]
         public static void ShowWindow()
         {
             var abyControllerWindow = GetWindow<AbyControllerEditorWindow>();
@@ -92,15 +97,16 @@ namespace Theta.Unity.Editor.Aby
         {
             // Mount environment assets and pick one to use with the editor window.
             // TODO: Move this to a static value on AbyEnvConfig itself.
-            var envConfigs = AssetDatabase.FindAssets("t:AbyEnv");
+            var envConfigs = AssetDatabase.FindAssets("t:AbyEnvironment");
             if (envConfigs.Length == 0)
             {
                 Debug.LogWarning("Couldn't find Aby Environment configs.");
             }
             else
             {
+                Debug.LogFormat("Found {0} AbyEnvironment assets ..", envConfigs.Length);
                 var envConfigPath = AssetDatabase.GUIDToAssetPath(envConfigs[0]);
-                m_CurrentEnvironment = AssetDatabase.LoadAssetAtPath<AbyEnv>(envConfigPath);
+                m_ServiceConfig = AssetDatabase.LoadAssetAtPath<AbyExecutor>(envConfigPath);
             }
         }
 
@@ -114,50 +120,58 @@ namespace Theta.Unity.Editor.Aby
 
         //--
         /// <summary>
+        /// TODO: Hoist this out to parent.
+        /// </summary>
+        /// <typeparam name="E"></typeparam>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        private E QueryElement<E>(string query) where E : VisualElement
+        {
+            var foundElement = rootVisualElement.Q<E>(query);
+            if (foundElement == null)
+            {
+                Debug.LogWarningFormat("Could not find element with query '{0}'.", query);
+                return null;
+            }
+            else
+            {
+                return foundElement;
+            }
+        }
+
+        //--
+        /// <summary>
         /// Mounts the root `VisualElement` and inits the start/reload buttons.
         /// </summary>
         public void CreateGUI()
         {
-            // Mount the admin ui and bind state.
-            rootVisualElement.Add(m_VisualTreeAsset.Instantiate());
-
-            DrawRuntimeControlToolbar();
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        private void DrawRuntimeControlToolbar()
-        {
-            var stateLabel = rootVisualElement.Q<Label>("RuntimeState");
-            if (stateLabel == null)
+            if (visualTreeAsset != null)
             {
-                Debug.LogWarning("RuntimeState element not found ..");
+                rootVisualElement.Add(visualTreeAsset.Instantiate());
+
+                var stateLabel = QueryElement<Label>("RuntimeState");
+                if (stateLabel != null)
+                {
+                    // TODO: Get the current state from the selected runtime instance.
+                    stateLabel.text = $"Runtime State: TODO";
+                }
+
+                var toggleButton = QueryElement<Button>("ToggleButton");
+                if (toggleButton != null)
+                {
+                    toggleButton.clicked += OnToggleButtonClicked;
+                }
+
+
+                var reloadButton = QueryElement<Button>("ReloadButton");
+                if (reloadButton != null)
+                {
+                    reloadButton.clicked += OnReloadButtonClicked;
+                }
             }
             else
             {
-                stateLabel.text = $"Runtime State: {JsRuntime.State}";
-            }
-
-            var toggleButton = rootVisualElement.Q<Button>("ToggleButton");
-            if (toggleButton == null)
-            {
-                Debug.LogError("ToggleButton element not found!");
-            }
-            else
-            {
-                toggleButton.clicked += OnToggleButtonClicked;
-            }
-
-
-            var reloadButton = rootVisualElement.Q<Button>("ReloadButton");
-            if (reloadButton == null)
-            {
-                Debug.LogError("ReloadButton element not found!");
-            }
-            else
-            {
-                reloadButton.clicked += OnReloadButtonClicked;
+                Debug.LogError("VisualTreeAsset is not assigned.");
             }
         }
 
@@ -166,9 +180,15 @@ namespace Theta.Unity.Editor.Aby
         /// </summary>
         public void OnGUI()
         {
-            //..
+            var toggleButton = QueryElement<Button>("ToggleButton");
+            if (toggleButton != null)
+            {
+                // TODO: Something like `selectedRuntime.IsAlive == false ? "Start" : "Stop"`
+                toggleButton.text = "Toggle";
+            }
         }
 
+        //---
         /// <summary>
         /// TODO
         /// </summary>
@@ -177,19 +197,21 @@ namespace Theta.Unity.Editor.Aby
             // Debug.LogFormat("Found GUI item: {0}", instanceID);
         }
 
+        //---
         /// <summary>
-        /// TODO: Setup an observer for status display.
+        /// TODO
         /// </summary>
         private void OnToggleButtonClicked()
         {
-            if (JsRuntime.IsRunning == false)
-            {
-                JsRuntime.StartServiceThread();
-            }
-            else
-            {
-                JsRuntime.StopServiceThread();
-            }
+            // TODO: Start or stop the runtime, depending on its state ..
+            // if (!abyRuntime.IsAlive)
+            // {
+            //     abyRuntime.StartServiceThread();
+            // }
+            // else
+            // {
+            //     abyRuntime.StopServiceThread();
+            // }
         }
 
         /// <summary>
@@ -199,12 +221,12 @@ namespace Theta.Unity.Editor.Aby
         {
             Debug.Log("Attempting to reload plugin.");
 
-            // We need to exit play mode first so we can (optionally) save
-            // and safely run shutdown operations.
+            // We need to exit play mode first so we can save and safely
+            // run shutdown operations on Aby's managed threads.
             EditorApplication.ExitPlaymode();
 
-            // `ExitPlaymore` doesn't complete until "later", so we defer
-            // the rest of the operation until then.
+            // The call to `ExitPlaymode` above doesn't complete until "later",
+            // so we defer the rest of the operation until then.
             EditorApplication.delayCall += DelayedOnReloadButtonClicked;
         }
 
