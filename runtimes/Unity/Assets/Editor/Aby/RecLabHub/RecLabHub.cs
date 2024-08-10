@@ -28,8 +28,6 @@ namespace Aby.Unity
         private const string TEXT_FIELD_NAME = "ServerEntry";
         private const string BACKGROUND_CONTAINER = "Background";
         private const string BUILD_BUTTON_NAME = "BuildButton";
-        private const string CANCEL_DOCKER_BUTTON_NAME = "CancelDocker";
-        private const string CANCEL_SERVER_BUTTON_NAME = "CancelServer";
         private const string STOP_BUTTON_NAME = "StopButton";
         private const string START_BUTTON_NAME = "StartButton";
         private const string DISCONNECT_BUTTON_NAME = "DisconnectButton";
@@ -50,7 +48,7 @@ namespace Aby.Unity
         private bool isConnected = false;
 
         // Connection state management
-        private enum ConnectionState { Idle, Connecting, Connected, Disconnecting }
+        private enum ConnectionState { Idle, Connecting, Connected, Online, Disconnecting }
         private ConnectionState currentState = ConnectionState.Idle;
         private float connectionStateStartTime;
 
@@ -78,8 +76,9 @@ namespace Aby.Unity
             // Setup UI elements
             SetupUIElements(root);
 
-            // Set the initial status label text
-            statusLabel.text = "Status: Not Built";
+            // Initially hide the status labels
+            dockerLabel.style.display = DisplayStyle.None;
+            statusLabel.style.display = DisplayStyle.None;
 
             // Update button visibility based on connection status
             UpdateButtonVisibility();
@@ -142,8 +141,6 @@ namespace Aby.Unity
         private void SetupUIElements(VisualElement root)
         {
             SetupButton<Button>(root, BUILD_BUTTON_NAME, OnClickedBuildButton);
-            SetupButton<Button>(root, CANCEL_DOCKER_BUTTON_NAME, OnClickedCancelDockerButton);
-            SetupButton<Button>(root, CANCEL_SERVER_BUTTON_NAME, OnClickedCancelServerButton);
             SetupButton<Button>(root, STOP_BUTTON_NAME, OnClickedStopButton, false); // Ensure stopButton is set up here
             SetupButton<Button>(root, START_BUTTON_NAME, () => OnClickedStartButton(newServerID.serverID));
             SetupButton<Button>(root, DISCONNECT_BUTTON_NAME, OnClickedDisconnectButton, false);
@@ -205,7 +202,7 @@ namespace Aby.Unity
             dockerLabel = root.Q<Label>(DOCKER_LABEL_NAME);
             if (dockerLabel != null)
             {
-                // Do something
+                dockerLabel.style.display = DisplayStyle.None; // Initially hidden
             }
             else
             {
@@ -218,7 +215,7 @@ namespace Aby.Unity
             statusLabel = root.Q<Label>(STATUS_LABEL_NAME);
             if (statusLabel != null)
             {
-                // Do something
+                statusLabel.style.display = DisplayStyle.None; // Initially hidden
             }
             else
             {
@@ -266,6 +263,7 @@ namespace Aby.Unity
         {
             TransitionConnectionState(ConnectionState.Connecting, "Connecting...");
         }
+        
         private void OnClickedCancelServerButton()
         {
             TransitionConnectionState(ConnectionState.Disconnecting, "Canceling...");
@@ -280,18 +278,32 @@ namespace Aby.Unity
         {
             dockerState = newState;
             dockerStateStartTime = (float)EditorApplication.timeSinceStartup;
-            dockerLabel.text = $"Status: {dockerStatus}";
-            statusLabel.style.display = DisplayStyle.Flex;
-            Debug.Log($"TransitionDockerState: Transitioned to {newState} with status {dockerStatus}");
-            UpdateButtonVisibility();
+
+            // Show the docker status label when there's a relevant status update
+            if (newState != DockerState.Idle)
+            {
+               dockerLabel.style.display = DisplayStyle.Flex;
+               dockerLabel.text = dockerStatus;
+            }
+
+            UpdateButtonVisibility(); // Ensure button visibility is updated immediately
+            MarkDirtyRepaintForAll(); // Force UI repaint to ensure all elements are updated
         }
 
         private void TransitionConnectionState(ConnectionState newState, string statusText)
         {
             currentState = newState;
             connectionStateStartTime = (float)EditorApplication.timeSinceStartup;
-            statusLabel.text = $"Status: {statusText}";
-            statusLabel.style.display = DisplayStyle.Flex;
+
+            // Show the connection status label when there's a relevant status update
+            if (newState != ConnectionState.Idle)
+            {
+                statusLabel.style.display = DisplayStyle.Flex;
+                statusLabel.text = statusText;
+            }
+
+            UpdateButtonVisibility(); // Ensure the UI is updated immediately
+            MarkDirtyRepaintForAll(); // Force UI repaint to ensure all elements are updated
         }
 
         private void UpdateButtonVisibility()
@@ -299,90 +311,73 @@ namespace Aby.Unity
             VisualElement root = rootVisualElement;
 
             Button buildButton = root.Q<Button>(BUILD_BUTTON_NAME);
-            Button cancelDockerButton = root.Q<Button>(CANCEL_DOCKER_BUTTON_NAME);
             Button stopButton = root.Q<Button>(STOP_BUTTON_NAME);
             Button startButton = root.Q<Button>(START_BUTTON_NAME);
-            Button cancelServerButton = root.Q<Button>(CANCEL_SERVER_BUTTON_NAME);
             Button disconnectButton = root.Q<Button>(DISCONNECT_BUTTON_NAME);
             TextField textField = root.Q<TextField>(TEXT_FIELD_NAME);
 
+            // Handle Local Docker Cluster buttons
             if (buildButton != null)
             {
-                buildButton.style.display = isBuilt ? DisplayStyle.None : DisplayStyle.Flex;
+                buildButton.style.display = dockerState == DockerState.Idle ? DisplayStyle.Flex : DisplayStyle.None;
                 Debug.Log($"buildButton visibility: {buildButton.style.display}");
-            }
-
-            if (cancelDockerButton != null)
-            {
-                // Show the cancel button during both the "Building" and "Built" states for the local Docker cluster
-                cancelDockerButton.style.display = (dockerState == DockerState.Building || dockerState == DockerState.Built) ? DisplayStyle.Flex : DisplayStyle.None;
-                if(dockerState == DockerState.Built)
-                {
-                    cancelDockerButton.SetEnabled(false);
-                }
-                Debug.Log($"cancelDockerButton visibility: {cancelDockerButton.style.display}");
             }
 
             if (stopButton != null)
             {
-                stopButton.style.display = isBuilt ? DisplayStyle.Flex : DisplayStyle.None;
+                stopButton.style.display = dockerState == DockerState.Live ? DisplayStyle.Flex : DisplayStyle.None;
+                stopButton.SetEnabled(dockerState == DockerState.Live || dockerState == DockerState.Built); // Disabled during Building
                 Debug.Log($"stopButton visibility: {stopButton.style.display}");
             }
 
+            // Handle Remote Docker Cluster buttons
             if (startButton != null)
             {
-                startButton.style.display = isConnected ? DisplayStyle.None : DisplayStyle.Flex;
+                startButton.style.display = currentState == ConnectionState.Idle ? DisplayStyle.Flex : DisplayStyle.None;
+                startButton.SetEnabled(dockerState == DockerState.Live && currentState == ConnectionState.Idle);
                 Debug.Log($"startButton visibility: {startButton.style.display}");
-            }
-
-            if(cancelServerButton != null)
-            {
-                // Show the cancel button only during the "Connecting" state for the remote Docker cluster
-                cancelServerButton.style.display = currentState == ConnectionState.Connecting ? DisplayStyle.Flex : DisplayStyle.None;
-                if(currentState == ConnectionState.Connected)
-                {
-                    cancelServerButton.SetEnabled(false);
-                }
-                Debug.Log($"cancelServerButton visibility: {cancelServerButton.style.display}");
             }
 
             if (disconnectButton != null)
             {
-                disconnectButton.style.display = (isConnected == true || currentState == ConnectionState.Disconnecting) ? DisplayStyle.Flex : DisplayStyle.None;
-                if(currentState == ConnectionState.Disconnecting)
-                {
-                    disconnectButton.SetEnabled(false);
-                }
+                disconnectButton.style.display = currentState == ConnectionState.Online ? DisplayStyle.Flex : DisplayStyle.None;
+                disconnectButton.SetEnabled(currentState == ConnectionState.Online);
                 Debug.Log($"disconnectButton visibility: {disconnectButton.style.display}");
             }
 
+            // Enable/disable textField based on connection state
             if (textField != null)
             {
-                textField.SetEnabled(!isConnected);
+                textField.SetEnabled(!isConnected && currentState == ConnectionState.Idle);
+            }
+
+            // Ensure the correct status label is updated
+            if (dockerLabel != null)
+            {
+                if (dockerState == DockerState.Building)
+                    dockerLabel.text = "Building...";
+                else if (dockerState == DockerState.Built)
+                    dockerLabel.text = "Built!";
+                else if (dockerState == DockerState.Stopping)
+                    dockerLabel.text = "Stopping...";
+                else
+                    dockerLabel.style.display = DisplayStyle.None; // Hide the docker label if no relevant status
+
+                Debug.Log($"dockerLabel text: {dockerLabel.text}");
             }
 
             if (statusLabel != null)
             {
-                statusLabel.style.display = DisplayStyle.Flex;
-                statusLabel.text = isConnected ? "Status: Connected" : "Status: Disconnected";
-            }
+                if (currentState == ConnectionState.Connecting)
+                    statusLabel.text = "Connecting...";
+                else if (currentState == ConnectionState.Connected)
+                    statusLabel.text = "Connected!";
+                else if (currentState == ConnectionState.Disconnecting)
+                    statusLabel.text = "Disconnecting...";
+                else
+                    statusLabel.style.display = DisplayStyle.None; // Hide the status label if no relevant status
 
-            if (buildButton != null && stopButton != null)
-            {
-                Debug.Log($"UpdateButtonVisibility: DockerState = {dockerState}");
-                buildButton.style.display = dockerState == DockerState.Idle ? DisplayStyle.Flex : DisplayStyle.None;
-                stopButton.style.display = dockerState == DockerState.Live ? DisplayStyle.Flex : DisplayStyle.None;
-
-                buildButton.SetEnabled(dockerState == DockerState.Idle);
-                stopButton.SetEnabled(dockerState == DockerState.Live);
-
-                Debug.Log($"buildButton visibility: {buildButton.style.display}");
-                Debug.Log($"stopButton visibility: {stopButton.style.display}");
-
-                // Force layout update
-                buildButton.MarkDirtyRepaint();
-                stopButton.MarkDirtyRepaint();
-                root.MarkDirtyRepaint();
+                Debug.Log($"statusLabel text: {statusLabel.text}");
             }
 
             if (remoteDockerCluster != null)
@@ -393,35 +388,7 @@ namespace Aby.Unity
 
         private void OnEditorUpdate()
         {
-            float elapsedTime = (float)EditorApplication.timeSinceStartup - dockerStateStartTime;
-
-            switch (dockerState)
-            {
-                case DockerState.Building:
-                    if (elapsedTime > StateTransitionDuration)
-                    {
-                        TransitionDockerState(DockerState.Built, "Built!");
-                        isBuilt = true;
-                    }
-                    break;
-                case DockerState.Built:
-                    if (elapsedTime > StateTransitionDuration)
-                    {
-                        TransitionDockerState(DockerState.Live, "Live");
-                        UpdateButtonVisibility();
-                    }
-                    break;
-                case DockerState.Stopping:
-                    if (elapsedTime > StateTransitionDuration)
-                    {
-                        isBuilt = false;
-                        TransitionDockerState(DockerState.Idle, "Not Built");
-                        UpdateButtonVisibility();
-                    }
-                    break;
-            }
-
-            elapsedTime = (float)EditorApplication.timeSinceStartup - connectionStateStartTime;
+            float elapsedTime = (float)EditorApplication.timeSinceStartup - connectionStateStartTime;
 
             switch (currentState)
             {
@@ -430,13 +397,12 @@ namespace Aby.Unity
                     {
                         TransitionConnectionState(ConnectionState.Connected, "Connected!");
                         isConnected = true;
-                        UpdateButtonVisibility();
                     }
                     break;
                 case ConnectionState.Connected:
                     if (elapsedTime > StateTransitionDuration)
                     {
-                        currentState = ConnectionState.Idle;
+                        TransitionConnectionState(ConnectionState.Online, "Online");
                     }
                     break;
                 case ConnectionState.Disconnecting:
@@ -444,7 +410,32 @@ namespace Aby.Unity
                     {
                         isConnected = false;
                         TransitionConnectionState(ConnectionState.Idle, "Disconnected");
-                        UpdateButtonVisibility();
+                    }
+                    break;
+            }
+
+            float dockerElapsedTime = (float)EditorApplication.timeSinceStartup - dockerStateStartTime;
+
+            switch (dockerState)
+            {
+                case DockerState.Building:
+                    if (dockerElapsedTime > StateTransitionDuration)
+                    {
+                        TransitionDockerState(DockerState.Built, "Built!");
+                        isBuilt = true;
+                    }
+                    break;
+                case DockerState.Built:
+                    if (dockerElapsedTime > StateTransitionDuration)
+                    {
+                        TransitionDockerState(DockerState.Live, "Live");
+                    }
+                    break;
+                case DockerState.Stopping:
+                    if (dockerElapsedTime > StateTransitionDuration)
+                    {
+                        isBuilt = false;
+                        TransitionDockerState(DockerState.Idle, "Not Built");
                     }
                     break;
             }
@@ -470,6 +461,15 @@ namespace Aby.Unity
                 rootContainer.style.height = rootVisualElement.contentRect.height;
             }
         }
+
+        private void MarkDirtyRepaintForAll()
+        {
+            rootVisualElement.MarkDirtyRepaint();
+            rootVisualElement.Q<Button>(START_BUTTON_NAME)?.MarkDirtyRepaint();
+            rootVisualElement.Q<Button>(DISCONNECT_BUTTON_NAME)?.MarkDirtyRepaint();
+            rootVisualElement.Q<Label>(STATUS_LABEL_NAME)?.MarkDirtyRepaint();
+            rootVisualElement.Q<Label>(DOCKER_LABEL_NAME)?.MarkDirtyRepaint();
+        }
     }
 
     [System.Serializable]
@@ -478,4 +478,3 @@ namespace Aby.Unity
         public string serverID;
     }
 }
-           

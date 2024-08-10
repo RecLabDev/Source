@@ -21,8 +21,9 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 100px;
+    width: 100%;
     height: 30px;
+    min-width: 100px;
 }
 
 .cta-button:hover {
@@ -35,8 +36,9 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 100px;
+    width: 100%;
     height: 30px;
+    min-width: 100px;
 }
 
 .cta-button:disabled {
@@ -48,23 +50,25 @@
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
-    width: 100px;
-    height: 30px;
+    width: 100%;
+    height: 100%;
+    min-width: 100px;
 }
 
 TextField > TextInput {
     background-color: rgb(255, 255, 255);
     -unity-text-align: middle-left;
-    width: 200px;
+    width: 100%;
     height: 30px;
     color: rgb(0, 0, 0);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
-    border-bottom-left-radius: 10px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
     padding-left: 10px;
     padding-right: 10px;
     margin-bottom: 0;
+    min-width: 250px;
 }
 
 .background {
@@ -79,8 +83,6 @@ TextField > TextInput {
 }
 
 .disconnect-button {
-    width: 100px;
-    height: 30px;
     background-color: rgb(200, 3, 3);
     color: rgb(255, 255, 255);
     -unity-font-style: bold;
@@ -88,11 +90,12 @@ TextField > TextInput {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
+    width: 100%;
+    height: 30px;
+    min-width: 100px;
 }
 
 .disconnect-button:hover {
-    width: 100px;
-    height: 30px;
     background-color: rgb(255, 0, 0);
     color: rgb(255, 255, 255);
     -unity-font-style: bold;
@@ -100,6 +103,9 @@ TextField > TextInput {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
+    width: 100%;
+    height: 30px;
+    min-width: 100px;
 }
 
 .status-text {
@@ -113,6 +119,7 @@ TextField > TextInput {
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
     background-color: rgb(226, 226, 226);
+    width: 100%;
 }
 
 .regular-button {

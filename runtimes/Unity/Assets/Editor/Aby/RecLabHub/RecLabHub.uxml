@@ -1,25 +1,23 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/Editor/Aby/RecLabHub/RecLabHub.uss?fileID=7433441132597879392&amp;guid=1e4c617ebd8df4b75aacd2b7b0a44d24&amp;type=3#RecLabHub" />
     <ui:VisualElement name="Background" class="background" style="flex-direction: column; align-items: center; padding: 20px;">
-        <ui:VisualElement name="LocalDockerCluster" class="server-container" style="width: 450px; height: 80px; margin-bottom: 20px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
-            <ui:Label text="Local Docker Cluster" style="flex-grow: 1; font-size: 18px; font-weight: bold;" />
+        <ui:VisualElement name="LocalDockerCluster" class="server-container" style="margin-bottom: 20px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
+            <ui:Label text="Local Docker Cluster" style="flex-grow: 1; font-size: 18px; font-weight: bold; width: 202px;" />
             <ui:VisualElement style="flex-direction: column; align-items: flex-end;">
-                <ui:Label text="Status: Stopped" name="DockerStatus" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
+                <ui:Label text="Status: Stopped" name="DockerStatus" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px; align-self: auto; align-items: center;" />
                 <ui:Button text="Build" name="BuildButton" class="cta-button" style="color: white; align-items: stretch;" />
-                <ui:Button text="Cancel" name="CancelDocker" focusable="true" class="regular-button" style="color: white; align-items: stretch;" />
                 <ui:Button text="Stop" name="StopButton" parse-escape-sequences="false" class="disconnect-button" style="color: white; align-items: stretch;" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="RemoteDockerCluster" class="server-container" style="width: 450px; height: 120px; flex-direction: row; align-items: center; padding: 10px; color: rgb(0, 0, 0);">
-            <ui:VisualElement style="flex-grow: 1; flex-direction: column;">
-                <ui:Label text="Remote Docker Cluster" style="font-size: 18px; font-weight: bold; margin-bottom: 5px;" />
-                <ui:TextField max-length="36" name="ServerEntry" style="margin-top: 5px; width: 100%;" />
+        <ui:VisualElement name="RemoteDockerCluster" class="server-container" style="flex-direction: column; align-items: stretch; padding: 10px; color: rgb(0, 0, 0); height: auto; min-height: 100px;">
+            <ui:Label text="Remote Docker Cluster" style="font-size: 18px; font-weight: bold; margin-bottom: 5px; align-self: flex-start;" />
+            <ui:VisualElement style="flex-grow: 1; flex-direction: column; align-items: stretch; align-self: auto;">
+                <ui:TextField max-length="36" name="ServerEntry" style="margin-top: 5px;" />
             </ui:VisualElement>
-            <ui:VisualElement style="flex-direction: column; align-items: flex-end; margin-left: 10px;">
+            <ui:VisualElement style="flex-direction: row; align-items: auto; margin-left: 10px; margin-top: 10px; justify-content: center; align-self: center;">
                 <ui:Label text="Status: Stopped" name="StatusText" class="status-text" style="font-size: 14px; color: black; margin-bottom: 5px;" />
-                <ui:Button text="Start" name="StartButton" class="connect-button cta-button" />
-                <ui:Button text="Cancel" name="CancelServer" focusable="true" class="regular-button" style="color: white; align-items: stretch;" />
-                <ui:Button text="Disconnect" name="DisconnectButton" class="disconnect-button" style="color: white;" />
+                <ui:Button text="Start" name="StartButton" class="connect-button cta-button" style="min-width: 250px;" />
+                <ui:Button text="Disconnect" name="DisconnectButton" class="disconnect-button" style="color: white; min-width: 250px;" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
