@@ -48,16 +48,16 @@ namespace Aby.Unity.Plugin
         public static extern CConstructRuntimeResult c_construct_runtime(CAbyRuntimeConfig c_runtime_config);
 
         [DllImport(__DllName, EntryPoint = "aby__c_send_broadcast", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_send_broadcast(CAbyRuntime* c_self, uint message);
+        public static extern void c_send_broadcast(CAbyRuntime* c_aby_runtime_ptr, CSendBroadcastOptions options);
 
         /// <summary>
         ///  TODO
         /// </summary>
         [DllImport(__DllName, EntryPoint = "aby__c_exec_module", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CExecModuleResult c_exec_module(CAbyRuntime* c_self, CExecModuleOptions options);
+        public static extern CExecModuleResult c_exec_module(CAbyRuntime* c_aby_runtime_ptr, CExecModuleOptions options);
 
         [DllImport(__DllName, EntryPoint = "aby__c_free_runtime", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void c_free_runtime(CAbyRuntime* c_aby_runtime);
+        public static extern void c_free_runtime(CAbyRuntime* c_aby_runtime_ptr);
 
 
     }
@@ -92,13 +92,21 @@ namespace Aby.Unity.Plugin
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CSendBroadcastOptions
+    {
+        public sbyte* name;
+        public byte* data;
+        public nuint length;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe partial struct CExecModuleOptions
     {
         public byte* module_specifier;
     }
 
 
-    public enum CJsRuntimeLogLevel : C
+    public enum CJsRuntimeLogLevel : uint
     {
         None = 0,
         Error = 1,
@@ -108,7 +116,7 @@ namespace Aby.Unity.Plugin
         Trace = 5,
     }
 
-    public enum CConstructRuntimeResultCode : C
+    public enum CConstructRuntimeResultCode : uint
     {
         Ok,
         InvalidConfig,
@@ -121,7 +129,7 @@ namespace Aby.Unity.Plugin
         FailedBroadcast,
     }
 
-    public enum CExecModuleResult : C
+    public enum CExecModuleResult : uint
     {
         Ok,
         RuntimeNul,
@@ -136,7 +144,7 @@ namespace Aby.Unity.Plugin
         FailedEventLoopErr,
     }
 
-    public enum CAbyRuntimeStatus : C
+    public enum CAbyRuntimeStatus : uint
     {
         None = 0,
         Cold,
